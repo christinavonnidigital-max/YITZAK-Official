@@ -1,0 +1,104 @@
+{
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "An appointment booking for institutional consulting",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who booked"
+        },
+        "userName": {
+          "type": "string",
+          "description": "The name of the user"
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "The email address of the user"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date of the booking (YYYY-MM-DD)"
+        },
+        "timeSlot": {
+          "type": "string",
+          "description": "The time slot of the booking"
+        },
+        "pillar": {
+          "type": "string",
+          "description": "The service pillar selected"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes or requirements"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "cancelled"],
+          "description": "Status of the booking"
+        },
+        "calendarEventId": {
+          "type": "string",
+          "description": "The Google Calendar event ID"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of when the booking was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of when the booking was updated"
+        }
+      },
+      "required": ["userId", "userName", "userEmail", "date", "timeSlot", "pillar", "status", "createdAt", "updatedAt"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "A general inquiry from the Contact Us form",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the enquirer"
+        },
+        "email": {
+          "type": "string",
+          "description": "The email of the enquirer"
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject of the inquiry"
+        },
+        "message": {
+          "type": "string",
+          "description": "The message body"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Optional user ID of logged-in user"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["unread", "read", "replied"],
+          "description": "The status of the inquiry"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of when the inquiry was created"
+        }
+      },
+      "required": ["name", "email", "subject", "message", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "User scheduled consulting appointments"
+    },
+    "inquiries/{inquiryId}": {
+      "schema": "Inquiry",
+      "description": "Client and general visitor inquiries"
+    }
+  }
+}

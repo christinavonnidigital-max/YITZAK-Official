@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable, hardened helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isEmailVerified() && request.auth.token.email == "christinagumpo@gmail.com";
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation helper for Booking entity
+    function isValidBooking(data) {
+      return data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid
+        && data.userName is string && data.userName.size() <= 128
+        && data.userEmail is string && data.userEmail.size() <= 128 && data.userEmail == request.auth.token.email
+        && data.date is string && data.date.size() == 10
+        && data.timeSlot is string && data.timeSlot.size() <= 30
+        && (data.pillar == "Compliance Mastery" || data.pillar == "Strategic Training" || data.pillar == "Institutional Advisory")
+        && (data.status == "pending" || data.status == "confirmed" || data.status == "cancelled")
+        && (!data.keys().contains('notes') || (data.notes is string && data.notes.size() <= 5000))
+        && (!data.keys().contains('calendarEventId') || (data.calendarEventId is string && data.calendarEventId.size() <= 256));
+    }
+
+    // Rules for bookings collection
+    match /bookings/{bookingId} {
+      // Get/List: Allow if user owns the booking or is the admin
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Create: user must be verified, ID must be valid, and payload must be valid booking
+      // On creation, status must be pending (non-admins cannot self-confirm)
+      allow create: if isEmailVerified() 
+        && isValidId(bookingId) 
+        && isValidBooking(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (incoming().status == "pending" || isAdmin());
+
+      // Update: user can cancel their own booking (or modify notes). Admin can modify anything.
+      // We partition updates into named "Actions" using || as requested in Fortress rules.
+      allow update: if isEmailVerified()
+        && (
+          // Admin can update anything as long as the new data is valid
+          (isAdmin() && isValidBooking(incoming()) && incoming().updatedAt == request.time)
+          ||
+          // User updates: must be valid booking, owner of the document, and cannot alter immutable fields
+          (
+            resource.data.userId == request.auth.uid
+            && isValidBooking(incoming())
+            && incoming().userId == existing().userId
+            && incoming().userEmail == existing().userEmail
+            && incoming().pillar == existing().pillar
+            && incoming().createdAt == existing().createdAt
+            && incoming().updatedAt == request.time
+            && (
+              // Action 1: Cancel Booking
+              (incoming().status == "cancelled" && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']))
+              ||
+              // Action 2: Update notes/details (keeping status unchanged)
+              (incoming().status == existing().status && incoming().diff(existing()).affectedKeys().hasOnly(['notes', 'updatedAt']))
+              ||
+              // Action 3: Sync Calendar Event ID after creation
+              (incoming().diff(existing()).affectedKeys().hasOnly(['calendarEventId', 'updatedAt']))
+            )
+          )
+        );
+
+      // Delete: Users cannot delete bookings to maintain audit logs. Admin can delete.
+      allow delete: if isAdmin();
+    }
+
+    // Validation helper for Inquiry entity
+    function isValidInquiry(data) {
+      return data.name is string && data.name.size() <= 128
+        && data.email is string && data.email.size() <= 128
+        && data.subject is string && data.subject.size() <= 256
+        && data.message is string && data.message.size() <= 10000
+        && (data.status == "unread" || data.status == "read" || data.status == "replied")
+        && (!data.keys().contains('userId') || (data.userId is string && data.userId.size() <= 128));
+    }
+
+    // Rules for inquiries collection
+    match /inquiries/{inquiryId} {
+      // Anyone can submit an inquiry (authenticated or guest)
+      allow create: if isValidId(inquiryId)
+        && isValidInquiry(incoming())
+        && (incoming().createdAt == request.time || incoming().createdAt is string);
+
+      // Only admin can read, update, or delete inquiries
+      allow read: if isAdmin();
+      allow update: if isAdmin() && isValidInquiry(incoming());
+      allow delete: if isAdmin();
+    }
+  }
+}
