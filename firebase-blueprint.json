@@ -89,6 +89,26 @@
         }
       },
       "required": ["name", "email", "subject", "message", "status", "createdAt"]
+    },
+    "NewsletterSubscription": {
+      "title": "NewsletterSubscription",
+      "description": "An email subscription for the Yitzak knowledge newsletter",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "The subscriber's email address"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when they subscribed"
+        },
+        "status": {
+          "type": "string",
+          "description": "Subscription status (e.g., active)"
+        }
+      },
+      "required": ["email", "createdAt"]
     }
   },
   "firestore": {
@@ -99,6 +119,10 @@
     "inquiries/{inquiryId}": {
       "schema": "Inquiry",
       "description": "Client and general visitor inquiries"
+    },
+    "newsletter_subscriptions/{subscriptionId}": {
+      "schema": "NewsletterSubscription",
+      "description": "Newsletter email sign-ups"
     }
   }
 }

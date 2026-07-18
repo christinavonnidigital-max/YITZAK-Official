@@ -16,6 +16,7 @@ interface DashboardProps {
 
 export default function Dashboard({ currentUser, onLogout, onOpenBooking, refreshTrigger }: DashboardProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [referrals, setReferrals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -74,6 +75,42 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
       }
 
       setBookings(list);
+
+      // Fetch referrals as well
+      let refsList: any[] = [];
+      const localRefs = JSON.parse(localStorage.getItem('yitzak_referral_clicks') || '[]');
+      if (!isGuest) {
+        try {
+          const refCol = collection(db, 'referral_clicks');
+          let qRefs;
+          if (isAdminUser) {
+            qRefs = query(refCol);
+          } else {
+            qRefs = query(refCol, where('userId', '==', currentUser.uid));
+          }
+          const refSnapshot = await getDocs(qRefs);
+          refSnapshot.forEach(docSnap => {
+            refsList.push({ id: docSnap.id, ...(docSnap.data() as any) });
+          });
+
+          // Merge local clicks belonging to this user
+          const localUserRefs = localRefs.filter((r: any) => r.userId === currentUser.uid);
+          localUserRefs.forEach((lr: any) => {
+            if (!refsList.some(r => r.id === lr.id)) {
+              refsList.push(lr);
+            }
+          });
+        } catch (refErr) {
+          console.warn('Could not load referrals from DB, fallback to localStorage:', refErr);
+          refsList = localRefs.filter((r: any) => isAdminUser || r.userId === currentUser.uid);
+        }
+      } else {
+        refsList = localRefs.filter((r: any) => r.userId === currentUser.uid);
+      }
+
+      // Sort by creation date descending
+      refsList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setReferrals(refsList);
     } catch (err: any) {
       console.error(err);
       try {
@@ -202,6 +239,7 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
       {isAdminUser ? (
         <AdministrativeView 
           bookings={bookings} 
+          referrals={referrals}
           loading={loading} 
           onRefresh={fetchBookings} 
           onOpenBooking={onOpenBooking} 

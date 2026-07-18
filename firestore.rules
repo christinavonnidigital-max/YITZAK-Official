@@ -114,5 +114,22 @@ service cloud.firestore {
       allow update: if isAdmin() && isValidInquiry(incoming());
       allow delete: if isAdmin();
     }
+
+    // Validation helper for NewsletterSubscription entity
+    function isValidNewsletterSubscription(data) {
+      return data.email is string && data.email.size() <= 128
+        && data.createdAt is string
+        && (!data.keys().contains('status') || (data.status is string && data.status.size() <= 50));
+    }
+
+    // Rules for newsletter_subscriptions collection
+    match /newsletter_subscriptions/{subscriptionId} {
+      // Anyone can subscribe (create)
+      allow create: if isValidId(subscriptionId)
+        && isValidNewsletterSubscription(incoming());
+
+      // Only admin can read, update, or delete subscriptions
+      allow read, update, delete: if isAdmin();
+    }
   }
 }

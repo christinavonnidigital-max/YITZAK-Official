@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, BookOpen, Download, HelpCircle, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronRight, Globe, Mail, Share2, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, Lightbulb, AlertCircle } from 'lucide-react';
 import { User } from 'firebase/auth';
-import { auth, initAuth, googleSignIn } from './lib/firebase';
+import { auth, initAuth, googleSignIn, db } from './lib/firebase';
 import BookingModal from './components/BookingModal';
 import Dashboard from './components/Dashboard';
 import TrainingCalendar from './components/TrainingCalendar';
 import ContactUs from './components/ContactUs';
 import { exportPortfolioToCSV, exportPortfolioToPDF } from './utils/portfolioExport';
 import ScrollReveal from './components/ScrollReveal';
+import OutboundBridgeModal from './components/OutboundBridgeModal';
 
 const portfolioCategories = [
   {
@@ -177,9 +178,16 @@ export default function App() {
   
   // Interactive Website Features State
   const [activeFocusStep, setActiveFocusStep] = useState('01');
+  const [referralTarget, setReferralTarget] = useState<{ url: string; schemeName: string } | null>(null);
   const [activeFocusPrinciple, setActiveFocusPrinciple] = useState('01');
   const [industrySearchQuery, setIndustrySearchQuery] = useState('');
   const [industrySectorFilter, setIndustrySectorFilter] = useState('all');
+
+  // Newsletter Subscription Form State
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+  const [newsletterSuccess, setNewsletterSuccess] = useState(false);
+  const [newsletterError, setNewsletterError] = useState<string | null>(null);
 
   const navigateTo = (view: 'home' | 'training' | 'calendar' | 'contact', elementId?: string) => {
     setCurrentView(view);
@@ -222,6 +230,31 @@ export default function App() {
     return () => {
       unsubscribe();
       unsubAuth();
+    };
+  }, []);
+
+  // Intercept FoodChain ID external links to capture and track partner attribution
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest('a');
+      if (anchor && anchor.href && anchor.href.includes('foodchainid.com')) {
+        e.preventDefault();
+        const url = anchor.href;
+        
+        // Extract a friendly scheme name from inner text or title
+        let schemeName = anchor.title || anchor.innerText || 'FoodChain ID Partner Scheme';
+        schemeName = schemeName.replace('↗', '').trim();
+        if (!schemeName || schemeName.length < 3) {
+          schemeName = 'FoodChain ID Academy or Scheme';
+        }
+        
+        setReferralTarget({ url, schemeName });
+      }
+    };
+    document.addEventListener('click', handleGlobalClick, true);
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, true);
     };
   }, []);
 
@@ -299,6 +332,54 @@ export default function App() {
     if (confirmDownload) {
       // Mock download execution
       triggerNotification("Downloading Institutional Frameworks 2024.pdf...");
+    }
+  };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.trim()) {
+      setNewsletterError('Please enter a valid email address.');
+      return;
+    }
+    const emailVal = newsletterEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailVal)) {
+      setNewsletterError('Please enter a valid email address.');
+      return;
+    }
+
+    setNewsletterSubmitting(true);
+    setNewsletterError(null);
+
+    try {
+      const docId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      const subscriptionData = {
+        email: emailVal,
+        createdAt: new Date().toISOString(),
+        status: 'active'
+      };
+
+      // Dynamically import setDoc/doc
+      const { doc, setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'newsletter_subscriptions', docId), subscriptionData);
+
+      setNewsletterSuccess(true);
+      setNewsletterEmail('');
+      triggerNotification('Thank you for subscribing to our knowledge newsletter.');
+    } catch (err: any) {
+      console.warn('Newsletter database write failed, using local fallback: ', err);
+      try {
+        const localSubs = JSON.parse(localStorage.getItem('yitzak_newsletter_subscriptions') || '[]');
+        localSubs.push({ email: emailVal, createdAt: new Date().toISOString() });
+        localStorage.setItem('yitzak_newsletter_subscriptions', JSON.stringify(localSubs));
+        setNewsletterSuccess(true);
+        setNewsletterEmail('');
+        triggerNotification('Thank you for subscribing! Your submission has been saved.');
+      } catch (localErr) {
+        setNewsletterError('An error occurred. Please try again later.');
+      }
+    } finally {
+      setNewsletterSubmitting(false);
     }
   };
 
@@ -611,15 +692,25 @@ export default function App() {
                     </div>
 
                     {/* Absolute Badge Card 1 */}
-                    <div className="absolute -left-6 bottom-8 z-20 bg-[#023625] text-white p-4 rounded-xl shadow-lg border border-white/10 max-w-[200px] hidden sm:block">
+                    <a 
+                      href="https://www.foodchainid.com/academy/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="absolute -left-6 bottom-8 z-20 bg-[#023625] text-white p-4 rounded-xl shadow-lg border border-white/10 max-w-[200px] hidden sm:block hover:bg-[#034d35] hover:scale-105 transition-all group duration-200 cursor-pointer"
+                      title="Visit FoodChain ID Academy (Opens in new tab)"
+                    >
                       <div className="flex items-center gap-2 mb-1.5">
                         <Award className="text-[#B68A35]" size={18} />
-                        <span className="font-serif text-xs font-bold">Partner Ecosystem</span>
+                        <span className="font-serif text-xs font-bold group-hover:text-[#B68A35] transition-colors">Partner Ecosystem</span>
                       </div>
                       <p className="font-sans text-[10px] text-white/80 leading-relaxed">
                         Integrated access to global courses via FoodChain ID Academy.
                       </p>
-                    </div>
+                      <div className="mt-2 text-[#B68A35] font-sans text-[9px] uppercase tracking-wider font-bold flex items-center gap-1">
+                        <span>Visit Academy</span>
+                        <span className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">↗</span>
+                      </div>
+                    </a>
 
                     {/* Absolute Badge Card 2 */}
                     <div className="absolute -right-6 top-8 z-20 bg-white border border-border p-4 rounded-xl shadow-lg max-w-[180px] hidden sm:block">
@@ -826,10 +917,22 @@ export default function App() {
                       <div className="mt-8 pt-6 border-t border-border/60">
                         <span className="text-[10px] font-mono uppercase text-outline tracking-wider block mb-2">Accredited Schemes:</span>
                         <div className="flex flex-wrap gap-1.5">
-                          {['Product & Label Certification', 'GLOBALG.A.P.', 'BRCGS Certifications'].map((item, idx) => (
-                            <span key={idx} className="bg-white border border-border/40 text-[10px] text-primary px-2.5 py-1 font-sans rounded font-semibold">
-                              {item}
-                            </span>
+                          {[
+                            { name: 'Product & Label Certification', url: 'https://www.foodchainid.com/product-and-label-certification/' },
+                            { name: 'GLOBALG.A.P.', url: 'https://www.foodchainid.com/globalg-a-p/' },
+                            { name: 'BRCGS Certifications', url: 'https://www.foodchainid.com/brcgs-certifications/' }
+                          ].map((item, idx) => (
+                            <a 
+                              key={idx} 
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-white hover:bg-mist border border-border/40 hover:border-[#B68A35]/40 text-[10px] text-primary hover:text-[#B68A35] px-2.5 py-1 font-sans rounded font-semibold transition-all inline-flex items-center gap-1 cursor-pointer"
+                              title={`View ${item.name} scheme details (Opens in new tab)`}
+                            >
+                              <span>{item.name}</span>
+                              <span className="text-[8px] opacity-70">↗</span>
+                            </a>
                           ))}
                         </div>
                       </div>
@@ -896,13 +999,24 @@ export default function App() {
                           Access to a respected global training portfolio of internationally recognised courses and certification preparation.
                         </p>
                       </div>
-                      <button
-                        onClick={() => navigateTo('training', 'portfolio')}
-                        className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 mt-6 cursor-pointer self-start"
-                      >
-                        <span>View Academy Courses</span>
-                        <ArrowRight size={14} />
-                      </button>
+                      <div className="mt-6 flex flex-col gap-2.5">
+                        <button
+                          onClick={() => navigateTo('training', 'portfolio')}
+                          className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 cursor-pointer self-start"
+                        >
+                          <span>View Academy Courses</span>
+                          <ArrowRight size={14} />
+                        </button>
+                        <a
+                          href="https://www.foodchainid.com/academy/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors flex items-center gap-1 cursor-pointer self-start"
+                        >
+                          <span>Explore Global Academy</span>
+                          <span>↗</span>
+                        </a>
+                      </div>
                     </div>
                   </ScrollReveal>
 
@@ -946,54 +1060,87 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {/* Scheme 1 */}
                   <ScrollReveal direction="up" delay={0.1}>
-                    <div className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full">
+                    <div className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full hover:border-[#B68A35]/30 hover:shadow-md transition-all group duration-200">
                       <div className="space-y-6">
                         <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-serif font-bold text-lg">
                           P
                         </div>
                         <div className="space-y-1">
-                          <h3 className="font-serif text-lg md:text-xl text-primary font-bold">Product &amp; Label Certification</h3>
+                          <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors">Product &amp; Label Certification</h3>
                           <span className="text-[10px] font-mono uppercase tracking-wider text-outline block">Products &amp; Claims</span>
                         </div>
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
                           Certification for product claims that hold up to market and regulatory scrutiny, including organic and Non-GMO. We help you choose the right scheme, prepare your evidence, and move through assessment with confidence.
                         </p>
                       </div>
+                      <div className="mt-8 pt-4 border-t border-border/60 flex justify-between items-center">
+                        <a
+                          href="https://www.foodchainid.com/product-and-label-certification/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span>Scheme details</span>
+                          <span>↗</span>
+                        </a>
+                      </div>
                     </div>
                   </ScrollReveal>
 
                   {/* Scheme 2 */}
                   <ScrollReveal direction="up" delay={0.2}>
-                    <div className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full">
+                    <div className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full hover:border-[#B68A35]/30 hover:shadow-md transition-all group duration-200">
                       <div className="space-y-6">
                         <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-serif font-bold text-lg">
                           G
                         </div>
                         <div className="space-y-1">
-                          <h3 className="font-serif text-lg md:text-xl text-primary font-bold">GLOBALG.A.P.</h3>
+                          <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors">GLOBALG.A.P.</h3>
                           <span className="text-[10px] font-mono uppercase tracking-wider text-outline block">Farm Assurance</span>
                         </div>
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
                           Good agricultural practice certification covering food safety, traceability, and responsible production. GFSI-benchmarked and recognised by retailers worldwide, it opens doors to markets that demand certified supply.
                         </p>
                       </div>
+                      <div className="mt-8 pt-4 border-t border-border/60 flex justify-between items-center">
+                        <a
+                          href="https://www.foodchainid.com/globalg-a-p/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span>Scheme details</span>
+                          <span>↗</span>
+                        </a>
+                      </div>
                     </div>
                   </ScrollReveal>
 
                   {/* Scheme 3 */}
                   <ScrollReveal direction="up" delay={0.3}>
-                    <div className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full">
+                    <div className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full hover:border-[#B68A35]/30 hover:shadow-md transition-all group duration-200">
                       <div className="space-y-6">
                         <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-serif font-bold text-lg">
                           B
                         </div>
                         <div className="space-y-1">
-                          <h3 className="font-serif text-lg md:text-xl text-primary font-bold">BRCGS Certifications</h3>
+                          <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors">BRCGS Certifications</h3>
                           <span className="text-[10px] font-mono uppercase tracking-wider text-outline block">Food Safety</span>
                         </div>
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
                           Globally recognised food-safety standards spanning manufacturing, packaging, storage, and distribution. We prepare your team and systems so the audit confirms what is already in place.
                         </p>
+                      </div>
+                      <div className="mt-8 pt-4 border-t border-border/60 flex justify-between items-center">
+                        <a
+                          href="https://www.foodchainid.com/brcgs-certifications/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span>Scheme details</span>
+                          <span>↗</span>
+                        </a>
                       </div>
                     </div>
                   </ScrollReveal>
@@ -1458,98 +1605,121 @@ export default function App() {
                       </p>
                     </div>
 
-                    <div className="max-w-xs mx-auto pt-2 space-y-4">
-                      <button
-                        id="portal_google_login_btn"
-                        disabled={portalShowGuestForm}
-                        onClick={handleGoogleLoginOnly}
-                        className="w-full flex justify-center items-center gap-3 py-3 border border-border bg-white text-charcoal hover:bg-surface transition-all active:scale-95 shadow-sm font-sans font-bold text-xs uppercase tracking-wider rounded cursor-pointer disabled:opacity-50"
-                      >
-                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
-                          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-                          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                        </svg>
-                        <span>Sign in with Google</span>
-                      </button>
+                    <div className="max-w-md mx-auto pt-2">
+                      <AnimatePresence mode="wait">
+                        {!portalShowGuestForm ? (
+                          <motion.div
+                            key="google-signin-view"
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -15 }}
+                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                            className="max-w-xs mx-auto space-y-4"
+                          >
+                            <button
+                              id="portal_google_login_btn"
+                              onClick={handleGoogleLoginOnly}
+                              className="w-full flex justify-center items-center gap-3 py-3 border border-border bg-white text-charcoal hover:bg-surface transition-all active:scale-95 shadow-sm font-sans font-bold text-xs uppercase tracking-wider rounded cursor-pointer"
+                            >
+                              <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
+                                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                              </svg>
+                              <span>Sign in with Google</span>
+                            </button>
 
-                      {!portalShowGuestForm ? (
-                        <button
-                          type="button"
-                          onClick={() => setPortalShowGuestForm(true)}
-                          className="w-full text-center py-2 text-xs text-secondary hover:underline font-semibold cursor-pointer block"
-                        >
-                          Or: Bypass Google Auth & Enter as Guest
-                        </button>
-                      ) : (
-                        <motion.div 
-                          initial={{ opacity: 0, y: -5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-left border border-border p-4 bg-[#F9F9F9] space-y-3 rounded shadow-xs"
-                        >
-                          <h6 className="text-xs font-bold text-primary uppercase tracking-wide">Guest Details</h6>
-                          <div>
-                            <label className="text-[10px] uppercase font-mono tracking-wider text-ash block mb-1">Full Name</label>
-                            <input 
-                              type="text" 
-                              required
-                              value={portalGuestName}
-                              onChange={(e) => setPortalGuestName(e.target.value)}
-                              placeholder="e.g. John Doe"
-                              className="w-full p-2 border border-border bg-white text-xs text-charcoal outline-none focus:border-primary"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] uppercase font-mono tracking-wider text-ash block mb-1">Email Address</label>
-                            <input 
-                              type="email" 
-                              required
-                              value={portalGuestEmail}
-                              onChange={(e) => setPortalGuestEmail(e.target.value)}
-                              placeholder="e.g. john.doe@company.com"
-                              className="w-full p-2 border border-border bg-white text-xs text-charcoal outline-none focus:border-primary"
-                            />
-                          </div>
-                          <div className="flex gap-2 pt-2">
                             <button
+                              id="portal_guest_bypass_btn"
                               type="button"
-                              onClick={() => {
-                                if (!portalGuestName.trim() || !portalGuestEmail.trim()) {
-                                  triggerNotification('Please enter both your name and email to proceed.');
-                                  return;
-                                }
-                                if (!portalGuestEmail.includes('@')) {
-                                  triggerNotification('Please enter a valid email address.');
-                                  return;
-                                }
-                                const mockUser: User = {
-                                  uid: 'guest_' + Date.now(),
-                                  displayName: portalGuestName.trim(),
-                                  email: portalGuestEmail.trim(),
-                                  photoURL: null,
-                                  emailVerified: false,
-                                  isAnonymous: true
-                                } as unknown as User;
-                                setCurrentUser(mockUser);
-                                triggerNotification('Logged in successfully as guest.');
-                              }}
-                              className="flex-1 bg-primary text-white py-2 text-xs uppercase font-bold tracking-widest hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                              onClick={() => setPortalShowGuestForm(true)}
+                              className="w-full text-center py-2 text-xs text-secondary hover:underline font-semibold cursor-pointer block"
                             >
-                              Enter Portal
+                              Or: Bypass Google Auth & Enter as Guest
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPortalShowGuestForm(false);
-                              }}
-                              className="px-3 border border-border text-ash hover:text-primary text-xs cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
+                          </motion.div>
+                        ) : (
+                          <motion.div 
+                            key="guest-form-view"
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -15 }}
+                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                            className="text-left border border-border p-6 bg-white space-y-4 rounded-xl shadow-xs"
+                          >
+                            <div className="flex items-center justify-between border-b border-border pb-2.5">
+                              <h6 className="text-xs font-bold text-primary uppercase tracking-wide">Guest Details</h6>
+                              <span className="font-mono text-[9px] uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2 py-0.5 rounded font-semibold">
+                                Sandbox Bypass
+                              </span>
+                            </div>
+                            <div>
+                              <label htmlFor="portal-guest-name" className="text-[10px] uppercase font-mono tracking-wider text-ash block mb-1 font-semibold">Full Name</label>
+                              <input 
+                                id="portal-guest-name"
+                                type="text" 
+                                required
+                                value={portalGuestName}
+                                onChange={(e) => setPortalGuestName(e.target.value)}
+                                placeholder="e.g. John Doe"
+                                className="w-full p-2.5 border border-border bg-white text-xs text-charcoal outline-none focus:border-primary rounded-lg font-sans"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="portal-guest-email" className="text-[10px] uppercase font-mono tracking-wider text-ash block mb-1 font-semibold">Email Address</label>
+                              <input 
+                                id="portal-guest-email"
+                                type="email" 
+                                required
+                                value={portalGuestEmail}
+                                onChange={(e) => setPortalGuestEmail(e.target.value)}
+                                placeholder="e.g. john.doe@company.com"
+                                className="w-full p-2.5 border border-border bg-white text-xs text-charcoal outline-none focus:border-primary rounded-lg font-sans"
+                              />
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                id="portal-guest-enter-btn"
+                                type="button"
+                                onClick={() => {
+                                  if (!portalGuestName.trim() || !portalGuestEmail.trim()) {
+                                    triggerNotification('Please enter both your name and email to proceed.');
+                                    return;
+                                  }
+                                  if (!portalGuestEmail.includes('@')) {
+                                    triggerNotification('Please enter a valid email address.');
+                                    return;
+                                  }
+                                  const mockUser: User = {
+                                    uid: 'guest_' + Date.now(),
+                                    displayName: portalGuestName.trim(),
+                                    email: portalGuestEmail.trim(),
+                                    photoURL: null,
+                                    emailVerified: false,
+                                    isAnonymous: true
+                                  } as unknown as User;
+                                  setCurrentUser(mockUser);
+                                  triggerNotification('Logged in successfully as guest.');
+                                }}
+                                className="flex-1 bg-[#023625] text-white py-2.5 text-xs uppercase font-bold tracking-widest hover:bg-primary active:scale-95 transition-all cursor-pointer rounded-lg text-center"
+                              >
+                                Enter Portal
+                              </button>
+                              <button
+                                id="portal-guest-cancel-btn"
+                                type="button"
+                                onClick={() => {
+                                  setPortalShowGuestForm(false);
+                                }}
+                                className="px-4 border border-border text-ash hover:text-primary text-xs cursor-pointer rounded-lg hover:bg-mist transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 )}
@@ -1570,6 +1740,108 @@ export default function App() {
                   </button>
                 </div>
               </ScrollReveal>
+            </section>
+
+            {/* Newsletter Subscription Section */}
+            <section id="newsletter" className="py-16 md:py-20 px-4 md:px-16 bg-mist border-t border-b border-border scroll-mt-24">
+              <div className="max-w-[1280px] mx-auto">
+                <ScrollReveal direction="up" delay={0.05}>
+                  <div className="max-w-3xl mx-auto text-center space-y-6">
+                    <div className="inline-flex items-center gap-2 bg-[#B68A35]/10 text-primary border border-[#B68A35]/20 px-3.5 py-1 rounded-full">
+                      <Mail size={14} className="text-[#B68A35]" />
+                      <span className="font-sans text-[10px] uppercase tracking-widest font-bold">Knowledge Newsletter</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold tracking-tight">The YITZAK Digest</h2>
+                      <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-xl mx-auto leading-relaxed">
+                        Stay ahead of evolving compliance landscapes. Get monthly technical briefings, ISO & GFSI standard updates, and strategic risk-mitigation insights curated by our principal auditors.
+                      </p>
+                    </div>
+
+                    <div className="max-w-md mx-auto pt-4">
+                      {newsletterSuccess ? (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="bg-[#023625] text-white p-6 rounded-2xl border border-white/10 text-center space-y-3 shadow-md"
+                        >
+                          <div className="w-12 h-12 bg-[#B68A35]/20 rounded-full flex items-center justify-center mx-auto text-[#B68A35]">
+                            <CheckCircle size={24} />
+                          </div>
+                          <h3 className="font-serif text-lg font-bold">Subscription Confirmed</h3>
+                          <p className="font-sans text-xs text-white/80 leading-relaxed">
+                            Thank you for joining our professional community. You will receive the next edition of our technical digest directly in your inbox.
+                          </p>
+                          <button
+                            id="newsletter-resubscribe-btn"
+                            onClick={() => setNewsletterSuccess(false)}
+                            className="text-[#B68A35] hover:underline font-sans text-xs font-semibold cursor-pointer block mx-auto pt-1"
+                          >
+                            Subscribe another email
+                          </button>
+                        </motion.div>
+                      ) : (
+                        <form onSubmit={handleNewsletterSubmit} className="space-y-4">
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="relative flex-grow">
+                              <label htmlFor="newsletter-email" className="sr-only">Email address</label>
+                              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-outline">
+                                <Mail size={16} />
+                              </div>
+                              <input
+                                id="newsletter-email"
+                                type="email"
+                                placeholder="Enter your corporate email"
+                                required
+                                value={newsletterEmail}
+                                onChange={(e) => {
+                                  setNewsletterEmail(e.target.value);
+                                  if (newsletterError) setNewsletterError(null);
+                                }}
+                                className="w-full bg-white border border-border pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#B68A35] transition-colors rounded-xl text-primary font-sans h-[48px]"
+                              />
+                            </div>
+                            <button
+                              id="newsletter-submit"
+                              type="submit"
+                              disabled={newsletterSubmitting}
+                              className="bg-[#023625] hover:bg-primary text-white font-sans font-bold text-xs uppercase tracking-widest py-3 px-6 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2 h-[48px] sm:w-auto w-full flex-shrink-0 disabled:opacity-75 disabled:cursor-not-allowed"
+                            >
+                              {newsletterSubmitting ? (
+                                <>
+                                  <Loader2 size={14} className="animate-spin" />
+                                  <span>Subscribing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>Subscribe</span>
+                                  <ChevronRight size={14} />
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          {newsletterError && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="text-red-600 flex items-center justify-center gap-1.5 text-xs font-sans font-medium"
+                            >
+                              <AlertCircle size={14} />
+                              <span>{newsletterError}</span>
+                            </motion.div>
+                          )}
+
+                          <p className="font-sans text-[10px] text-outline text-center leading-relaxed">
+                            Zero spam. We respect your confidentiality. Unsubscribe at any time. By subscribing, you agree to receive communications from YITZAK.
+                          </p>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                </ScrollReveal>
+              </div>
             </section>
           </>
         )}
@@ -1673,17 +1945,28 @@ export default function App() {
                         Internationally recognized certification courses delivered through our exclusive partnership, ensuring global standard compliance.
                       </p>
                     </div>
-                    <button
-                      onClick={() => {
-                        setActiveSidebarSection('food-safety');
-                        const el = document.getElementById('portfolio');
-                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }}
-                      className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 self-start cursor-pointer"
-                    >
-                      <span>View Certifications</span>
-                      <ArrowRight size={14} />
-                    </button>
+                    <div className="flex flex-col gap-2.5">
+                      <button
+                        onClick={() => {
+                          setActiveSidebarSection('food-safety');
+                          const el = document.getElementById('portfolio');
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 self-start cursor-pointer"
+                      >
+                        <span>View Certifications</span>
+                        <ArrowRight size={14} />
+                      </button>
+                      <a
+                        href="https://www.foodchainid.com/academy/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors flex items-center gap-1 cursor-pointer self-start"
+                      >
+                        <span>Explore Global Academy</span>
+                        <span>↗</span>
+                      </a>
+                    </div>
                   </div>
 
                   {/* Stream 3 */}
@@ -1971,6 +2254,16 @@ export default function App() {
         initialPillarId={selectedPillarId}
         initialNotes={selectedBookingNotes}
         onBookingSuccess={handleBookingSuccess}
+      />
+
+      {/* Outbound Referral Bridge Interstitial Modal */}
+      <OutboundBridgeModal
+        isOpen={referralTarget !== null}
+        onClose={() => setReferralTarget(null)}
+        targetUrl={referralTarget?.url || ''}
+        schemeName={referralTarget?.schemeName || ''}
+        currentUser={currentUser}
+        triggerNotification={triggerNotification}
       />
 
       {/* Floating Back to Top Button */}
