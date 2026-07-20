@@ -7,6 +7,7 @@ import BookingModal from './components/BookingModal';
 import Dashboard from './components/Dashboard';
 import TrainingCalendar from './components/TrainingCalendar';
 import ContactUs from './components/ContactUs';
+import ComplianceCalculator from './components/ComplianceCalculator';
 import { exportPortfolioToCSV, exportPortfolioToPDF } from './utils/portfolioExport';
 import ScrollReveal from './components/ScrollReveal';
 import OutboundBridgeModal from './components/OutboundBridgeModal';
@@ -1991,6 +1992,9 @@ export default function App() {
                 </div>
               </div>
             </section>
+
+            {/* Interactive Compliance & ROI Calculator Section */}
+            <ComplianceCalculator onInquire={(notes) => handleOpenBooking('compliance', notes)} />
 
             {/* Training Portfolio Section */}
             <section id="portfolio" className="py-16 md:py-20 px-4 md:px-16 bg-white scroll-mt-24">
