@@ -8,6 +8,7 @@ import Dashboard from './components/Dashboard';
 import TrainingCalendar from './components/TrainingCalendar';
 import ContactUs from './components/ContactUs';
 import ComplianceCalculator from './components/ComplianceCalculator';
+import FAQSection from './components/FAQSection';
 import { exportPortfolioToCSV, exportPortfolioToPDF } from './utils/portfolioExport';
 import ScrollReveal from './components/ScrollReveal';
 import OutboundBridgeModal from './components/OutboundBridgeModal';
@@ -843,9 +844,28 @@ export default function App() {
                   </div>
                 </ScrollReveal>
 
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                <motion.div 
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-100px" }}
+                  variants={{
+                    hidden: {},
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.15
+                      }
+                    }
+                  }}
+                  className="grid grid-cols-1 gap-8 lg:grid-cols-3"
+                >
                   {/* Service 1 */}
-                  <ScrollReveal direction="up" delay={0.1} className="h-full">
+                  <motion.div 
+                    variants={{
+                      hidden: { opacity: 0, y: 30 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+                    }}
+                    className="h-full"
+                  >
                     <div className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between h-full shadow-sm hover:shadow-md hover:border-[#B68A35]/30 transition-all">
                       <div className="space-y-6">
                         <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center">
@@ -870,10 +890,16 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-                  </ScrollReveal>
+                  </motion.div>
 
                   {/* Service 2 */}
-                  <ScrollReveal direction="up" delay={0.2} className="h-full">
+                  <motion.div 
+                    variants={{
+                      hidden: { opacity: 0, y: 30 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+                    }}
+                    className="h-full"
+                  >
                     <div className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between h-full shadow-sm hover:shadow-md hover:border-[#B68A35]/30 transition-all">
                       <div className="space-y-6">
                         <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center">
@@ -898,10 +924,16 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-                  </ScrollReveal>
+                  </motion.div>
 
                   {/* Service 3 */}
-                  <ScrollReveal direction="up" delay={0.3} className="h-full">
+                  <motion.div 
+                    variants={{
+                      hidden: { opacity: 0, y: 30 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+                    }}
+                    className="h-full"
+                  >
                     <div className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between h-full shadow-sm hover:shadow-md hover:border-[#B68A35]/30 transition-all">
                       <div className="space-y-6">
                         <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center">
@@ -938,8 +970,8 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-                  </ScrollReveal>
-                </div>
+                  </motion.div>
+                </motion.div>
 
                 {/* Trust bar */}
                 <ScrollReveal direction="up" delay={0.1}>
@@ -2184,6 +2216,9 @@ export default function App() {
                 </div>
               </div>
             </section>
+
+            {/* Frequently Asked Questions Accordion Section */}
+            <FAQSection />
           </motion.div>
         )}
 
