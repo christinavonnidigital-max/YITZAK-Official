@@ -1,16 +1,41 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import { getAnalytics, isSupported } from 'firebase/analytics';
+import defaultConfig from '../../firebase-applet-config.json';
+
+const env = (import.meta as any).env || {};
+
+const firebaseConfig = {
+  apiKey: env.VITE_FIREBASE_API_KEY || defaultConfig.apiKey,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || defaultConfig.authDomain,
+  projectId: env.VITE_FIREBASE_PROJECT_ID || defaultConfig.projectId,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || defaultConfig.storageBucket,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultConfig.messagingSenderId,
+  appId: env.VITE_FIREBASE_APP_ID || defaultConfig.appId,
+  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || defaultConfig.measurementId,
+};
 
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore DB using specific database ID (CRITICAL!)
-export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
+// Initialize Firestore DB
+export const db = (firebaseConfig as any).firestoreDatabaseId 
+  ? getFirestore(app, (firebaseConfig as any).firestoreDatabaseId)
+  : getFirestore(app);
 
 // Initialize Auth
 export const auth = getAuth(app);
+
+// Initialize Analytics conditionally
+export let analytics: any = null;
+if (typeof window !== 'undefined') {
+  isSupported().then((supported) => {
+    if (supported) {
+      analytics = getAnalytics(app);
+    }
+  }).catch(() => {});
+}
 
 // Configure Google OAuth Provider with Workspace scopes
 export const provider = new GoogleAuthProvider();

@@ -4,6 +4,7 @@ import { Calendar, Clock, Lock, FileText, CheckCircle, AlertCircle, X, Loader2, 
 import { User } from 'firebase/auth';
 import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, googleSignIn, getAccessToken, OperationType, handleFirestoreError } from '../lib/firebase';
+import { preRegisterGuest } from '../lib/whitelist';
 import { createCalendarEvent, sendConfirmationEmail } from '../lib/googleApi';
 import { PILLARS, TIME_SLOTS } from '../data';
 
@@ -469,7 +470,7 @@ export default function BookingModal({
                                   <div className="flex gap-2 pt-2">
                                     <button
                                       type="button"
-                                      onClick={() => {
+                                      onClick={async () => {
                                         if (!guestName.trim() || !guestEmail.trim()) {
                                           setError('Please enter both your name and email to proceed as a guest.');
                                           return;
@@ -479,6 +480,20 @@ export default function BookingModal({
                                           return;
                                         }
                                         setError(null);
+
+                                        // Auto pre-register guest in Firestore Whitelist
+                                        try {
+                                          await preRegisterGuest(
+                                            guestEmail.trim(), 
+                                            guestName.trim(), 
+                                            'Pre-registered during Consultation Booking', 
+                                            'guest', 
+                                            'active'
+                                          );
+                                        } catch (e) {
+                                          console.warn('Auto whitelist pre-registration notice:', e);
+                                        }
+
                                         const mockUser: User = {
                                           uid: 'guest_' + Date.now(),
                                           displayName: guestName.trim(),

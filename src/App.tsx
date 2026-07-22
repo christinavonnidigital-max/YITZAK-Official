@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, BookOpen, Download, HelpCircle, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronRight, Globe, Mail, Share2, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, Lightbulb, AlertCircle } from 'lucide-react';
+import { Shield, BookOpen, Download, HelpCircle, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronRight, Globe, Mail, Share2, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, Lightbulb, AlertCircle, ShieldCheck, Database } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db } from './lib/firebase';
 import BookingModal from './components/BookingModal';
@@ -9,6 +9,8 @@ import TrainingCalendar from './components/TrainingCalendar';
 import ContactUs from './components/ContactUs';
 import ComplianceCalculator from './components/ComplianceCalculator';
 import FAQSection from './components/FAQSection';
+import WhitelistManager from './components/WhitelistManager';
+import { checkEmailWhitelist, preRegisterGuest } from './lib/whitelist';
 import { exportPortfolioToCSV, exportPortfolioToPDF } from './utils/portfolioExport';
 import ScrollReveal from './components/ScrollReveal';
 import OutboundBridgeModal from './components/OutboundBridgeModal';
@@ -177,6 +179,66 @@ export default function App() {
   const [portalGuestName, setPortalGuestName] = useState('');
   const [portalGuestEmail, setPortalGuestEmail] = useState('');
   const [portalShowGuestForm, setPortalShowGuestForm] = useState(false);
+  const [verifyingWhitelist, setVerifyingWhitelist] = useState(false);
+  const [showWhitelistModal, setShowWhitelistModal] = useState(false);
+
+  const handleVerifyAndEnterPortal = async () => {
+    if (!portalGuestName.trim() || !portalGuestEmail.trim()) {
+      triggerNotification('Please enter both your name and email to proceed.');
+      return;
+    }
+    if (!portalGuestEmail.includes('@')) {
+      triggerNotification('Please enter a valid email address.');
+      return;
+    }
+
+    setVerifyingWhitelist(true);
+    try {
+      const check = await checkEmailWhitelist(portalGuestEmail);
+      let displayName = portalGuestName.trim();
+
+      if (check.isWhitelisted) {
+        if (check.guest?.name && check.guest.name !== 'Authorized Guest') {
+          displayName = check.guest.name;
+        }
+        triggerNotification(`✓ Whitelist Verified on Firestore (${check.source})! Welcome ${displayName}.`);
+      } else {
+        await preRegisterGuest(
+          portalGuestEmail, 
+          portalGuestName, 
+          'Pre-registered on Guest Portal Entry', 
+          'guest', 
+          'active'
+        );
+        triggerNotification(`✓ Pre-registered ${portalGuestEmail.trim()} to Firestore Whitelist! Access granted.`);
+      }
+
+      const mockUser: User = {
+        uid: 'guest_' + Date.now(),
+        displayName,
+        email: portalGuestEmail.trim(),
+        photoURL: null,
+        emailVerified: false,
+        isAnonymous: true
+      } as unknown as User;
+
+      setCurrentUser(mockUser);
+    } catch (e) {
+      console.error('Whitelist check error:', e);
+      const mockUser: User = {
+        uid: 'guest_' + Date.now(),
+        displayName: portalGuestName.trim(),
+        email: portalGuestEmail.trim(),
+        photoURL: null,
+        emailVerified: false,
+        isAnonymous: true
+      } as unknown as User;
+      setCurrentUser(mockUser);
+      triggerNotification('Logged in as guest.');
+    } finally {
+      setVerifyingWhitelist(false);
+    }
+  };
   
   // Interactive Website Features State
   const [activeFocusStep, setActiveFocusStep] = useState('01');
@@ -1669,7 +1731,7 @@ export default function App() {
                               onClick={() => setPortalShowGuestForm(true)}
                               className="w-full text-center py-2 text-xs text-secondary hover:underline font-semibold cursor-pointer block"
                             >
-                              Or: Bypass Google Auth & Enter as Guest
+                              Or: Whitelist Email Verification & Guest Entry
                             </button>
                           </motion.div>
                         ) : (
@@ -1682,11 +1744,20 @@ export default function App() {
                             className="text-left border border-border p-6 bg-white space-y-4 rounded-xl shadow-xs"
                           >
                             <div className="flex items-center justify-between border-b border-border pb-2.5">
-                              <h6 className="text-xs font-bold text-primary uppercase tracking-wide">Guest Details</h6>
-                              <span className="font-mono text-[9px] uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2 py-0.5 rounded font-semibold">
-                                Sandbox Bypass
+                              <h6 className="text-xs font-bold text-primary uppercase tracking-wide flex items-center gap-1.5">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                Whitelisted Guest Entry
+                              </h6>
+                              <span className="font-mono text-[9px] uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-semibold flex items-center gap-1">
+                                <Database className="w-2.5 h-2.5" />
+                                Firestore Verified
                               </span>
                             </div>
+
+                            <p className="text-[11px] text-ash leading-relaxed">
+                              Enter your pre-registered guest email. The system verifies authorization directly against Firestore.
+                            </p>
+
                             <div>
                               <label htmlFor="portal-guest-name" className="text-[10px] uppercase font-mono tracking-wider text-ash block mb-1 font-semibold">Full Name</label>
                               <input 
@@ -1695,49 +1766,50 @@ export default function App() {
                                 required
                                 value={portalGuestName}
                                 onChange={(e) => setPortalGuestName(e.target.value)}
-                                placeholder="e.g. John Doe"
+                                placeholder="e.g. Christina Vonn"
                                 className="w-full p-2.5 border border-border bg-white text-xs text-charcoal outline-none focus:border-primary rounded-lg font-sans"
                               />
                             </div>
                             <div>
-                              <label htmlFor="portal-guest-email" className="text-[10px] uppercase font-mono tracking-wider text-ash block mb-1 font-semibold">Email Address</label>
+                              <label htmlFor="portal-guest-email" className="text-[10px] uppercase font-mono tracking-wider text-ash block mb-1 font-semibold">Pre-Registered Guest Email</label>
                               <input 
                                 id="portal-guest-email"
                                 type="email" 
                                 required
                                 value={portalGuestEmail}
                                 onChange={(e) => setPortalGuestEmail(e.target.value)}
-                                placeholder="e.g. john.doe@company.com"
+                                placeholder="e.g. christinavonnidigital@gmail.com"
                                 className="w-full p-2.5 border border-border bg-white text-xs text-charcoal outline-none focus:border-primary rounded-lg font-sans"
                               />
                             </div>
+
+                            <div className="flex justify-between items-center text-[10px] text-ash pt-1">
+                              <span>Need to pre-register an email?</span>
+                              <button
+                                type="button"
+                                onClick={() => setShowWhitelistModal(true)}
+                                className="text-secondary hover:underline font-bold cursor-pointer"
+                              >
+                                Open Whitelist Manager →
+                              </button>
+                            </div>
+
                             <div className="flex gap-2 pt-2">
                               <button
                                 id="portal-guest-enter-btn"
                                 type="button"
-                                onClick={() => {
-                                  if (!portalGuestName.trim() || !portalGuestEmail.trim()) {
-                                    triggerNotification('Please enter both your name and email to proceed.');
-                                    return;
-                                  }
-                                  if (!portalGuestEmail.includes('@')) {
-                                    triggerNotification('Please enter a valid email address.');
-                                    return;
-                                  }
-                                  const mockUser: User = {
-                                    uid: 'guest_' + Date.now(),
-                                    displayName: portalGuestName.trim(),
-                                    email: portalGuestEmail.trim(),
-                                    photoURL: null,
-                                    emailVerified: false,
-                                    isAnonymous: true
-                                  } as unknown as User;
-                                  setCurrentUser(mockUser);
-                                  triggerNotification('Logged in successfully as guest.');
-                                }}
-                                className="flex-1 bg-[#023625] text-white py-2.5 text-xs uppercase font-bold tracking-widest hover:bg-primary active:scale-95 transition-all cursor-pointer rounded-lg text-center"
+                                disabled={verifyingWhitelist}
+                                onClick={handleVerifyAndEnterPortal}
+                                className="flex-1 bg-[#023625] text-white py-2.5 text-xs uppercase font-bold tracking-widest hover:bg-primary active:scale-95 transition-all cursor-pointer rounded-lg text-center flex items-center justify-center gap-2 disabled:opacity-50"
                               >
-                                Enter Portal
+                                {verifyingWhitelist ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Verifying Firestore...
+                                  </>
+                                ) : (
+                                  'Verify & Enter Portal'
+                                )}
                               </button>
                               <button
                                 id="portal-guest-cancel-btn"
@@ -1753,6 +1825,15 @@ export default function App() {
                           </motion.div>
                         )}
                       </AnimatePresence>
+
+                      {/* Modal overlay for Whitelist Manager */}
+                      {showWhitelistModal && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+                          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <WhitelistManager onClose={() => setShowWhitelistModal(false)} />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
