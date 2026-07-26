@@ -29,10 +29,10 @@ export const PILLARS: Pillar[] = [
     id: 'advisory',
     title: 'Institutional Advisory',
     icon: 'account_balance',
-    description: 'Long-term advisory for board-level stakeholders. Strengthening corporate governance through structured performance audits.',
+    description: 'Long-term advisory for board-level stakeholders. Strengthening institutional governance through structured performance audits.',
     details: [
       'Board-level advisory',
-      'Corporate governance mapping',
+      'Institutional governance mapping',
       'Structured performance auditing',
       'Risk mitigation roadmaps'
     ]
@@ -95,8 +95,8 @@ export const TRAINING_STREAMS = [
   {
     id: 'bespoke',
     kicker: 'Custom Engagement',
-    title: 'Corporate Bespoke',
-    description: 'Tailor-made training solutions designed to integrate seamlessly into your existing corporate ecosystem.',
+    title: 'In-House Bespoke',
+    description: 'Tailor-made training solutions designed to integrate seamlessly into your existing organizational ecosystem.',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAI27jv44rFeAk1JqmBzl_g9S9LnQSaJ63OrNThYydyww8_P2twtoLG5_O5YcG5mFHiVDovtbLAfXitx53TEDVT3a8-FAlangFMnCuBnOY2ukQ-Zdy8_6aa4BSHPjsWa2cxyc_DmyOLiAWjk5NJMbNJLkZYZ1ex0is_xFU4Vapx2jwuSAwK1hrMet2MbqsRubC83_cADvpiAKuMy0ORV02S8xwv6EaR9CJNEtEa-ggcsFx8hGadvSXe'
   }
 ];

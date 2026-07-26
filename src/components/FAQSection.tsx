@@ -33,10 +33,10 @@ export default function FAQSection() {
     },
     {
       id: 'faq-customization',
-      category: 'Corporate Solutions',
+      category: 'In-House Solutions',
       icon: <Users size={16} className="text-[#B68A35]" />,
       question: 'Can the training programs be customized for our specific facility and sector?',
-      answer: 'Yes. Under our "Corporate Solutions" stream, we routinely perform pre-training consultations to adapt our syllabi to your unique plant layout, machinery types, products, and historic compliance challenges. We can incorporate your internal Standard Operating Procedures (SOPs) into case studies and deliver instruction in both classroom and practical on-site environments.'
+      answer: 'Yes. Under our "In-House Solutions" stream, we routinely perform pre-training consultations to adapt our syllabi to your unique plant layout, machinery types, products, and historic compliance challenges. We can incorporate your internal Standard Operating Procedures (SOPs) into case studies and deliver instruction in both classroom and practical on-site environments.'
     },
     {
       id: 'faq-accreditation',

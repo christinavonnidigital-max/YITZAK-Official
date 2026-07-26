@@ -87,7 +87,7 @@ export function exportPortfolioToPDF(categories: Category[]) {
     doc.line(marginX, pageHeight - 15, pageWidth - marginX, pageHeight - 15);
     
     doc.text(`Page ${pageNum}`, pageWidth - marginX, pageHeight - 10, { align: 'right' });
-    doc.text('CONFIDENTIAL - YITZAK Corporate Training Division © 2026', marginX, pageHeight - 10);
+    doc.text('CONFIDENTIAL - YITZAK Professional Training Division © 2026', marginX, pageHeight - 10);
   };
 
   // Helper for check page break
@@ -103,7 +103,7 @@ export function exportPortfolioToPDF(categories: Category[]) {
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(2, 54, 37); // Yitzak Primary Forest Green
-      doc.text('YITZAK INSTITUTIONAL ADVISORY  |  CORPORATE TRAINING PORTFOLIO', marginX, y);
+      doc.text('YITZAK INSTITUTIONAL ADVISORY  |  PROFESSIONAL TRAINING PORTFOLIO', marginX, y);
       
       doc.setDrawColor(182, 138, 53); // Antique Gold
       doc.setLineWidth(0.4);

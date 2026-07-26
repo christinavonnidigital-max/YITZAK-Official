@@ -81,7 +81,7 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
 
       setMessage({ 
         type: 'success', 
-        text: `Successfully pre-registered ${added.email} in Firestore whitelist!` 
+        text: `Successfully pre-registered ${added.email}!` 
       });
 
       setNewEmail('');
@@ -99,7 +99,7 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
     setIsSubmitting(true);
     try {
       await preRegisterGuest(email, name, 'Quick pre-registered via panel', role, 'active');
-      setMessage({ type: 'success', text: `Pre-registered ${email} in Firestore whitelist!` });
+      setMessage({ type: 'success', text: `Pre-registered ${email}!` });
       loadWhitelist();
     } catch (e) {
       setMessage({ type: 'error', text: 'Quick add failed.' });
@@ -139,14 +139,13 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
         <div>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-600" />
-            <h3 className="text-base font-bold text-primary font-serif">Firestore Guest Whitelist Manager</h3>
+            <h3 className="text-base font-bold text-primary font-serif">Guest Whitelist Manager</h3>
             <span className="bg-emerald-100 text-emerald-800 text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold flex items-center gap-1">
-              <Database className="w-3 h-3" />
-              Live Sync
+              Live Access
             </span>
           </div>
           <p className="text-xs text-ash mt-1">
-            Pre-register authorized guest emails in Firestore so users can bypass Google Auth restrictions during portal entry.
+            Pre-register authorized guest emails so invited users can access the portal seamlessly.
           </p>
         </div>
 
@@ -155,7 +154,7 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
             type="button"
             onClick={loadWhitelist}
             className="p-2 border border-border hover:bg-mist text-ash hover:text-primary rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-            title="Refresh Whitelist from Firestore"
+            title="Refresh Whitelist"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -192,11 +191,11 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => handleQuickAdd('cgumpo@yitzak.co.za', 'Christina Gumpo (Yitzak)', 'admin')}
+            onClick={() => handleQuickAdd('christinagumpo@gmail.com', 'Christina Gumpo', 'admin')}
             className="text-xs bg-white hover:bg-emerald-50 border border-border hover:border-emerald-300 text-charcoal hover:text-emerald-900 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Sparkles className="w-3 h-3 text-amber-500" />
-            + cgumpo@yitzak.co.za
+            + christinagumpo@gmail.com
           </button>
           <button
             type="button"
@@ -342,7 +341,7 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
                 ) : (
                   <p className="font-bold flex items-center gap-1 text-amber-800">
                     <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                    Not pre-registered in Firestore Whitelist
+                    Not pre-registered in Guest Whitelist
                   </p>
                 )}
               </div>
@@ -371,7 +370,7 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
           <div className="border border-border rounded-xl overflow-hidden bg-white max-h-[420px] overflow-y-auto divide-y divide-border/60">
             {loading ? (
               <div className="p-8 text-center text-xs text-ash">
-                Loading Firestore Whitelist...
+                Loading Guest Whitelist...
               </div>
             ) : filteredGuests.length === 0 ? (
               <div className="p-8 text-center space-y-2">

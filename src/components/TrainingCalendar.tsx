@@ -20,7 +20,8 @@ import {
   ArrowRight,
   User,
   MapPin,
-  Award
+  Award,
+  Printer
 } from 'lucide-react';
 
 interface SyllabusModule {
@@ -667,7 +668,7 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
   };
 
   return (
-    <div className="space-y-8 max-w-[1280px] mx-auto py-4 px-1">
+    <div className={`space-y-8 max-w-[1280px] mx-auto py-4 px-1 ${selectedCourse ? 'hide-when-drawer-printing' : ''}`}>
       
       {/* Intro Banner */}
       <div className="bg-primary text-white p-8 md:p-12 rounded-3xl relative overflow-hidden shadow-xl border border-white/5">
@@ -1007,10 +1008,10 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
                       </p>
                     </div>
                     <button
-                      onClick={() => onReserveCourse('Custom Corporate Cohort Inquiry', 'Contact for Scheduling')}
+                      onClick={() => onReserveCourse('Custom In-House Cohort Inquiry', 'Contact for Scheduling')}
                       className="text-xs font-bold text-[#B68A35] hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      Inquire Custom Corporate Training <ArrowRight size={12} />
+                      Inquire Custom In-House Training <ArrowRight size={12} />
                     </button>
                   </div>
 
@@ -1139,7 +1140,7 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedCourse(null)}
-              className="fixed inset-0 z-50 bg-primary-900/60 backdrop-blur-xs cursor-pointer"
+              className="fixed inset-0 z-50 bg-primary-900/60 backdrop-blur-xs cursor-pointer no-print-backdrop"
             />
 
             {/* Sliding Drawer Container */}
@@ -1148,8 +1149,23 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="fixed top-0 right-0 z-50 h-full w-full max-w-xl bg-white shadow-2xl flex flex-col border-l border-[#E5E5E5] text-left"
+              className="fixed top-0 right-0 z-50 h-full w-full max-w-xl bg-white shadow-2xl flex flex-col border-l border-[#E5E5E5] text-left printable-drawer"
             >
+              {/* Print Letterhead Banner (Visible only during physical printing) */}
+              <div className="hidden print:block p-6 border-b-2 border-[#B68A35] bg-white">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <h1 className="font-serif text-xl font-bold text-[#023625]">YITZAK INSTITUTIONAL ADVISORY</h1>
+                    <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Official Course Syllabus Specification</p>
+                    <p className="text-[10px] text-gray-600 mt-1">Ref #{selectedCourse.no} — {selectedCourse.name}</p>
+                  </div>
+                  <div className="text-right text-[10px] font-mono text-gray-500">
+                    <p>Printed: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    <p>Accreditation: Verified Syllabus</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Drawer Header */}
               <div className="bg-primary text-white p-6 sticky top-0 z-10 flex justify-between items-start border-b border-white/10 shadow-sm shrink-0">
                 <div>
@@ -1173,7 +1189,7 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
                 </div>
                 <button
                   onClick={() => setSelectedCourse(null)}
-                  className="text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer text-sm font-mono shrink-0"
+                  className="text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer text-sm font-mono shrink-0 no-print"
                   title="Close Drawer"
                 >
                   ✕
@@ -1252,7 +1268,7 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
                       {selectedCourse.syllabus.length} Active Modules
                     </span>
                   </div>
-                  <p className="text-[11px] text-ash leading-relaxed">
+                  <p className="text-[11px] text-ash leading-relaxed print:hidden">
                     Click any curriculum module below to examine classroom hours, accreditation compliance, and specific learning outcomes:
                   </p>
 
@@ -1262,7 +1278,7 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
                       return (
                         <div 
                           key={mIdx} 
-                          className={`border rounded-xl transition-all overflow-hidden ${
+                          className={`border rounded-xl transition-all overflow-hidden syllabus-module ${
                             isExpanded ? 'border-[#B68A35] bg-antique-gold/5 shadow-xs' : 'border-[#E5E5E5] hover:border-antique-gold/40 bg-white'
                           }`}
                         >
@@ -1274,50 +1290,40 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
                             <span className="font-serif text-xs font-bold text-primary hover:text-[#B68A35] transition-colors leading-snug pr-4">
                               {module.title}
                             </span>
-                            <span className={`text-[10px] text-[#B68A35] font-mono font-bold transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                            <span className={`text-[10px] text-[#B68A35] font-mono font-bold transform transition-transform print:hidden ${isExpanded ? 'rotate-180' : ''}`}>
                               ▼
                             </span>
                           </button>
 
-                          {/* Collapsible content section using Framer Motion */}
-                          <AnimatePresence initial={false}>
-                            {isExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="px-4 pb-4 pt-1 border-t border-[#E5E5E5]/40 space-y-3.5 text-xs">
-                                  {/* Quick stats indicators */}
-                                  <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-ash pt-1.5">
-                                    <div className="flex items-center gap-1.5 bg-white border border-[#E5E5E5]/60 px-2.5 py-1 rounded-lg">
-                                      <Clock size={11} className="text-[#B68A35]" />
-                                      <span><strong>Hours:</strong> {module.hours}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 bg-white border border-[#E5E5E5]/60 px-2.5 py-1 rounded-lg">
-                                      <Shield size={11} className="text-[#B68A35]" />
-                                      <span><strong>Accreditation:</strong> {module.accreditations}</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Outcomes List */}
-                                  <div className="space-y-2">
-                                    <p className="font-bold text-primary text-[10px] uppercase tracking-wider font-mono">Module Target Outcomes:</p>
-                                    <ul className="space-y-2 pl-0.5">
-                                      {module.outcomes.map((outcome, oIdx) => (
-                                        <li key={oIdx} className="flex items-start gap-2 text-ash text-[11px] leading-relaxed">
-                                          <CheckCircle size={12} className="text-green-600 mt-0.5 shrink-0" />
-                                          <span>{outcome}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
+                          {/* Collapsible content section using Framer Motion (Auto-expanded in print) */}
+                          <div className={`syllabus-accordion-content ${isExpanded ? 'block' : 'hidden print:block'}`}>
+                            <div className="px-4 pb-4 pt-1 border-t border-[#E5E5E5]/40 space-y-3.5 text-xs">
+                              {/* Quick stats indicators */}
+                              <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-ash pt-1.5">
+                                <div className="flex items-center gap-1.5 bg-white border border-[#E5E5E5]/60 px-2.5 py-1 rounded-lg">
+                                  <Clock size={11} className="text-[#B68A35]" />
+                                  <span><strong>Hours:</strong> {module.hours}</span>
                                 </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                                <div className="flex items-center gap-1.5 bg-white border border-[#E5E5E5]/60 px-2.5 py-1 rounded-lg">
+                                  <Shield size={11} className="text-[#B68A35]" />
+                                  <span><strong>Accreditation:</strong> {module.accreditations}</span>
+                                </div>
+                              </div>
+
+                              {/* Outcomes List */}
+                              <div className="space-y-2">
+                                <p className="font-bold text-primary text-[10px] uppercase tracking-wider font-mono">Module Target Outcomes:</p>
+                                <ul className="space-y-2 pl-0.5">
+                                  {module.outcomes.map((outcome, oIdx) => (
+                                    <li key={oIdx} className="flex items-start gap-2 text-ash text-[11px] leading-relaxed">
+                                      <CheckCircle size={12} className="text-green-600 mt-0.5 shrink-0" />
+                                      <span>{outcome}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
@@ -1326,7 +1332,17 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
               </div>
 
               {/* Drawer Actions Footer */}
-              <div className="border-t border-[#E5E5E5] p-6 bg-[#F9F9F9] flex flex-col sm:flex-row gap-3 justify-end shrink-0 sticky bottom-0 z-10 shadow-inner">
+              <div className="border-t border-[#E5E5E5] p-6 bg-[#F9F9F9] flex flex-col sm:flex-row gap-3 justify-end shrink-0 sticky bottom-0 z-10 shadow-inner no-print">
+                {/* Print Syllabus button */}
+                <button
+                  onClick={() => window.print()}
+                  className="bg-primary hover:bg-[#1f4d3a] text-white text-xs font-sans font-bold uppercase tracking-widest py-3 px-5 rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none shadow-sm"
+                  title="Print official course syllabus record"
+                >
+                  <Printer size={14} />
+                  <span>Print Syllabus</span>
+                </button>
+
                 {/* Add to Calendar button */}
                 <button
                   onClick={() => handleMockAddToCalendar(selectedCourse.id)}

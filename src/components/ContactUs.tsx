@@ -14,7 +14,8 @@ import {
   Clock, 
   HelpCircle,
   Database,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 import { db, auth, getAccessToken } from '../lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -133,13 +134,13 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
         <div className="relative z-10 space-y-8">
           <div>
             <span className="text-xs uppercase tracking-widest text-[#7d5800] font-bold block mb-2 font-mono">
-              Direct Channels
+              Get In Touch
             </span>
             <h3 className="font-display-hero text-headline-md font-bold mb-4 text-surface-container-lowest">
-              YITZAK Support & Advisory
+              Let's build competence and compliance together.
             </h3>
             <p className="text-sm text-ash leading-relaxed max-w-sm">
-              Connect with our principal compliance officers and senior trainers. General inquiries are processed within 4 hours by our central Secretariat.
+              Developing Competence. Enabling Compliance. Reach out to our head office in Randburg, South Africa.
             </p>
           </div>
 
@@ -150,13 +151,13 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
               </div>
               <div>
                 <h4 className="text-xs uppercase tracking-wider text-[#7d5800] font-bold font-mono">
-                  Global Headquarters
+                  Head Office
                 </h4>
-                <p className="text-sm mt-1 text-[#E5E5E5]">
-                  Yitzak Towers, Suite 1400
+                <p className="text-sm mt-1 text-[#E5E5E5] font-semibold">
+                  359 Surrey Avenue, Randburg
                 </p>
                 <p className="text-xs text-ash">
-                  One Broadgate, London EC2M 2QS, United Kingdom
+                  South Africa
                 </p>
               </div>
             </div>
@@ -167,30 +168,27 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
               </div>
               <div>
                 <h4 className="text-xs uppercase tracking-wider text-[#7d5800] font-bold font-mono">
-                  Electronic Secretariat
+                  Official Email Enquiries
                 </h4>
-                <p className="text-sm mt-1 text-[#E5E5E5]">
-                  secretariat@yitzak-advisory.com
+                <p className="text-sm mt-1 text-[#E5E5E5] font-mono">
+                  info@yitzak.co.za
                 </p>
-                <p className="text-xs text-ash">
-                  For corporate tenders and compliance briefs
+                <p className="text-xs text-ash font-mono">
+                  cgumpo@yitzak.co.za
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
               <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary">
-                <Clock size={18} />
+                <ShieldCheck size={18} />
               </div>
               <div>
                 <h4 className="text-xs uppercase tracking-wider text-[#7d5800] font-bold font-mono">
-                  Operational Standard
+                  Institutional Mission
                 </h4>
-                <p className="text-sm mt-1 text-[#E5E5E5]">
-                  Monday – Friday, 08:00 – 18:00 UTC
-                </p>
-                <p className="text-xs text-ash">
-                  Global offices synchronized on London Standard Time
+                <p className="text-xs text-ash mt-1 italic">
+                  Developing Competence. Enabling Compliance.
                 </p>
               </div>
             </div>
@@ -199,10 +197,10 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
 
         <div className="relative z-10 mt-12 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-ash font-mono">
           <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Database Synchronization Live
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Advisory Desk Available
           </span>
-          <span>v1.2.4</span>
+          <span>YITZAK Institutional</span>
         </div>
       </div>
 
@@ -210,49 +208,39 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
       <div className="lg:col-span-7 bg-white p-8 md:p-12 border border-[#E5E5E5] shadow-xl flex flex-col justify-between">
         <div className="max-w-xl">
           <h3 className="font-display-hero text-headline-sm font-bold text-primary mb-2">
-            Submit a General Inquiry
+            Submit an Advisory Inquiry
           </h3>
           <p className="text-sm text-[#737373] mb-8">
-            Complete the formal dispatch below to log your inquiry in our secure enterprise vault. Authorized advisors will follow up immediately.
+            Complete the form below to connect with our compliance experts and advisory team.
           </p>
 
           {success ? (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-[#F4F9F6] border border-emerald-200 p-6 space-y-4"
+              className="bg-[#F4F9F6] border border-emerald-200 p-6 space-y-4 rounded-xl"
             >
               <div className="flex items-start gap-3">
                 <CheckCircle className="text-emerald-700 shrink-0 mt-0.5" size={20} />
                 <div>
-                  <h4 className="font-bold text-primary text-sm font-mono uppercase tracking-wider">
-                    Dispatch Successful
+                  <h4 className="font-bold text-primary text-sm uppercase tracking-wider">
+                    Inquiry Submitted Successfully
                   </h4>
                   <p className="text-xs text-emerald-800 mt-1">
-                    Your general inquiry has been safely synchronized to the Yitzak Firestore database under record reference:
+                    Thank you for reaching out. Your inquiry has been received under reference:
                   </p>
-                  <div className="bg-white border border-emerald-100 p-2 font-mono text-xs text-primary font-bold mt-2 select-all inline-block">
+                  <div className="bg-white border border-emerald-100 p-2 font-mono text-xs text-primary font-bold mt-2 select-all inline-block rounded">
                     {inquiryId}
                   </div>
-                </div>
-              </div>
-
-              <div className="text-xs border-t border-emerald-100 pt-3 space-y-1 text-[#737373] font-mono">
-                <div className="flex justify-between">
-                  <span>Firestore Write:</span>
-                  <span className="text-emerald-700 font-bold">SUCCESS</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Gmail Forwarding:</span>
-                  {emailStatus === 'sent' && <span className="text-emerald-700 font-bold">FORWARDED TO SUPPORT</span>}
-                  {emailStatus === 'skipped' && <span className="text-amber-700 font-bold">SKIPPED (VISITOR SESSION)</span>}
-                  {emailStatus === 'failed' && <span className="text-red-700 font-bold">DISPATCH FAILED</span>}
+                  <p className="text-xs text-ash mt-2">
+                    Our compliance team will review your message and contact you within 1 business day.
+                  </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setSuccess(false)}
-                className="w-full bg-primary hover:bg-primary-container text-white text-xs font-bold font-mono tracking-wider py-2.5 px-4 transition-all uppercase"
+                className="w-full bg-primary hover:bg-primary-container text-white text-xs font-bold tracking-wider py-2.5 px-4 transition-all uppercase rounded"
               >
                 Submit Another Inquiry
               </button>
@@ -346,30 +334,20 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
                 </div>
               </div>
 
-              <div className="bg-surface border border-border p-3.5 font-mono text-[11px] text-ash space-y-1">
-                <div className="flex items-center gap-1.5 text-[#7d5800] font-bold mb-1">
-                  <Database size={13} />
-                  <span>DURABLE SECURE PERSISTENCE</span>
-                </div>
-                <p className="leading-relaxed">
-                  Your submission is recorded in our Firestore database. If logged in using your corporate Google Account with active scopes, an automated copy will be dispatched to both you and our support administrators instantly.
-                </p>
-              </div>
-
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#023625] hover:bg-[#1f4d3a] text-white py-3.5 px-6 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#023625] hover:bg-[#1f4d3a] text-white py-3.5 px-6 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
               >
                 {loading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    <span>Processing Submission...</span>
+                    <span>Sending Inquiry...</span>
                   </>
                 ) : (
                   <>
                     <Send size={14} />
-                    <span>Transmit General Inquiry</span>
+                    <span>Submit Inquiry</span>
                   </>
                 )}
               </button>

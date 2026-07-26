@@ -54,8 +54,8 @@ export const INITIAL_WHITELIST_SEEDS: Omit<WhitelistedGuest, 'id'>[] = [
     notes: 'Internal Verification Desk',
   },
   {
-    email: 'cgumpo@yitzak.co.za',
-    name: 'Christina Gumpo (Yitzak)',
+    email: 'christinagumpo@gmail.com',
+    name: 'Christina Gumpo',
     status: 'active',
     role: 'admin',
     addedAt: new Date().toISOString(),

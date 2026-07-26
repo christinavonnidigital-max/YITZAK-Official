@@ -210,3 +210,161 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #7d5800;
 }
+
+/* ==========================================================================
+   PRINT MEDIA QUERIES FOR CERTIFICATION PORTFOLIO & TRAINING SYLLABUS
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 12mm 15mm 12mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide interactive, non-essential web elements */
+  header,
+  footer,
+  nav,
+  .no-print,
+  button.no-print,
+  .no-print-backdrop,
+  input,
+  select,
+  .animate-pulse,
+  .shadow-ambient,
+  .shadow-lg,
+  .shadow-2xl,
+  .shadow-inner {
+    box-shadow: none !important;
+  }
+
+  /* Hide fixed elements like navigation header, site footer, modals when background printing */
+  header,
+  footer,
+  .fixed.inset-0.no-print-backdrop {
+    display: none !important;
+  }
+
+  /* When drawer modal is open, hide the background page content */
+  body.has-open-drawer .hide-when-drawer-printing,
+  .hide-when-drawer-printing {
+    display: none !important;
+  }
+
+  /* Ensure main layout spans full printable area */
+  main,
+  section,
+  .max-w-\[1280px\],
+  .max-w-7xl,
+  .max-w-5xl,
+  .max-w-4xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Printable Drawer styling */
+  .printable-drawer {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  .printable-drawer .overflow-y-auto {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .printable-drawer .sticky {
+    position: static !important;
+  }
+
+  /* Always expand syllabus accordion content in print view */
+  .syllabus-accordion-content,
+  div[data-projection-id] {
+    display: block !important;
+    height: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    overflow: visible !important;
+  }
+
+  /* Prevent page breaks inside critical record cards & syllabus blocks */
+  .card-consultancy,
+  .border,
+  .rounded-xl,
+  .rounded-2xl,
+  article,
+  .syllabus-module,
+  .course-card,
+  .scheme-card,
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Heading page-break rules */
+  h1, h2, h3, h4, h5, h6 {
+    color: #023625 !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Adjust grid layouts for printable pages */
+  .grid {
+    display: grid !important;
+  }
+
+  /* High contrast colors for print legibility */
+  .bg-mist, .bg-surface, .bg-\[\#F9F9F9\], .bg-antique-gold\/5 {
+    background-color: #f8f8f8 !important;
+  }
+
+  .bg-primary {
+    background-color: #023625 !important;
+    color: #ffffff !important;
+  }
+
+  .text-primary {
+    color: #023625 !important;
+  }
+
+  .text-\[\#B68A35\], .text-antique-gold {
+    color: #8b6413 !important;
+  }
+
+  .border, .border-border, .border-\[\#E5E5E5\] {
+    border-color: #d1d1d1 !important;
+  }
+
+  /* Print-only elements visibility */
+  .print\:block {
+    display: block !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+}
