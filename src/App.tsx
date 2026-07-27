@@ -525,8 +525,7 @@ export default function App() {
             onClick={() => navigateTo('home')}
             className="cursor-pointer text-left focus:outline-none flex items-center shrink-0 min-w-0 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
-            <img src="/yitzak-logo.svg" alt="YITZAK Logo" className="h-7 sm:h-8 md:h-9 w-auto max-w-[150px] sm:max-w-[180px] md:max-w-[220px] object-contain shrink-0 dark:hidden" />
-            <img src="/yitzak-logo-white.svg" alt="YITZAK Logo" className="h-7 sm:h-8 md:h-9 w-auto max-w-[150px] sm:max-w-[180px] md:max-w-[220px] object-contain shrink-0 hidden dark:block" />
+            <span className="font-serif font-extrabold text-2xl tracking-wider text-primary dark:text-white uppercase">YITZAK</span>
           </button>
           
           <nav className="hidden lg:flex gap-5 xl:gap-7 items-center font-sans text-xs xl:text-sm">
@@ -3308,7 +3307,7 @@ export default function App() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 px-4 md:px-16 py-16 max-w-[1280px] mx-auto">
           <div className="col-span-1 md:col-span-2 mb-8 md:mb-0 space-y-4">
             <div>
-              <img src="/yitzak-logo-white.svg" alt="YITZAK Logo" className="h-8 w-auto max-w-[180px] object-contain shrink-0 mb-3" />
+              <span className="font-serif font-extrabold text-2xl tracking-wider text-white uppercase block mb-3">YITZAK</span>
             </div>
             <p className="font-body-md text-sm opacity-80 max-w-md leading-relaxed">
               In direct technical partnership with FoodChain ID. Providing institutional consulting, accredited certification readiness, and professional food safety training across Southern Africa.

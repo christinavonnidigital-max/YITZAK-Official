@@ -19,7 +19,9 @@ export interface WhitelistedGuest {
   verifiedCount?: number;
 }
 
-// Initial seed list of authorized guest emails
+// Initial seed list of authorized guest emails.
+// NOTE: emails must be unique. sanitizeEmailDocId() maps each email to a Firestore
+// document ID, so a repeated address silently overwrites the earlier entry.
 export const INITIAL_WHITELIST_SEEDS: Omit<WhitelistedGuest, 'id'>[] = [
   {
     email: 'christinavonnidigital@gmail.com',
@@ -52,14 +54,6 @@ export const INITIAL_WHITELIST_SEEDS: Omit<WhitelistedGuest, 'id'>[] = [
     role: 'admin',
     addedAt: new Date().toISOString(),
     notes: 'Internal Verification Desk',
-  },
-  {
-    email: 'christinagumpo@gmail.com',
-    name: 'Christina Gumpo',
-    status: 'active',
-    role: 'admin',
-    addedAt: new Date().toISOString(),
-    notes: 'Pre-registered Executive Account',
   }
 ];
 

@@ -2,7 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global default-deny safety net
+    // Firestore denies any request not explicitly allowed by a matching rule below.
+    // NOTE: this block is documentation only. Firestore ORs all matching allow
+    // statements together, so `if false` cannot override a grant made elsewhere —
+    // it is not a safety net. Real enforcement lives in the per-collection rules.
     match /{document=**} {
       allow read, write: if false;
     }
@@ -16,8 +19,14 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
 
+    // Prefer a custom claim so admins can be granted/revoked without redeploying
+    // rules. The email check is a temporary fallback: once the `admin` claim is
+    // set on the operator account, delete the second clause.
     function isAdmin() {
-      return isEmailVerified() && request.auth.token.email == "christinagumpo@gmail.com";
+      return isEmailVerified() && (
+        request.auth.token.get('admin', false) == true
+        || request.auth.token.email == "christinagumpo@gmail.com"
+      );
     }
 
     function isValidId(id) {
@@ -99,15 +108,21 @@ service cloud.firestore {
         && data.subject is string && data.subject.size() <= 256
         && data.message is string && data.message.size() <= 10000
         && (data.status == "unread" || data.status == "read" || data.status == "replied")
-        && (!data.keys().contains('userId') || (data.userId is string && data.userId.size() <= 128));
+        // ContactUs.tsx always sends userId, using null for signed-out visitors.
+        // The null case must be permitted explicitly or every guest inquiry is denied.
+        && (!data.keys().contains('userId')
+            || data.userId == null
+            || (data.userId is string && data.userId.size() <= 128));
     }
 
     // Rules for inquiries collection
     match /inquiries/{inquiryId} {
       // Anyone can submit an inquiry (authenticated or guest)
+      // createdAt must be server time. Previously an `is string` branch allowed
+      // clients to backdate or forward-date submissions at will.
       allow create: if isValidId(inquiryId)
         && isValidInquiry(incoming())
-        && (incoming().createdAt == request.time || incoming().createdAt is string);
+        && incoming().createdAt == request.time;
 
       // Only admin can read, update, or delete inquiries
       allow read: if isAdmin();
