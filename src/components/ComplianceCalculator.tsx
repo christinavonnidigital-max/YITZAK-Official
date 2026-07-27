@@ -120,7 +120,7 @@ Yitzak Professional Training: ${includeYitzakSupport ? 'YES (Active)' : 'NO (Sel
 Estimated Project Timeline: ${timeline} Months
 Projected Audit Success Rate: ${successRate}%
 Estimated Engineering Hours Saved: ${includeYitzakSupport ? hoursSaved + ' Hours' : 'N/A'}
-Mitigated Financial Exposure Value: ${includeYitzakSupport ? '₹' + (financialRoi * 80).toLocaleString('en-IN') + ' / $' + financialRoi.toLocaleString() : 'N/A'}`;
+Mitigated Financial Exposure Value: ${includeYitzakSupport ? 'R ' + (financialRoi * 18.5).toLocaleString('en-ZA', { maximumFractionDigits: 0 }) + ' ZAR / $' + financialRoi.toLocaleString() + ' USD' : 'N/A'}`;
     
     onInquire(notesString);
   };
@@ -371,7 +371,7 @@ Mitigated Financial Exposure Value: ${includeYitzakSupport ? '₹' + (financialR
                     </div>
                     <div className="text-right">
                       <span className="font-mono font-bold text-green-400 bg-white/5 px-2 py-0.5 rounded border border-white/10 text-xs shrink-0 whitespace-nowrap">
-                        {includeYitzakSupport ? `₹${(financialRoi * 80).toLocaleString('en-IN')}` : '₹0'}
+                        {includeYitzakSupport ? `R ${(financialRoi * 18.5).toLocaleString('en-ZA', { maximumFractionDigits: 0 })} ZAR` : 'R 0 ZAR'}
                       </span>
                       {includeYitzakSupport && (
                         <span className="block text-[9px] text-white/50 font-mono mt-0.5">~${financialRoi.toLocaleString()} USD</span>
