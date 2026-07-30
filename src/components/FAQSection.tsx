@@ -20,7 +20,11 @@ interface FAQItem {
   icon: React.ReactNode;
 }
 
-export default function FAQSection() {
+interface FAQSectionProps {
+  onNavigateToContact?: () => void;
+}
+
+export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const faqs: FAQItem[] = [
@@ -165,14 +169,12 @@ export default function FAQSection() {
           <button
             id="faq-contact-redirect-btn"
             onClick={() => {
-              const el = document.getElementById('contact-form-section') || document.getElementById('contact') || document.getElementById('portal');
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              if (onNavigateToContact) {
+                onNavigateToContact();
               } else {
-                // If element is not found, open generic inquiry
-                const contactBtn = document.querySelector('[onClick*="contact"]');
-                if (contactBtn instanceof HTMLButtonElement) {
-                  contactBtn.click();
+                const el = document.getElementById('contact-form-section') || document.getElementById('contact') || document.getElementById('portal');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
               }
             }}

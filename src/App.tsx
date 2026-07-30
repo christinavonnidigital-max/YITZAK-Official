@@ -628,121 +628,190 @@ export default function App() {
 
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden text-primary cursor-pointer p-2 focus:outline-none"
+            className="lg:hidden text-primary cursor-pointer p-2 focus:outline-none rounded-lg hover:bg-mist/80 transition-colors"
+            aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
-        {/* Mobile Navigation Drawer */}
+        {/* Mobile Navigation Slide-out Drawer */}
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden bg-white border-b border-border overflow-hidden px-6 py-4 space-y-3"
-            >
-              <button 
-                onClick={() => {
-                  navigateTo('home');
-                  setMobileMenuOpen(false);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }} 
-                className={`block text-left w-full font-sans text-xs uppercase tracking-widest py-2 cursor-pointer font-bold ${
-                  currentView === 'home' ? 'text-secondary font-extrabold' : 'text-on-surface-variant'
-                }`}
+            <>
+              {/* Backdrop Overlay */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                onClick={() => setMobileMenuOpen(false)}
+                className="fixed inset-0 bg-black/65 backdrop-blur-sm z-50 lg:hidden"
+              />
+
+              {/* Slide-out Drawer Panel */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 26, stiffness: 230 }}
+                className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-[#012B1D] text-white z-50 shadow-2xl flex flex-col justify-between overflow-y-auto lg:hidden border-l border-[#02402c]"
               >
-                About Us
-              </button>
-              <button 
-                onClick={() => {
-                  navigateTo('consulting');
-                  setMobileMenuOpen(false);
-                }} 
-                className={`block text-left w-full font-sans text-xs uppercase tracking-widest py-2 cursor-pointer font-bold ${
-                  currentView === 'consulting' ? 'text-secondary font-extrabold' : 'text-on-surface-variant'
-                }`}
-              >
-                Consulting Services
-              </button>
-              <button 
-                onClick={() => {
-                  navigateTo('training');
-                  setMobileMenuOpen(false);
-                }}
-                className={`block text-left w-full font-sans text-xs uppercase tracking-widest py-2 cursor-pointer font-bold ${
-                  currentView === 'training' ? 'text-secondary font-extrabold' : 'text-on-surface-variant'
-                }`}
-              >
-                Training Curricula
-              </button>
-              <button 
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  navigateTo('certifications');
-                }} 
-                className={`block text-left w-full font-sans text-xs uppercase tracking-widest py-2 cursor-pointer font-bold ${
-                  currentView === 'certifications' ? 'text-secondary font-extrabold' : 'text-on-surface-variant'
-                }`}
-              >
-                Accredited Certifications
-              </button>
-              <button 
-                onClick={() => {
-                  navigateTo('calendar');
-                  setMobileMenuOpen(false);
-                }}
-                className={`block text-left w-full font-sans text-xs uppercase tracking-widest py-2 cursor-pointer font-bold ${
-                  currentView === 'calendar' ? 'text-[#B68A35] font-extrabold' : 'text-on-surface-variant'
-                }`}
-              >
-                Training Calendar
-              </button>
-              <button 
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleDownloadWhitepaper();
-                }} 
-                className="block text-left w-full font-sans text-xs uppercase tracking-widest text-on-surface-variant py-2 cursor-pointer font-bold"
-              >
-                Knowledge Centre
-              </button>
-              <button 
-                onClick={() => {
-                  navigateTo('contact');
-                  setMobileMenuOpen(false);
-                }} 
-                className={`block text-left w-full font-sans text-xs uppercase tracking-widest py-2 cursor-pointer font-bold ${
-                  currentView === 'contact' ? 'text-secondary font-extrabold' : 'text-on-surface-variant'
-                }`}
-              >
-                Contact Us
-              </button>
-              <button 
-                onClick={() => {
-                  navigateTo('home');
-                  setMobileMenuOpen(false);
-                  setTimeout(() => {
-                    const el = document.getElementById('portal');
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }, 100);
-                }} 
-                className="block text-left w-full font-sans text-xs uppercase tracking-widest text-primary py-2 cursor-pointer font-extrabold flex items-center gap-2"
-              >
-                <User size={14} className="text-[#B68A35]" />
-                <span>{currentUser ? 'Client Portal' : 'Portal Log In'}</span>
-              </button>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleOpenBooking();
-                }}
-                className="w-full text-center btn-primary text-xs py-3 uppercase cursor-pointer font-bold tracking-wider"
-              >
-                Request a Consultation
-              </button>
-            </motion.div>
+                {/* Drawer Header */}
+                <div>
+                  <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#002015]">
+                    <div className="flex flex-col">
+                      <span className="font-serif text-xl font-bold tracking-wider text-white">YITZAK</span>
+                      <span className="text-[10px] uppercase font-mono tracking-widest text-[#B68A35]">Institutional Advisory</span>
+                    </div>
+                    <button
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="p-2 text-white/70 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                      aria-label="Close menu"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  {/* Drawer Navigation Menu */}
+                  <nav className="p-6 space-y-1.5">
+                    <button
+                      onClick={() => {
+                        navigateTo('home');
+                        setMobileMenuOpen(false);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        currentView === 'home'
+                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Building2 size={16} className={currentView === 'home' ? 'text-[#B68A35]' : 'text-white/60'} />
+                      <span>About Us</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigateTo('consulting');
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        currentView === 'consulting'
+                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <BookOpen size={16} className={currentView === 'consulting' ? 'text-[#B68A35]' : 'text-white/60'} />
+                      <span>Consulting Services</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigateTo('training');
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        currentView === 'training'
+                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <GraduationCap size={16} className={currentView === 'training' ? 'text-[#B68A35]' : 'text-white/60'} />
+                      <span>Training Curricula</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        navigateTo('certifications');
+                      }}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        currentView === 'certifications'
+                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Award size={16} className={currentView === 'certifications' ? 'text-[#B68A35]' : 'text-white/60'} />
+                      <span>Accredited Certifications</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigateTo('calendar');
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        currentView === 'calendar'
+                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Calendar size={16} className="text-[#B68A35]" />
+                      <span>Training Calendar</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleDownloadWhitepaper();
+                      }}
+                      className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider text-white/80 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                    >
+                      <FileText size={16} className="text-white/60" />
+                      <span>Knowledge Centre</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigateTo('contact');
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        currentView === 'contact'
+                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Mail size={16} className={currentView === 'contact' ? 'text-[#B68A35]' : 'text-white/60'} />
+                      <span>Contact Us</span>
+                    </button>
+                  </nav>
+                </div>
+
+                {/* Drawer Actions & Footer */}
+                <div className="p-6 border-t border-white/10 space-y-3 bg-[#002015]">
+                  <button
+                    onClick={() => {
+                      navigateTo('home');
+                      setMobileMenuOpen(false);
+                      setTimeout(() => {
+                        const el = document.getElementById('portal');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 100);
+                    }}
+                    className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border border-white/10"
+                  >
+                    <User size={15} className="text-[#B68A35]" />
+                    <span>{currentUser ? 'Client Portal' : 'Portal Log In'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleOpenBooking();
+                    }}
+                    className="w-full text-center py-3.5 px-4 rounded-lg bg-[#B68A35] hover:bg-[#a3792b] text-[#012B1D] text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all cursor-pointer"
+                  >
+                    Request a Consultation
+                  </button>
+
+                  <p className="text-[10px] text-white/40 text-center font-mono pt-2">
+                    Developing Competence. Enabling Compliance.
+                  </p>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </header>
@@ -2438,13 +2507,13 @@ export default function App() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Stream 1 */}
-                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-8 hover:shadow-ambient hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
-                    <div>
-                      <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center mb-6">
+                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 md:p-8 hover:shadow-ambient hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
+                    <div className="space-y-4 mb-6">
+                      <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center">
                         <GraduationCap className="text-forest-green" size={24} />
                       </div>
-                      <h3 className="font-serif text-xl text-primary font-bold mb-3">YITZAK Curricula</h3>
-                      <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed mb-6">
+                      <h3 className="font-serif text-xl text-primary font-bold">YITZAK Curricula</h3>
+                      <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
                         Proprietary training modules focused on specialized compliance, strategy implementation, and advanced internal auditing techniques.
                       </p>
                     </div>
@@ -2454,7 +2523,7 @@ export default function App() {
                         const el = document.getElementById('portfolio');
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }}
-                      className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 self-start cursor-pointer"
+                      className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 self-start cursor-pointer mt-auto"
                     >
                       <span>Explore Modules</span>
                       <ArrowRight size={14} />
@@ -2462,50 +2531,39 @@ export default function App() {
                   </div>
 
                   {/* Stream 2 */}
-                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-8 hover:shadow-ambient hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
-                    <div>
-                      <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center mb-6">
+                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 md:p-8 hover:shadow-ambient hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
+                    <div className="space-y-4 mb-6">
+                      <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center">
                         <Award className="text-forest-green" size={24} />
                       </div>
-                      <h3 className="font-serif text-xl text-primary font-bold mb-3">FoodChain ID Academy</h3>
-                      <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed mb-6">
+                      <h3 className="font-serif text-xl text-primary font-bold">FoodChain ID Academy</h3>
+                      <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
                         Internationally recognized certification courses delivered through our exclusive partnership, ensuring global standard compliance.
                       </p>
                     </div>
-                    <div className="flex flex-col gap-2.5">
-                      <button
-                        onClick={() => navigateTo('certifications')}
-                        className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 self-start cursor-pointer"
-                      >
-                        <span>View Accredited Schemes</span>
-                        <ArrowRight size={14} />
-                      </button>
-                      <a
-                        href="https://www.foodchainid.com/academy/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors flex items-center gap-1 cursor-pointer self-start"
-                      >
-                        <span>Explore Global Academy</span>
-                        <span>↗</span>
-                      </a>
-                    </div>
+                    <button
+                      onClick={() => navigateTo('certifications')}
+                      className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 self-start cursor-pointer mt-auto"
+                    >
+                      <span>Explore Accredited Schemes</span>
+                      <ArrowRight size={14} />
+                    </button>
                   </div>
 
                   {/* Stream 3 */}
-                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-8 hover:shadow-ambient hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
-                    <div>
-                      <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center mb-6">
+                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 md:p-8 hover:shadow-ambient hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
+                    <div className="space-y-4 mb-6">
+                      <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center">
                         <Building2 className="text-forest-green" size={24} />
                       </div>
-                      <h3 className="font-serif text-xl text-primary font-bold mb-3">In-House Solutions</h3>
-                      <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed mb-6">
+                      <h3 className="font-serif text-xl text-primary font-bold">In-House Solutions</h3>
+                      <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
                         Bespoke, on-site training programs tailored to your organization's specific operational realities and cultural context.
                       </p>
                     </div>
                     <button
                       onClick={() => handleOpenBooking('training')}
-                      className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 self-start cursor-pointer"
+                      className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 self-start cursor-pointer mt-auto"
                     >
                       <span>Request Custom Plan</span>
                       <ArrowRight size={14} />
@@ -2751,56 +2809,75 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 border-b border-[#E5E5E5] pb-6">
+                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8 md:mb-12 border-b border-[#E5E5E5] pb-6">
                   <div>
                     <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold mb-2">Training Portfolio</h2>
                     <div className="w-24 h-1 bg-[#B68A35]"></div>
                   </div>
                   
                   {/* Portfolio Download & Print buttons */}
-                  <div className="flex flex-wrap items-center gap-3 no-print">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#737373] font-mono w-full md:w-auto">
+                  <div className="flex flex-wrap items-center gap-3 no-print lg:justify-end">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#737373] font-mono shrink-0">
                       Export Syllabus:
                     </span>
-                    <button
-                      onClick={() => window.print()}
-                      className="bg-[#B68A35] hover:bg-[#a37a2e] text-white font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 px-4 transition-all duration-200 flex items-center gap-2 cursor-pointer shadow-sm hover:shadow active:scale-[0.98]"
-                      title="Print full training syllabus & portfolio for physical record-keeping"
-                    >
-                      <Printer size={14} />
-                      <span>Print Record</span>
-                    </button>
-                    <button
-                      onClick={() => exportPortfolioToPDF(portfolioCategories)}
-                      className="bg-primary hover:bg-[#1f4d3a] text-white font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 px-4 transition-all duration-200 flex items-center gap-2 cursor-pointer shadow-sm hover:shadow active:scale-[0.98]"
-                      title="Download full portfolio syllabus as a high-quality PDF document"
-                    >
-                      <FileText size={14} />
-                      <span>Download PDF</span>
-                    </button>
-                    <button
-                      onClick={() => exportPortfolioToCSV(portfolioCategories)}
-                      className="border border-[#E5E5E5] hover:bg-[#F9F9F9] text-[#2B2B2B] font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 px-4 transition-all duration-200 flex items-center gap-2 cursor-pointer active:scale-[0.98]"
-                      title="Download full portfolio courses list in Excel-compatible CSV spreadsheet format"
-                    >
-                      <Download size={14} className="text-[#B68A35]" />
-                      <span>Download CSV</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => window.print()}
+                        className="bg-[#B68A35] hover:bg-[#a37a2e] text-white font-mono text-[11px] font-bold uppercase tracking-wider py-2 px-3.5 transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs active:scale-[0.98] rounded-md"
+                        title="Print full training syllabus & portfolio for physical record-keeping"
+                      >
+                        <Printer size={13} />
+                        <span className="whitespace-nowrap">Print Record</span>
+                      </button>
+                      <button
+                        onClick={() => exportPortfolioToPDF(portfolioCategories)}
+                        className="bg-primary hover:bg-[#1f4d3a] text-white font-mono text-[11px] font-bold uppercase tracking-wider py-2 px-3.5 transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs active:scale-[0.98] rounded-md"
+                        title="Download full portfolio syllabus as a high-quality PDF document"
+                      >
+                        <FileText size={13} />
+                        <span className="whitespace-nowrap">Download PDF</span>
+                      </button>
+                      <button
+                        onClick={() => exportPortfolioToCSV(portfolioCategories)}
+                        className="border border-[#E5E5E5] hover:bg-[#F9F9F9] text-[#2B2B2B] font-mono text-[11px] font-bold uppercase tracking-wider py-2 px-3.5 transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] rounded-md"
+                        title="Download full portfolio courses list in Excel-compatible CSV spreadsheet format"
+                      >
+                        <Download size={13} className="text-[#B68A35]" />
+                        <span className="whitespace-nowrap">Download CSV</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
+                {/* Mobile horizontal scrollable categories tab bar */}
+                <div className="md:hidden flex flex-row overflow-x-auto gap-2 pb-3 mb-6 border-b border-[#E5E5E5] no-scrollbar">
+                  {portfolioCategories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActiveSidebarSection(cat.id)}
+                      className={`whitespace-nowrap px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-all shrink-0 ${
+                        activeSidebarSection === cat.id
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'bg-[#F4F4F4] text-on-surface-variant hover:bg-[#EAEAEA]'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12">
-                  {/* Left Sidebar Menu */}
-                  <div className="md:col-span-3">
+                  {/* Left Sidebar Menu (Desktop) */}
+                  <div className="hidden md:block md:col-span-3">
                     <div className="flex flex-col space-y-1 border-l-2 border-[#E5E5E5] pl-0">
                       {portfolioCategories.map((cat) => (
                         <button
                           key={cat.id}
                           onClick={() => setActiveSidebarSection(cat.id)}
-                          className={`text-left py-2.5 px-4 transition-all text-xs uppercase tracking-wider font-bold cursor-pointer border-l-2 -ml-[2px] ${
+                          className={`text-left py-3 px-4 transition-all text-xs uppercase tracking-wider font-bold cursor-pointer border-l-2 -ml-[2px] rounded-r-md ${
                             activeSidebarSection === cat.id
-                              ? 'border-[#B68A35] text-primary bg-[#F9F9F9]'
-                              : 'border-transparent text-on-surface-variant hover:text-primary hover:border-[#E5E5E5]'
+                              ? 'border-[#B68A35] text-primary bg-[#F2F4F3] font-extrabold shadow-2xs'
+                              : 'border-transparent text-on-surface-variant hover:text-primary hover:bg-[#F9FBF9] hover:border-[#D0D0D0]'
                           }`}
                         >
                           {cat.label}
@@ -2810,7 +2887,7 @@ export default function App() {
                   </div>
 
                   {/* Right Courses Panel */}
-                  <div className="md:col-span-9">
+                  <div className="col-span-1 md:col-span-9">
                     <AnimatePresence mode="wait">
                       {portfolioCategories.map((cat) => cat.id === activeSidebarSection && (
                         <motion.div
@@ -2822,11 +2899,11 @@ export default function App() {
                           className="space-y-6"
                         >
                           {/* Category Header */}
-                          <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-4 mb-4">
+                          <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-4 mb-6">
                             <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">
                               {cat.title}
                             </h3>
-                            <span className="text-secondary font-mono text-[11px] uppercase tracking-wider bg-secondary-fixed px-3 py-1 rounded font-bold">
+                            <span className="text-secondary font-mono text-[11px] uppercase tracking-wider bg-secondary-fixed px-3 py-1 rounded-md font-bold shrink-0 min-w-[95px] text-center border border-secondary/20">
                               {cat.badge}
                             </span>
                           </div>
@@ -2836,9 +2913,9 @@ export default function App() {
                             {cat.courses.map((course, idx) => (
                               <div
                                 key={idx}
-                                className="border border-[#E5E5E5] p-6 hover:shadow-ambient transition-all duration-300 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-xl"
+                                className="border border-[#E5E5E5] p-5 md:p-6 hover:shadow-ambient transition-all duration-300 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-xl"
                               >
-                                <div>
+                                <div className="flex-1 min-w-0">
                                   <h4 className="font-sans text-sm md:text-base font-bold text-primary mb-1">
                                     {course.title}
                                   </h4>
@@ -2847,11 +2924,11 @@ export default function App() {
                                   </p>
                                 </div>
 
-                                <div className="flex gap-2 flex-wrap">
+                                <div className="flex flex-row md:flex-col items-start md:items-end justify-center gap-1.5 shrink-0 min-w-[120px]">
                                   {course.tags.map((tag, tagIdx) => (
                                     <span
                                       key={tagIdx}
-                                      className="text-[10px] font-mono uppercase tracking-wider bg-forest-green/10 text-forest-green px-3 py-1 font-bold rounded"
+                                      className="inline-flex items-center justify-center min-w-[95px] text-center text-[10px] font-mono uppercase tracking-wider bg-forest-green/10 text-forest-green px-3 py-1 font-bold rounded-md border border-forest-green/15 whitespace-nowrap"
                                     >
                                       {tag}
                                     </span>
@@ -2945,8 +3022,8 @@ export default function App() {
               </div>
             </section>
 
-            {/* Frequently Asked Questions Accordion Section */}
-            <FAQSection />
+            {/* Frequently Asked Questions Section */}
+            <FAQSection onNavigateToContact={() => navigateTo('contact')} />
           </motion.div>
         )}
 
@@ -3267,9 +3344,6 @@ export default function App() {
 
             {/* Compliance & ROI Calculator Section */}
             <ComplianceCalculator onInquire={(notes) => handleOpenBooking('compliance', notes)} />
-
-            {/* Frequently Asked Questions Accordion Section */}
-            <FAQSection />
           </motion.div>
         )}
 
@@ -3295,8 +3369,15 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className="bg-[#F9F9F9] min-h-screen text-[#2D3142] py-16 px-4 md:px-16"
+            className="bg-[#F9F9F9] min-h-screen text-[#2D3142] py-12 md:py-16 px-4 sm:px-6 md:px-12 lg:px-16"
           >
+            <div className="max-w-[1280px] mx-auto mb-10 text-center space-y-3">
+              <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Direct Institutional Advisory</span>
+              <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary">Contact Advisory Team</h1>
+              <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
+                Connect directly with Yitzak's principal advisors to schedule a gap assessment, system analysis, or custom corporate workshop.
+              </p>
+            </div>
             <ContactUs />
           </motion.div>
         )}

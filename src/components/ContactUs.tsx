@@ -126,7 +126,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-[1280px] mx-auto w-full">
       {/* Sidebar - Corporate Context & Addresses */}
-      <div className="lg:col-span-5 bg-primary text-white p-8 md:p-12 flex flex-col justify-between relative overflow-hidden border border-[#023625] shadow-xl">
+      <div className="lg:col-span-5 bg-primary text-white p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden border border-[#023625] shadow-xl rounded-2xl">
         {/* Background decorative badge */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-secondary opacity-5 rounded-full blur-2xl transform translate-x-20 -translate-y-20"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary opacity-5 rounded-full blur-2xl transform -translate-x-20 translate-y-20"></div>
@@ -146,7 +146,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
 
           <div className="space-y-6 pt-4 border-t border-white/10">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary">
+              <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary rounded-lg">
                 <Building2 size={18} />
               </div>
               <div>
@@ -163,7 +163,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary">
+              <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary rounded-lg">
                 <Mail size={18} />
               </div>
               <div>
@@ -180,7 +180,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary">
+              <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary rounded-lg">
                 <ShieldCheck size={18} />
               </div>
               <div>
@@ -205,8 +205,8 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
       </div>
 
       {/* Main inquiry Form */}
-      <div className="lg:col-span-7 bg-white p-8 md:p-12 border border-[#E5E5E5] shadow-xl flex flex-col justify-between">
-        <div className="max-w-xl">
+      <div className="lg:col-span-7 bg-white p-6 sm:p-8 md:p-10 lg:p-12 border border-[#E5E5E5] shadow-xl flex flex-col justify-between rounded-2xl">
+        <div className="w-full">
           <h3 className="font-display-hero text-headline-sm font-bold text-primary mb-2">
             Submit an Advisory Inquiry
           </h3>
@@ -240,21 +240,21 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
 
               <button
                 onClick={() => setSuccess(false)}
-                className="w-full bg-primary hover:bg-primary-container text-white text-xs font-bold tracking-wider py-2.5 px-4 transition-all uppercase rounded"
+                className="w-full bg-primary hover:bg-primary-container text-white text-xs font-bold tracking-wider py-2.5 px-4 transition-all uppercase rounded-lg"
               >
                 Submit Another Inquiry
               </button>
             </motion.div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6 w-full">
               {error && (
-                <div className="bg-red-50 border border-red-200 p-4 text-xs text-red-700 flex items-start gap-2 font-mono">
+                <div className="bg-red-50 border border-red-200 p-4 text-xs text-red-700 flex items-start gap-2 font-mono rounded-lg">
                   <AlertCircle size={16} className="shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
                 <div className="relative">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-[#737373] block mb-1.5 font-mono">
                     Full Name <span className="text-red-500">*</span>
@@ -267,7 +267,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. John Doe"
-                      className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal placeholder:text-ash/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all"
+                      className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal placeholder:text-ash/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all rounded-lg"
                     />
                   </div>
                 </div>
@@ -284,7 +284,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="e.g. j.doe@company.com"
-                      className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal placeholder:text-ash/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all"
+                      className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal placeholder:text-ash/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all rounded-lg"
                     />
                   </div>
                 </div>
@@ -299,7 +299,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
                   <select
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all appearance-none cursor-pointer"
+                    className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all appearance-none cursor-pointer rounded-lg"
                   >
                     {subjects.map((subj) => (
                       <option key={subj} value={subj}>
@@ -325,7 +325,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
                     onChange={(e) => setMessage(e.target.value)}
                     rows={4}
                     placeholder="Describe your compliance, certification, or training needs in detail..."
-                    className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal placeholder:text-ash/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all resize-none"
+                    className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal placeholder:text-ash/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all resize-none rounded-lg"
                   ></textarea>
                 </div>
                 <div className="flex justify-between items-center mt-1.5 font-mono text-[10px] text-ash">
