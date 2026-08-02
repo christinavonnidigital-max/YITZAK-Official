@@ -520,21 +520,21 @@ export default function App() {
 
       {/* TopNavBar */}
       <header className="bg-surface-container-lowest text-secondary docked full-width top-0 sticky border-b border-outline-variant flat no shadows z-50">
-        <div className="flex justify-between items-center w-full px-4 md:px-16 py-4 max-w-[1280px] mx-auto">
+        <div className="flex justify-between items-center w-full px-4 sm:px-6 lg:px-8 py-3.5 max-w-[1400px] mx-auto gap-4">
           <button 
             onClick={() => navigateTo('home')}
             className="cursor-pointer text-left focus:outline-none flex items-center shrink-0 min-w-0 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
-            <span className="font-serif font-extrabold text-2xl tracking-wider text-primary dark:text-white uppercase">YITZAK</span>
+            <span className="font-serif font-extrabold text-xl sm:text-2xl tracking-wider text-primary dark:text-white uppercase whitespace-nowrap">YITZAK</span>
           </button>
           
-          <nav className="hidden lg:flex gap-5 xl:gap-7 items-center font-sans text-xs xl:text-sm">
+          <nav className="hidden lg:flex gap-3 xl:gap-6 items-center font-sans text-xs xl:text-sm shrink-0">
             <button 
               onClick={() => {
                 navigateTo('home');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`font-semibold transition-colors duration-200 cursor-pointer ${
+              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
                 currentView === 'home' 
                   ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
                   : 'text-on-surface-variant hover:text-secondary'
@@ -544,7 +544,7 @@ export default function App() {
             </button>
             <button 
               onClick={() => navigateTo('consulting')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer ${
+              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
                 currentView === 'consulting' 
                   ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
                   : 'text-on-surface-variant hover:text-secondary'
@@ -554,7 +554,7 @@ export default function App() {
             </button>
             <button 
               onClick={() => navigateTo('training')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer ${
+              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
                 currentView === 'training' 
                   ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
                   : 'text-on-surface-variant hover:text-secondary'
@@ -564,7 +564,7 @@ export default function App() {
             </button>
             <button 
               onClick={() => navigateTo('certifications')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer ${
+              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
                 currentView === 'certifications' 
                   ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
                   : 'text-on-surface-variant hover:text-secondary'
@@ -574,7 +574,7 @@ export default function App() {
             </button>
             <button 
               onClick={() => navigateTo('calendar')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer flex items-center gap-1.5 ${
+              className={`font-semibold transition-colors duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                 currentView === 'calendar' 
                   ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
                   : 'text-on-surface-variant hover:text-secondary'
@@ -585,13 +585,13 @@ export default function App() {
             </button>
             <button 
               onClick={handleDownloadWhitepaper}
-              className="text-on-surface-variant font-semibold hover:text-secondary transition-colors duration-200 cursor-pointer"
+              className="text-on-surface-variant font-semibold hover:text-secondary transition-colors duration-200 cursor-pointer whitespace-nowrap"
             >
               Knowledge Centre
             </button>
             <button 
               onClick={() => navigateTo('contact')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer ${
+              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
                 currentView === 'contact' 
                   ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
                   : 'text-on-surface-variant hover:text-secondary'
@@ -601,7 +601,7 @@ export default function App() {
             </button>
           </nav>
 
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2.5 xl:gap-3.5 shrink-0">
             <button 
               onClick={() => {
                 navigateTo('home');
@@ -610,7 +610,7 @@ export default function App() {
                   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 100);
               }}
-              className={`text-xs xl:text-sm font-semibold hover:text-secondary transition-colors cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded border border-border/60 ${
+              className={`text-xs xl:text-sm font-semibold hover:text-secondary transition-colors cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded border border-border/60 whitespace-nowrap ${
                 currentUser ? 'bg-primary/5 text-primary border-primary/30 font-bold' : 'text-on-surface-variant bg-mist/60 hover:bg-mist'
               }`}
             >
@@ -620,7 +620,7 @@ export default function App() {
 
             <button 
               onClick={() => handleOpenBooking()}
-              className="btn-primary text-xs xl:text-sm px-4 py-2 cursor-pointer focus:outline-none font-bold uppercase tracking-wider shrink-0 shadow-xs"
+              className="btn-primary text-xs xl:text-sm px-3.5 xl:px-4 py-2 cursor-pointer focus:outline-none font-bold uppercase tracking-wider shrink-0 shadow-xs whitespace-nowrap"
             >
               Request a Consultation
             </button>
@@ -838,7 +838,7 @@ export default function App() {
                     </h1>
 
                     <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed max-w-xl mb-6">
-                      YITZAK is an elite institutional consulting and professional training firm. We provide industry-leading guidance, expert advisory, and accredited standards implementation to help organisations develop capable teams, streamline management systems, and master compliance.
+                      YITZAK is an elite institutional consulting and professional training firm. We deliver industry-leading advisory and accredited standards implementation to help organisations reduce operational risk and achieve long-term compliance excellence.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 pt-2 mb-6">
@@ -933,14 +933,14 @@ export default function App() {
                       <div className="space-y-1 mb-6">
                         <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold block">About YITZAK</span>
                         <h2 className="font-serif text-3xl md:text-[40px] leading-tight text-primary font-bold">
-                          Building competence.<br />Driving business excellence.
+                          Empowering Teams.<br />Elevating Operational Standards.
                         </h2>
                       </div>
                       <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed mb-6">
-                        We help organisations develop capable people, strengthen management systems, and meet industry requirements with confidence, through professional training, consulting, and certification support.
+                        We partner with forward-thinking organisations to cultivate workforce expertise, optimize quality management systems, and navigate complex regulatory benchmarks with total confidence.
                       </p>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed opacity-90">
-                        Our approach pairs practical industry experience with internationally aligned standards, delivering learning and guidance that improve performance, reduce risk, and create lasting value. Whether you are investing in workforce development, implementing management systems, or preparing for an external audit, we give you learning and expert guidance you can put to work immediately.
+                        Combining practical industry experience with internationally aligned standards, our advisory services turn compliance requirements into measurable business value—from workforce development to external audit readiness.
                       </p>
                     </ScrollReveal>
                   </div>
@@ -3109,47 +3109,50 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {/* Scheme 1: Product & Label Certification */}
                   <ScrollReveal direction="up" delay={0.1}>
-                    <div className="bg-white border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full hover:border-[#B68A35]/40 hover:shadow-md transition-all group duration-200">
-                      <div className="space-y-6">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
+                    <div className="bg-white border border-[#E5E5E5] p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full">
+                      <div className="space-y-5">
+                        <div className="flex items-center justify-between gap-2 border-b border-[#F0F0F0] pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
+                              P
+                            </div>
+                            <div>
+                              <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
+                                Product &amp; Label
+                              </h3>
+                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block">
+                                Products &amp; Claims
+                              </span>
+                            </div>
+                          </div>
+                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1">
                             <ShieldCheck size={12} className="text-emerald-600" />
                             <span>Accredited</span>
                           </span>
-                          <span className="bg-[#B68A35]/10 text-[#7a5a1f] border border-[#B68A35]/30 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                            <Award size={12} className="text-[#B68A35]" />
-                            <span>Industry Standard</span>
-                          </span>
-                        </div>
-
-                        <div className="flex items-start gap-4 pt-1">
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-serif font-bold text-lg shrink-0">
-                            P
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors">Product &amp; Label Certification</h3>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-outline block">Products &amp; Claims</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Non-GMO</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Organic</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Identity Preserved</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Gluten-Free</span>
                         </div>
 
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Certification for product claims that hold up to market and regulatory scrutiny, including organic, Non-GMO Project Verification, and Gluten-Free. We help you choose the right scheme, prepare your evidence, and move through assessment with total confidence.
+                          Certification for product claims that hold up to market and regulatory scrutiny, including organic, Non-GMO Project Verification, and Gluten-Free. We help you choose the right scheme and move through assessment with total confidence.
                         </p>
+
+                        <div className="pt-2">
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Key Schemes:</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {['Non-GMO', 'Organic', 'Identity Preserved', 'Gluten-Free'].map((item, idx) => (
+                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium">
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="mt-8 pt-4 border-t border-border/60 flex flex-wrap justify-between items-center gap-2">
+                      <div className="mt-6 pt-4 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
                         <a
                           href="https://www.foodchainid.com/product-and-label-certification/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
                           <span>Scheme details</span>
                           <span>↗</span>
@@ -3167,47 +3170,50 @@ export default function App() {
 
                   {/* Scheme 2: GLOBALG.A.P. */}
                   <ScrollReveal direction="up" delay={0.2}>
-                    <div className="bg-white border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full hover:border-[#B68A35]/40 hover:shadow-md transition-all group duration-200">
-                      <div className="space-y-6">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                            <ShieldCheck size={12} className="text-emerald-600" />
-                            <span>Accredited</span>
-                          </span>
-                          <span className="bg-sky-50 text-sky-800 border border-sky-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
+                    <div className="bg-white border border-[#E5E5E5] p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full">
+                      <div className="space-y-5">
+                        <div className="flex items-center justify-between gap-2 border-b border-[#F0F0F0] pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
+                              G
+                            </div>
+                            <div>
+                              <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
+                                GLOBALG.A.P.
+                              </h3>
+                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block">
+                                Farm Assurance
+                              </span>
+                            </div>
+                          </div>
+                          <span className="bg-sky-50 text-sky-800 border border-sky-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1">
                             <Globe size={12} className="text-sky-600" />
                             <span>GFSI Benchmarked</span>
                           </span>
                         </div>
 
-                        <div className="flex items-start gap-4 pt-1">
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-serif font-bold text-lg shrink-0">
-                            G
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors">GLOBALG.A.P.</h3>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-outline block">Farm Assurance</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Good Ag Practice</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Chain of Custody</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">GRASP</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Produce Handling</span>
-                        </div>
-
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Good agricultural practice certification covering food safety, traceability, and responsible production. GFSI-benchmarked and recognised by major international retailers worldwide, it opens global export markets for your farm supply.
+                          Good agricultural practice certification covering food safety, traceability, and responsible production. GFSI-benchmarked and recognised by major international retailers worldwide.
                         </p>
+
+                        <div className="pt-2">
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Covered Modules:</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {['Good Ag Practice', 'Chain of Custody', 'GRASP', 'Produce Handling'].map((item, idx) => (
+                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium">
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="mt-8 pt-4 border-t border-border/60 flex flex-wrap justify-between items-center gap-2">
+                      <div className="mt-6 pt-4 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
                         <a
                           href="https://www.foodchainid.com/globalg-a-p/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
                           <span>Scheme details</span>
                           <span>↗</span>
@@ -3225,47 +3231,50 @@ export default function App() {
 
                   {/* Scheme 3: BRCGS Certifications */}
                   <ScrollReveal direction="up" delay={0.3}>
-                    <div className="bg-white border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full hover:border-[#B68A35]/40 hover:shadow-md transition-all group duration-200">
-                      <div className="space-y-6">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                            <ShieldCheck size={12} className="text-emerald-600" />
-                            <span>Accredited</span>
-                          </span>
-                          <span className="bg-indigo-50 text-indigo-800 border border-indigo-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
+                    <div className="bg-white border border-[#E5E5E5] p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full">
+                      <div className="space-y-5">
+                        <div className="flex items-center justify-between gap-2 border-b border-[#F0F0F0] pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
+                              B
+                            </div>
+                            <div>
+                              <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
+                                BRCGS Standard
+                              </h3>
+                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block">
+                                Food Safety &amp; Quality
+                              </span>
+                            </div>
+                          </div>
+                          <span className="bg-indigo-50 text-indigo-800 border border-indigo-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1">
                             <Award size={12} className="text-indigo-600" />
                             <span>Global Standard</span>
                           </span>
                         </div>
 
-                        <div className="flex items-start gap-4 pt-1">
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-serif font-bold text-lg shrink-0">
-                            B
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors">BRCGS Certifications</h3>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-outline block">Food Safety &amp; Quality</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Food Safety Issue 9</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Packaging</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Storage &amp; Dist.</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2.5 py-0.5 rounded font-medium">Agents &amp; Brokers</span>
-                        </div>
-
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Globally recognised food-safety standards spanning manufacturing, packaging, storage, and distribution. We prepare your team, documentation, and quality management systems so the certification audit succeeds smoothly.
+                          Globally recognised food-safety standards spanning manufacturing, packaging, storage, and distribution. We prepare your team, documentation, and quality management systems for certification.
                         </p>
+
+                        <div className="pt-2">
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Scope Standards:</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {['Food Safety Issue 9', 'Packaging', 'Storage & Dist.', 'Agents & Brokers'].map((item, idx) => (
+                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium">
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="mt-8 pt-4 border-t border-border/60 flex flex-wrap justify-between items-center gap-2">
+                      <div className="mt-6 pt-4 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
                         <a
                           href="https://www.foodchainid.com/brcgs-certifications/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
                           <span>Scheme details</span>
                           <span>↗</span>
@@ -3284,8 +3293,8 @@ export default function App() {
 
                 {/* Scheme 4: FSSC 22000 & ISO Systems */}
                 <ScrollReveal direction="up" delay={0.1}>
-                  <div className="bg-white border border-border p-8 rounded-xl flex flex-col md:flex-row justify-between items-center gap-8 shadow-sm hover:border-[#B68A35]/40 transition-all">
-                    <div className="space-y-4 max-w-3xl">
+                  <div className="bg-white border border-[#E5E5E5] p-6 md:p-8 rounded-2xl flex flex-col lg:flex-row justify-between lg:items-center gap-6 shadow-2xs hover:border-[#B68A35]/50 transition-all">
+                    <div className="space-y-3 max-w-3xl">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
                           <ShieldCheck size={12} className="text-emerald-600" />
@@ -3300,17 +3309,17 @@ export default function App() {
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
                         Full certification support for FSSC 22000 (Version 6), ISO 22000 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), and ISO 45001 (Occupational Health &amp; Safety). Build an integrated management framework that meets international buyer requirements.
                       </p>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <span className="text-xs bg-mist text-primary border border-border px-3 py-1 rounded font-medium">FSSC 22000 v6</span>
-                        <span className="text-xs bg-mist text-primary border border-border px-3 py-1 rounded font-medium">ISO 22000</span>
-                        <span className="text-xs bg-mist text-primary border border-border px-3 py-1 rounded font-medium">ISO 9001</span>
-                        <span className="text-xs bg-mist text-primary border border-border px-3 py-1 rounded font-medium">ISO 14001</span>
-                        <span className="text-xs bg-mist text-primary border border-border px-3 py-1 rounded font-medium">ISO 45001</span>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {['FSSC 22000 v6', 'ISO 22000', 'ISO 9001', 'ISO 14001', 'ISO 45001'].map((iso, idx) => (
+                          <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-3 py-1 rounded-md font-mono font-bold">
+                            {iso}
+                          </span>
+                        ))}
                       </div>
                     </div>
                     <button
                       onClick={() => handleOpenBooking('compliance', 'Inquiry: FSSC 22000 / ISO Management Systems')}
-                      className="bg-primary hover:bg-forest-green text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded transition-all cursor-pointer shrink-0 inline-flex items-center gap-2"
+                      className="bg-primary hover:bg-[#1f4d3a] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-md transition-all cursor-pointer shrink-0 inline-flex items-center justify-center gap-2 shadow-2xs active:scale-[0.98] w-full sm:w-auto"
                     >
                       <span>Inquire ISO &amp; FSSC</span>
                       <ArrowRight size={14} />
