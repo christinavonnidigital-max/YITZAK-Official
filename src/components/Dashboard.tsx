@@ -5,6 +5,7 @@ import { User } from 'firebase/auth';
 import { collection, query, where, getDocs, updateDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db, logout, getAccessToken, OperationType, handleFirestoreError } from '../lib/firebase';
 import { Booking } from '../types';
+import { toIsoDate } from '../utils/time';
 import AdministrativeView from './AdministrativeView';
 
 interface DashboardProps {
@@ -90,7 +91,11 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
           }
           const refSnapshot = await getDocs(qRefs);
           refSnapshot.forEach(docSnap => {
-            refsList.push({ id: docSnap.id, ...(docSnap.data() as any) });
+            const data = docSnap.data() as any;
+            // Cloud rows use serverTimestamp(); normalize createdAt to an ISO
+            // string so the descending sort below and AdministrativeView's
+            // `new Date(ref.createdAt)` render a real date rather than NaN/Invalid Date.
+            refsList.push({ id: docSnap.id, ...data, createdAt: toIsoDate(data.createdAt) });
           });
 
           // Merge local clicks belonging to this user

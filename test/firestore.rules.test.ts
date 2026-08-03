@@ -276,6 +276,12 @@ describe('bookings — legitimate operations', () => {
     await seed('bookings', 'x1', seededBooking());
     await assertFails(getDoc(doc(attackerDb(), 'bookings', 'x1')));
   });
+
+  test('non-boolean isGuestBooking is rejected on create', async () => {
+    await assertFails(
+      setDoc(doc(userDb(), 'bookings', 'gb1'), validBooking({ isGuestBooking: 'x'.repeat(1000) })),
+    );
+  });
 });
 
 // ---- inquiries --------------------------------------------------------------
@@ -387,6 +393,18 @@ describe('referral_clicks', () => {
 
   test('cannot log a referral click for another user', async () => {
     await assertFails(setDoc(doc(userDb(), 'referral_clicks', 'ref_spoof'), validClick({ userId: 'victim' })));
+  });
+
+  test('cannot log a referral click under another person\'s email', async () => {
+    await assertFails(
+      setDoc(doc(userDb(), 'referral_clicks', 'ref_email'), validClick({ userEmail: 'someone-else@example.com' })),
+    );
+  });
+
+  test('referral ghost field is rejected', async () => {
+    await assertFails(
+      setDoc(doc(userDb(), 'referral_clicks', 'ref_ghost'), validClick({ isAdmin: true })),
+    );
   });
 
   test('anonymous referral write is rejected', async () => {

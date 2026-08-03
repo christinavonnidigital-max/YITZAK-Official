@@ -53,6 +53,7 @@ service cloud.firestore {
         && (data.pillar == "Compliance Mastery" || data.pillar == "Strategic Training" || data.pillar == "Institutional Advisory")
         && (data.status == "pending" || data.status == "confirmed" || data.status == "cancelled")
         && (!data.keys().contains('notes') || (data.notes is string && data.notes.size() <= 5000))
+        && (!data.keys().contains('isGuestBooking') || data.isGuestBooking is bool)
         // calendarEventId may be absent, explicitly null (no calendar sync yet),
         // or a bounded string once a Google Calendar event has been created.
         && (!data.keys().contains('calendarEventId')
@@ -184,7 +185,12 @@ service cloud.firestore {
     // (e.g. id, coordinateEnrollment) are permitted; the sensitive fields are
     // bounded so a caller cannot bloat the document.
     function isValidReferralClick(data) {
-      return data.userId is string && data.userId.size() <= 128
+      return data.keys().hasOnly([
+          'id', 'referralCode', 'schemeName', 'targetUrl', 'trackingUrl',
+          'userId', 'userName', 'userEmail', 'userCompany', 'userPhone',
+          'coordinateEnrollment', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.userId is string && data.userId.size() <= 128
         && data.status is string && data.status.size() <= 50
         && (!data.keys().contains('referralCode') || (data.referralCode is string && data.referralCode.size() <= 128))
         && (!data.keys().contains('schemeName') || (data.schemeName is string && data.schemeName.size() <= 256))
@@ -207,6 +213,11 @@ service cloud.firestore {
         && isValidId(clickId)
         && isValidReferralClick(incoming())
         && incoming().userId == request.auth.uid
+        // Bind the contact identity to the caller: OutboundBridgeModal always
+        // logs the signed-in user's own email, so a verified user cannot log a
+        // referral under someone else's email. This check lives on the create
+        // rule (not isValidReferralClick) so admin triage updates still pass.
+        && incoming().userEmail == request.auth.token.email
         && incoming().createdAt == request.time;
 
       // Only admin can change status (triage) or delete.
