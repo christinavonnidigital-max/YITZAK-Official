@@ -113,8 +113,13 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
         refsList = localRefs.filter((r: any) => r.userId === currentUser.uid);
       }
 
-      // Sort by creation date descending
-      refsList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      // Sort by creation date descending. Missing/invalid timestamps sort last
+      // (treated as oldest) instead of floating to the top as "newest".
+      const ms = (v: any) => {
+        const t = new Date(v).getTime();
+        return isNaN(t) ? 0 : t;
+      };
+      refsList.sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
       setReferrals(refsList);
     } catch (err: any) {
       console.error(err);

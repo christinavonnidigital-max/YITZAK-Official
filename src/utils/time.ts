@@ -8,8 +8,10 @@
  * boundary keeps rendering and sorting consistent regardless of the source.
  */
 export function toIsoDate(value: unknown): string {
+  // Missing value: return empty rather than fabricating "now", so a row with no
+  // timestamp is not treated as the newest record or shown with a false date.
   if (value === null || value === undefined || value === '') {
-    return new Date().toISOString();
+    return '';
   }
   // Firestore Timestamp (duck-typed to avoid importing the SDK type here).
   if (typeof value === 'object' && typeof (value as { toDate?: unknown }).toDate === 'function') {
