@@ -78,6 +78,13 @@ service cloud.firestore {
       allow create: if isEmailVerified()
         && isValidId(bookingId)
         && isValidBookingShape(incoming())
+        // Ghost-field guard: reject any key not in the Booking schema
+        // (e.g. a spoofed `isAdmin: true`). Keeps spec Payload 4 honest.
+        && incoming().keys().hasOnly([
+          'userId', 'userName', 'userEmail', 'date', 'timeSlot', 'pillar',
+          'notes', 'status', 'isGuestBooking', 'calendarEventId',
+          'createdAt', 'updatedAt'
+        ])
         && (isAdmin() || ownsBooking(incoming()))
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time
@@ -139,6 +146,10 @@ service cloud.firestore {
       // clients to backdate or forward-date submissions at will.
       allow create: if isValidId(inquiryId)
         && isValidInquiry(incoming())
+        // Ghost-field guard: only the known Inquiry keys may be written.
+        && incoming().keys().hasOnly([
+          'name', 'email', 'subject', 'message', 'userId', 'status', 'createdAt'
+        ])
         && incoming().createdAt == request.time;
 
       // Only admin can read, update, or delete inquiries
@@ -147,11 +158,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Validation helper for NewsletterSubscription entity
+    // Validation helper for NewsletterSubscription entity.
+    // Public form, so it stays unauthenticated — but the payload is locked
+    // down: known keys only, a well-formed email, a server-controlled
+    // timestamp (no client backdating), and a constrained status enum.
     function isValidNewsletterSubscription(data) {
-      return data.email is string && data.email.size() <= 128
-        && data.createdAt is string
-        && (!data.keys().contains('status') || (data.status is string && data.status.size() <= 50));
+      return data.keys().hasOnly(['email', 'createdAt', 'status'])
+        && data.email is string && data.email.size() <= 128
+        && data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && data.createdAt == request.time
+        && data.status in ['active', 'unsubscribed'];
     }
 
     // Rules for newsletter_subscriptions collection

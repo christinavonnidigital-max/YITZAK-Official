@@ -15,7 +15,7 @@ import {
   Sparkles,
   RefreshCw
 } from 'lucide-react';
-import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db, getAccessToken } from '../lib/firebase';
 import { sendWelcomeNewsletterEmail } from '../lib/googleApi';
 
@@ -119,7 +119,7 @@ export default function NewsletterSubscribersManager() {
       const docId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const subObj = {
         email: cleanEmail,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
         status: 'active'
       };
       await setDoc(doc(db, 'newsletter_subscriptions', docId), subObj);
