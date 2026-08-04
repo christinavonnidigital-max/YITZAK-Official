@@ -424,14 +424,15 @@ export default function App() {
 
     try {
       const docId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+      // Dynamically import setDoc/doc. createdAt uses a server timestamp so the
+      // Firestore rules can reject client-controlled/backdated submissions.
+      const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
       const subscriptionData = {
         email: emailVal,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
         status: 'active'
       };
-
-      // Dynamically import setDoc/doc
-      const { doc, setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, 'newsletter_subscriptions', docId), subscriptionData);
 
       // Attempt immediate Gmail API dispatch if token available

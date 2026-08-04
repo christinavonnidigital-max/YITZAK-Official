@@ -41,11 +41,13 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // Validation helper for Booking entity
-    function isValidBooking(data) {
-      return data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid
+    // Shape/enum/size validation for a Booking entity. Deliberately does NOT
+    // assert caller identity — that is enforced separately (see ownsBooking)
+    // so the admin branch can validate bookings owned by *other* users.
+    function isValidBookingShape(data) {
+      return data.userId is string && data.userId.size() <= 128
         && data.userName is string && data.userName.size() <= 128
-        && data.userEmail is string && data.userEmail.size() <= 128 && data.userEmail == request.auth.token.email
+        && data.userEmail is string && data.userEmail.size() <= 128
         && data.date is string && data.date.size() == 10
         && data.timeSlot is string && data.timeSlot.size() <= 30
         // Pillars were renamed to match the company profile. Legacy values are still
@@ -59,7 +61,18 @@ service cloud.firestore {
             || data.pillar == "Institutional Advisory")
         && (data.status == "pending" || data.status == "confirmed" || data.status == "cancelled")
         && (!data.keys().contains('notes') || (data.notes is string && data.notes.size() <= 5000))
-        && (!data.keys().contains('calendarEventId') || (data.calendarEventId is string && data.calendarEventId.size() <= 256));
+        && (!data.keys().contains('isGuestBooking') || data.isGuestBooking is bool)
+        // calendarEventId may be absent, explicitly null (no calendar sync yet),
+        // or a bounded string once a Google Calendar event has been created.
+        && (!data.keys().contains('calendarEventId')
+            || data.calendarEventId == null
+            || (data.calendarEventId is string && data.calendarEventId.size() <= 256));
+    }
+
+    // Caller-identity lock: the booking must belong to the signed-in caller.
+    function ownsBooking(data) {
+      return data.userId == request.auth.uid
+        && data.userEmail == request.auth.token.email;
     }
 
     // Rules for bookings collection
@@ -67,11 +80,21 @@ service cloud.firestore {
       // Get/List: Allow if user owns the booking or is the admin
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
 
-      // Create: user must be verified, ID must be valid, and payload must be valid booking
-      // On creation, status must be pending (non-admins cannot self-confirm)
-      allow create: if isEmailVerified() 
-        && isValidId(bookingId) 
-        && isValidBooking(incoming())
+      // Create: user must be verified, ID must be valid, and payload must be a
+      // valid booking. Non-admins may only create bookings they own and must
+      // start in "pending" (they cannot self-confirm); admins may create on
+      // behalf of any user.
+      allow create: if isEmailVerified()
+        && isValidId(bookingId)
+        && isValidBookingShape(incoming())
+        // Ghost-field guard: reject any key not in the Booking schema
+        // (e.g. a spoofed `isAdmin: true`). Keeps spec Payload 4 honest.
+        && incoming().keys().hasOnly([
+          'userId', 'userName', 'userEmail', 'date', 'timeSlot', 'pillar',
+          'notes', 'status', 'isGuestBooking', 'calendarEventId',
+          'createdAt', 'updatedAt'
+        ])
+        && (isAdmin() || ownsBooking(incoming()))
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time
         && (incoming().status == "pending" || isAdmin());
@@ -80,13 +103,15 @@ service cloud.firestore {
       // We partition updates into named "Actions" using || as requested in Fortress rules.
       allow update: if isEmailVerified()
         && (
-          // Admin can update anything as long as the new data is valid
-          (isAdmin() && isValidBooking(incoming()) && incoming().updatedAt == request.time)
+          // Admin can update any user's booking as long as the new data is
+          // shape-valid. isValidBookingShape intentionally omits the identity
+          // lock so the admin is not forced to own the document.
+          (isAdmin() && isValidBookingShape(incoming()) && incoming().updatedAt == request.time)
           ||
-          // User updates: must be valid booking, owner of the document, and cannot alter immutable fields
+          // User updates: must be shape-valid, owner of the document, and cannot alter immutable fields
           (
             resource.data.userId == request.auth.uid
-            && isValidBooking(incoming())
+            && isValidBookingShape(incoming())
             && incoming().userId == existing().userId
             && incoming().userEmail == existing().userEmail
             && incoming().pillar == existing().pillar
@@ -130,6 +155,10 @@ service cloud.firestore {
       // clients to backdate or forward-date submissions at will.
       allow create: if isValidId(inquiryId)
         && isValidInquiry(incoming())
+        // Ghost-field guard: only the known Inquiry keys may be written.
+        && incoming().keys().hasOnly([
+          'name', 'email', 'subject', 'message', 'userId', 'status', 'createdAt'
+        ])
         && incoming().createdAt == request.time;
 
       // Only admin can read, update, or delete inquiries
@@ -138,11 +167,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Validation helper for NewsletterSubscription entity
+    // Validation helper for NewsletterSubscription entity.
+    // Public form, so it stays unauthenticated — but the payload is locked
+    // down: known keys only, a well-formed email, a server-controlled
+    // timestamp (no client backdating), and a constrained status enum.
     function isValidNewsletterSubscription(data) {
-      return data.email is string && data.email.size() <= 128
-        && data.createdAt is string
-        && (!data.keys().contains('status') || (data.status is string && data.status.size() <= 50));
+      return data.keys().hasOnly(['email', 'createdAt', 'status'])
+        && data.email is string && data.email.size() <= 128
+        && data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && data.createdAt == request.time
+        && data.status in ['active', 'unsubscribed'];
     }
 
     // Rules for newsletter_subscriptions collection
@@ -153,6 +187,71 @@ service cloud.firestore {
 
       // Only admin can read, update, or delete subscriptions
       allow read, update, delete: if isAdmin();
+    }
+
+    // Shape/size validation for a referral-click log. Extra descriptive keys
+    // (e.g. id, coordinateEnrollment) are permitted; the sensitive fields are
+    // bounded so a caller cannot bloat the document.
+    function isValidReferralClick(data) {
+      return data.keys().hasOnly([
+          'id', 'referralCode', 'schemeName', 'targetUrl', 'trackingUrl',
+          'userId', 'userName', 'userEmail', 'userCompany', 'userPhone',
+          'coordinateEnrollment', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.userId is string && data.userId.size() <= 128
+        && data.status is string && data.status.size() <= 50
+        && (!data.keys().contains('referralCode') || (data.referralCode is string && data.referralCode.size() <= 128))
+        && (!data.keys().contains('schemeName') || (data.schemeName is string && data.schemeName.size() <= 256))
+        && (!data.keys().contains('targetUrl') || (data.targetUrl is string && data.targetUrl.size() <= 2048))
+        && (!data.keys().contains('trackingUrl') || (data.trackingUrl is string && data.trackingUrl.size() <= 2048))
+        && (!data.keys().contains('userName') || (data.userName is string && data.userName.size() <= 128))
+        && (!data.keys().contains('userEmail') || (data.userEmail is string && data.userEmail.size() <= 128))
+        && (!data.keys().contains('userCompany') || (data.userCompany is string && data.userCompany.size() <= 256))
+        && (!data.keys().contains('userPhone') || (data.userPhone is string && data.userPhone.size() <= 64));
+    }
+
+    // Rules for referral_clicks collection.
+    // OutboundBridgeModal only writes here for signed-in users (guest clicks
+    // stay in localStorage), so a create must be owned by the caller and
+    // server-timestamped. Admins review/triage via AdministrativeView.
+    match /referral_clicks/{clickId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isEmailVerified()
+        && isValidId(clickId)
+        && isValidReferralClick(incoming())
+        && incoming().userId == request.auth.uid
+        // Bind the contact identity to the caller: OutboundBridgeModal always
+        // logs the signed-in user's own email, so a verified user cannot log a
+        // referral under someone else's email. This check lives on the create
+        // rule (not isValidReferralClick) so admin triage updates still pass.
+        && incoming().userEmail == request.auth.token.email
+        && incoming().createdAt == request.time;
+
+      // Only admin can change status (triage) or delete.
+      allow update: if isAdmin() && isValidReferralClick(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Shape/size validation for a whitelisted-guest entry.
+    function isValidWhitelistGuest(data) {
+      return data.email is string && data.email.size() <= 128
+        && (!data.keys().contains('name') || (data.name is string && data.name.size() <= 128))
+        && (!data.keys().contains('status') || (data.status is string && data.status.size() <= 30))
+        && (!data.keys().contains('role') || (data.role is string && data.role.size() <= 30))
+        && (!data.keys().contains('notes') || (data.notes is string && data.notes.size() <= 2000));
+    }
+
+    // Rules for whitelisted_guests collection.
+    // This is an authorization/allow-list, so only the admin may read or mutate
+    // it (managed via WhitelistManager). Guest self-registration continues to
+    // use the client's localStorage fallback exactly as it does today — those
+    // writes originate from unauthenticated mock-user flows and were already
+    // denied by the catch-all, so admin-only rules introduce no regression.
+    match /whitelisted_guests/{guestId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin() && isValidWhitelistGuest(incoming());
+      allow delete: if isAdmin();
     }
   }
 }

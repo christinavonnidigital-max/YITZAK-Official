@@ -15,9 +15,10 @@ import {
   Sparkles,
   RefreshCw
 } from 'lucide-react';
-import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db, getAccessToken } from '../lib/firebase';
 import { sendWelcomeNewsletterEmail } from '../lib/googleApi';
+import { toIsoDate } from '../utils/time';
 
 interface Subscriber {
   id: string;
@@ -47,7 +48,9 @@ export default function NewsletterSubscribersManager() {
         list.push({
           id: docSnap.id,
           email: data.email || docSnap.id,
-          createdAt: data.createdAt || new Date().toISOString(),
+          // serverTimestamp() rows come back as Firestore Timestamps; normalize
+          // to an ISO string so the table/CSV render a real date, not "Invalid Date".
+          createdAt: toIsoDate(data.createdAt),
           status: data.status || 'active',
           lastEmailSentAt: data.lastEmailSentAt
         });
@@ -119,7 +122,7 @@ export default function NewsletterSubscribersManager() {
       const docId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const subObj = {
         email: cleanEmail,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
         status: 'active'
       };
       await setDoc(doc(db, 'newsletter_subscriptions', docId), subObj);
