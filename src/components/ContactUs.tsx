@@ -38,9 +38,9 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
 
   const subjects = [
     'Regulatory Compliance',
-    'Strategic Employee Training',
-    'Institutional Advisory & Audits',
-    'FSSC/ISO Certification',
+    'Professional Training',
+    'Consulting & Advisory',
+    'Certification Support',
     'General Support Inquiry'
   ];
 

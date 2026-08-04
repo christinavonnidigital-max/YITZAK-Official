@@ -48,7 +48,15 @@ service cloud.firestore {
         && data.userEmail is string && data.userEmail.size() <= 128 && data.userEmail == request.auth.token.email
         && data.date is string && data.date.size() == 10
         && data.timeSlot is string && data.timeSlot.size() <= 30
-        && (data.pillar == "Compliance Mastery" || data.pillar == "Strategic Training" || data.pillar == "Institutional Advisory")
+        // Pillars were renamed to match the company profile. Legacy values are still
+        // accepted so bookings created before the rename remain updatable.
+        // Remove the legacy names once existing booking documents are migrated.
+        && (data.pillar == "Professional Training"
+            || data.pillar == "Consulting & Advisory"
+            || data.pillar == "Certification Support"
+            || data.pillar == "Compliance Mastery"
+            || data.pillar == "Strategic Training"
+            || data.pillar == "Institutional Advisory")
         && (data.status == "pending" || data.status == "confirmed" || data.status == "cancelled")
         && (!data.keys().contains('notes') || (data.notes is string && data.notes.size() <= 5000))
         && (!data.keys().contains('calendarEventId') || (data.calendarEventId is string && data.calendarEventId.size() <= 256));

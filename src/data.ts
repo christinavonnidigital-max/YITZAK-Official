@@ -2,39 +2,39 @@ import { Pillar } from './types';
 
 export const PILLARS: Pillar[] = [
   {
-    id: 'compliance',
-    title: 'Compliance Mastery',
-    icon: 'verified',
-    description: 'Navigate global regulatory standards with absolute certainty. We provide the audit and strategy tools required for high-stakes certification.',
-    details: [
-      'Regulatory compliance auditing',
-      'High-stakes certification readiness',
-      'Global standards mapping',
-      'Risk assessment & governance'
-    ]
-  },
-  {
     id: 'training',
-    title: 'Strategic Training',
+    title: 'Professional Training',
     icon: 'psychology',
-    description: 'Upskilling your workforce through curated academic rigor. Our training modules are built on real-world institutional case studies.',
+    description: 'Practical, instructor-led training that builds knowledge, competence, and confidence across management systems and industry disciplines. This is the heart of our business.',
     details: [
-      'Curated case-study analysis',
-      'Workforce upskilling pathways',
-      'Bespoke masterclasses',
-      'Competence audits & training records'
+      'Yitzak professional programmes',
+      'Selected FoodChain ID Academy courses',
+      'Corporate & in-house delivery',
+      'Customised learning pathways'
     ]
   },
   {
-    id: 'advisory',
-    title: 'Institutional Advisory',
+    id: 'consulting',
+    title: 'Consulting & Advisory',
     icon: 'account_balance',
-    description: 'Long-term advisory for board-level stakeholders. Strengthening institutional governance through structured performance audits.',
+    description: 'Practical guidance that helps organisations implement learning and improve systems, processes, and performance.',
     details: [
-      'Board-level advisory',
-      'Institutional governance mapping',
-      'Structured performance auditing',
-      'Risk mitigation roadmaps'
+      'Gap assessments & readiness reviews',
+      'Management system development',
+      'Documentation & records support',
+      'Internal audits & process reviews'
+    ]
+  },
+  {
+    id: 'certification',
+    title: 'Certification Support',
+    icon: 'verified',
+    description: 'Guidance from scope review and audit readiness through to a valid certificate, delivered through our partnership with FoodChain ID and its accredited certification bodies.',
+    details: [
+      'Scope review & scheme selection',
+      'Audit readiness & pre-assessment',
+      'Evidence & documentation preparation',
+      'Certificate maintenance & renewal'
     ]
   }
 ];
@@ -53,50 +53,50 @@ export const APPROACH_STEPS = [
   {
     num: 1,
     title: 'Discover',
-    description: 'Immersive analysis of existing institutional frameworks and pain points.'
+    description: 'Understand your organisation, objectives, and challenges.'
   },
   {
     num: 2,
     title: 'Assess',
-    description: 'Quantitative gap analysis against international compliance benchmarks.'
+    description: 'Evaluate current capability, systems, and opportunities.'
   },
   {
     num: 3,
     title: 'Develop',
-    description: 'Custom-engineered training and compliance roadmap creation.'
+    description: 'Design practical solutions aligned with your goals.'
   },
   {
     num: 4,
     title: 'Deliver',
-    description: 'On-site and digital execution of structured consulting programmes.'
+    description: 'Implement training, consulting, and improvement programmes.'
   },
   {
     num: 5,
     title: 'Improve',
-    description: 'Continuous evaluation cycles to ensure performance remains elite.'
+    description: 'Support continual improvement through ongoing partnership.'
   }
 ];
 
 export const TRAINING_STREAMS = [
   {
     id: 'academy',
-    kicker: 'Internal Frameworks',
-    title: 'YITZAK Academy',
-    description: 'The premier stream for proprietary institutional logic and governance mastery.',
+    kicker: 'Yitzak Programme',
+    title: 'Yitzak Professional Programmes',
+    description: 'Our own courses, developed around practical industry needs and delivered by experienced facilitators. This is where our expertise lives.',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBfnxvXuGPx63Lf1_RPo8IPYqlbrT3deq2nG0muPHTDo4DvgOdSbGDLY6Jig2NuIHx-xgFTgd8n9cD67OVCI3GvInFhFkVXkweGrOZ5x7D1hiCFujE73VJhOsenrc030dj8oPgB3ukyKK3-2yHDhLcxTxnqtyhQqxN4jamKcPUda7DuifKZ-xaVl0SOO_maJcBNDQB3QcNju64L2kFue_Wk2-uM0JqO7m2Vs1bO4XH6FQsWPlTLdtPp'
   },
   {
     id: 'foodchain',
-    kicker: 'Global Partnership',
-    title: 'FoodChain ID',
-    description: 'Specialised compliance and safety training powered by the global leader in supply chain integrity.',
+    kicker: 'FoodChain ID Course',
+    title: 'FoodChain ID Academy',
+    description: 'A trusted partner in our portfolio, giving clients access to a respected global range of internationally recognised courses.',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCRdGCDAe5YayYKRjrTKFPBBR34JK_ulUgp6xz92eP-ZLP_smKlwfpScfIMKskDmqHo8bauCn3H3Y7EQVCm-fnO8yx4KvSKLKvjtRqruQeK0ZCTbcbBZTrfE0e--1qcGAJemAaxNM2AqkgXMQqpCP8QNyHJt2gsePt8FoEwX6FxKsKlFOU2mn9DUi_XjHzSdK5XwVGfP0oIHdoKBmUVhW3z3zQ-gt2orjmK-eyebsqSQTizEdDsk1rm'
   },
   {
     id: 'bespoke',
-    kicker: 'Custom Engagement',
-    title: 'In-House Bespoke',
-    description: 'Tailor-made training solutions designed to integrate seamlessly into your existing organizational ecosystem.',
+    kicker: 'Yitzak Programme',
+    title: 'Corporate Learning Solutions',
+    description: 'Customised training built around your people and systems, delivered on-site, virtually, or blended.',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAI27jv44rFeAk1JqmBzl_g9S9LnQSaJ63OrNThYydyww8_P2twtoLG5_O5YcG5mFHiVDovtbLAfXitx53TEDVT3a8-FAlangFMnCuBnOY2ukQ-Zdy8_6aa4BSHPjsWa2cxyc_DmyOLiAWjk5NJMbNJLkZYZ1ex0is_xFU4Vapx2jwuSAwK1hrMet2MbqsRubC83_cADvpiAKuMy0ORV02S8xwv6EaR9CJNEtEa-ggcsFx8hGadvSXe'
   }
 ];

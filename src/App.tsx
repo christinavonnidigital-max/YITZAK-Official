@@ -838,7 +838,7 @@ export default function App() {
                     </h1>
 
                     <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed max-w-xl mb-6">
-                      YITZAK is an elite institutional consulting and professional training firm. We deliver industry-leading advisory and accredited standards implementation to help organisations reduce operational risk and achieve long-term compliance excellence.
+                      Yitzak is a professional training and capability-development company. We help organisations across many industries develop capable people, strengthen management systems, and meet industry requirements with confidence, through professional training, consulting, and certification support.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 pt-2 mb-6">
@@ -1253,7 +1253,7 @@ export default function App() {
                     <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Markets &amp; Sectors</span>
                     <h2 className="font-serif text-3xl md:text-[44px] text-primary font-bold">Industries We Serve</h2>
                     <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                      We tailor compliance and technical standards to the operational realities of your sector across Southern Africa.
+                      We support organisations across diverse sectors, adapting our training, consulting, and certification solutions to the realities of each operating environment.
                     </p>
                     <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
                   </div>
@@ -2770,7 +2770,7 @@ export default function App() {
                       <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold block">Exclusive Technical Partnership</span>
                       <h3 className="font-serif text-xl md:text-2xl font-bold">FoodChain ID &amp; Yitzak Consulting</h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        Yitzak operates in direct partnership with FoodChain ID to deliver accredited food safety certifications and official academy training across Southern Africa.
+                        As an Official FoodChain ID Partner, Yitzak gives clients access to selected FoodChain ID Academy courses, with certification delivered through FoodChain ID and its accredited certification bodies.
                       </p>
                     </div>
                     <a
@@ -2800,7 +2800,7 @@ export default function App() {
                     <div>
                       <h1 className="font-serif text-2xl font-bold text-[#023625]">YITZAK INSTITUTIONAL ADVISORY</h1>
                       <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Official Training Portfolio &amp; Syllabus Record</p>
-                      <p className="text-[10px] text-gray-500 mt-1">In direct technical partnership with FoodChain ID Academy</p>
+                      <p className="text-[10px] text-gray-500 mt-1">Official FoodChain ID Partner</p>
                     </div>
                     <div className="text-right text-[10px] font-mono text-gray-500">
                       <p>Issued: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
@@ -3046,7 +3046,7 @@ export default function App() {
                   Internationally Recognised Certification
                 </h1>
                 <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl mx-auto">
-                  In direct technical partnership with <strong className="text-primary font-bold">FoodChain ID</strong>, Yitzak Consulting guides food manufacturers, agricultural producers, and supply chain operators across Southern Africa from initial scoping and audit readiness through to valid, accredited certificates.
+                  As an Official <strong className="text-primary font-bold">FoodChain ID</strong> Partner, Yitzak guides organisations from scope review and audit readiness through to a valid certificate, issued by FoodChain ID and its accredited certification bodies.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2 no-print">
                   <button
@@ -3087,7 +3087,7 @@ export default function App() {
                     <div>
                       <h1 className="font-serif text-2xl font-bold text-[#023625]">YITZAK INSTITUTIONAL ADVISORY</h1>
                       <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Accredited Certification Schemes &amp; Standards Directory</p>
-                      <p className="text-[10px] text-gray-500 mt-1">In direct technical partnership with FoodChain ID</p>
+                      <p className="text-[10px] text-gray-500 mt-1">Official FoodChain ID Partner</p>
                     </div>
                     <div className="text-right text-[10px] font-mono text-gray-500">
                       <p>Issued: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
@@ -3334,7 +3334,7 @@ export default function App() {
                       <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold block">Exclusive Technical Partnership</span>
                       <h3 className="font-serif text-xl md:text-2xl font-bold">FoodChain ID &amp; Yitzak Consulting</h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        Yitzak operates in direct partnership with FoodChain ID to deliver accredited food safety certifications and official academy training across Southern Africa.
+                        As an Official FoodChain ID Partner, Yitzak gives clients access to selected FoodChain ID Academy courses, with certification delivered through FoodChain ID and its accredited certification bodies.
                       </p>
                     </div>
                     <a
@@ -3400,7 +3400,7 @@ export default function App() {
               <span className="font-serif font-extrabold text-2xl tracking-wider text-white uppercase block mb-3">YITZAK</span>
             </div>
             <p className="font-body-md text-sm opacity-80 max-w-md leading-relaxed">
-              In direct technical partnership with FoodChain ID. Providing institutional consulting, accredited certification readiness, and professional food safety training across Southern Africa.
+              Official FoodChain ID Partner. Professional training, consulting, and certification support that helps organisations develop capable people and strengthen management systems.
             </p>
             <p className="font-sans text-xs opacity-60 pt-2">
               © 2026 YITZAK. All rights reserved.

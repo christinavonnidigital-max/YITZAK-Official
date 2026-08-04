@@ -154,7 +154,7 @@ export function exportPortfolioToPDF(categories: Category[]) {
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(65, 73, 68); // Soft charcoal
-  const introText = 'This document presents the comprehensive, structured professional training portfolio of YITZAK Institutional Advisory, including our exclusive partnership curricula with FoodChain ID Academy. Our programs are designed to build tangible capability, ensure watertight global compliance, and empower corporate workforces through masterclass-level training programs.';
+  const introText = 'This document presents the professional training portfolio of Yitzak, including selected FoodChain ID Academy courses available through our partnership. Our programmes are designed to build practical capability, support compliance with internationally aligned standards, and develop capable people across your organisation.';
   const introLines = doc.splitTextToSize(introText, contentWidth);
   doc.text(introLines, marginX, y);
   
