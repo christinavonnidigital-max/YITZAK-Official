@@ -17,7 +17,7 @@ export const PILLARS: Pillar[] = [
     id: 'consulting',
     title: 'Consulting & Advisory',
     icon: 'account_balance',
-    description: 'Practical guidance that helps organisations implement learning and improve systems, processes, and performance.',
+    description: 'Practical guidance to implement learning, improve systems, and strengthen overall organisational performance.',
     details: [
       'Gap assessments & readiness reviews',
       'Management system development',
@@ -29,12 +29,24 @@ export const PILLARS: Pillar[] = [
     id: 'certification',
     title: 'Certification Support',
     icon: 'verified',
-    description: 'Guidance from scope review and audit readiness through to a valid certificate, delivered through our partnership with FoodChain ID and its accredited certification bodies.',
+    description: 'Accredited, internationally recognised schemes guiding organisations from audit readiness through to certification, delivered through our partnership with FoodChain ID.',
     details: [
       'Scope review & scheme selection',
       'Audit readiness & pre-assessment',
       'Evidence & documentation preparation',
       'Certificate maintenance & renewal'
+    ]
+  },
+  {
+    id: 'process_implementation',
+    title: 'Business Process Implementation',
+    icon: 'settings_suggest',
+    description: 'Helping organisations build operational foundations from zero, spanning process mapping, governance, and extension into HR, Accounting, and operational systems.',
+    details: [
+      'Phase 1: Process Mapping & Risk Controls',
+      'Phase 1: ISO/FSSC System Readiness',
+      'Phase 2: Operational Efficiency & Lean Audits',
+      'HR, Accounting & Operational Systems Integration'
     ]
   }
 ];

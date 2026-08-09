@@ -22,7 +22,7 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
-  const isAdminUser = currentUser.email === 'christinagumpo@gmail.com';
+  const isAdminUser = Boolean(currentUser.email && (currentUser.email === 'admin@yitzak.co.za' || currentUser.email.endsWith('@yitzak.co.za')));
 
   const formatTimeSlotSAST = (slot: string) => {
     if (!slot) return '';

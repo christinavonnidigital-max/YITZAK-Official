@@ -181,19 +181,19 @@ export default function AdministrativeView({
         <div>
           <h5 className="font-serif text-sm text-primary font-bold">YITZAK Root Administrative Console</h5>
           <p className="text-xs text-ash mt-1">
-            Viewing complete global business database. Access level: <strong>Root Administrator (christinagumpo@gmail.com)</strong>.
+            Viewing complete global business database. Access level: <strong>Root Administrator (admin@yitzak.co.za)</strong>.
           </p>
         </div>
       </div>
 
       {/* Primary Navigation Tabs */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-border overflow-x-auto no-scrollbar scrollbar-none whitespace-nowrap -mx-1 sm:mx-0 px-1 sm:px-0">
         <button
           onClick={() => {
             setActiveTab('consultations');
             setSearch('');
           }}
-          className={`flex-1 md:flex-initial px-6 py-4 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
+          className={`shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
             activeTab === 'consultations' 
               ? 'border-primary text-primary bg-primary/[0.02]' 
               : 'border-transparent text-ash hover:text-primary hover:bg-mist'
@@ -207,7 +207,7 @@ export default function AdministrativeView({
             setActiveTab('referrals');
             setSearch('');
           }}
-          className={`flex-1 md:flex-initial px-6 py-4 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
+          className={`shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
             activeTab === 'referrals' 
               ? 'border-primary text-primary bg-primary/[0.02]' 
               : 'border-transparent text-ash hover:text-primary hover:bg-mist'
@@ -221,7 +221,7 @@ export default function AdministrativeView({
             setActiveTab('whitelist');
             setSearch('');
           }}
-          className={`flex-1 md:flex-initial px-6 py-4 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
+          className={`shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
             activeTab === 'whitelist' 
               ? 'border-primary text-primary bg-primary/[0.02]' 
               : 'border-transparent text-ash hover:text-primary hover:bg-mist'
@@ -235,7 +235,7 @@ export default function AdministrativeView({
             setActiveTab('newsletter');
             setSearch('');
           }}
-          className={`flex-1 md:flex-initial px-6 py-4 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
+          className={`shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
             activeTab === 'newsletter' 
               ? 'border-primary text-primary bg-primary/[0.02]' 
               : 'border-transparent text-ash hover:text-primary hover:bg-mist'
@@ -253,22 +253,22 @@ export default function AdministrativeView({
       ) : activeTab === 'consultations' ? (
         <>
           {/* Corporate Dashboard Statistics panel for Bookings */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border border-border bg-surface p-4">
-            <div className="bg-white p-4 border border-border text-center">
-              <span className="text-[9px] font-mono font-bold text-ash uppercase tracking-widest block">Total Bookings</span>
-              <span className="font-serif text-primary text-xl font-bold mt-2 block">{totalRequests}</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border border-border bg-surface p-2.5 sm:p-4 rounded-xl">
+            <div className="bg-white p-2.5 sm:p-4 border border-border text-center overflow-hidden rounded-lg">
+              <span className="text-[8px] sm:text-[9px] font-mono font-bold text-ash uppercase tracking-wider block leading-tight break-words">Total Bookings</span>
+              <span className="font-serif text-primary text-lg sm:text-xl font-bold mt-1 sm:mt-2 block">{totalRequests}</span>
             </div>
-            <div className="bg-white p-4 border border-border text-center">
-              <span className="text-[9px] font-mono font-bold text-secondary uppercase tracking-widest block">Pending Review</span>
-              <span className="font-serif text-secondary text-xl font-bold mt-2 block">{pendingCount}</span>
+            <div className="bg-white p-2.5 sm:p-4 border border-border text-center overflow-hidden rounded-lg">
+              <span className="text-[8px] sm:text-[9px] font-mono font-bold text-secondary uppercase tracking-wider block leading-tight break-words">Pending Review</span>
+              <span className="font-serif text-secondary text-lg sm:text-xl font-bold mt-1 sm:mt-2 block">{pendingCount}</span>
             </div>
-            <div className="bg-white p-4 border border-border text-center">
-              <span className="text-[9px] font-mono font-bold text-primary uppercase tracking-widest block">Approved Sessions</span>
-              <span className="font-serif text-primary text-xl font-bold mt-2 block">{confirmedCount}</span>
+            <div className="bg-white p-2.5 sm:p-4 border border-border text-center overflow-hidden rounded-lg">
+              <span className="text-[8px] sm:text-[9px] font-mono font-bold text-primary uppercase tracking-wider block leading-tight break-words">Approved Sessions</span>
+              <span className="font-serif text-primary text-lg sm:text-xl font-bold mt-1 sm:mt-2 block">{confirmedCount}</span>
             </div>
-            <div className="bg-white p-4 border border-border text-center">
-              <span className="text-[9px] font-mono font-bold text-ash uppercase tracking-widest block">Cancelled Cases</span>
-              <span className="font-serif text-ash text-xl font-bold mt-2 block">{cancelledCount}</span>
+            <div className="bg-white p-2.5 sm:p-4 border border-border text-center overflow-hidden rounded-lg">
+              <span className="text-[8px] sm:text-[9px] font-mono font-bold text-ash uppercase tracking-wider block leading-tight break-words">Cancelled Cases</span>
+              <span className="font-serif text-ash text-lg sm:text-xl font-bold mt-1 sm:mt-2 block">{cancelledCount}</span>
             </div>
           </div>
 
@@ -338,7 +338,7 @@ export default function AdministrativeView({
                         </div>
                         <div className="flex items-center gap-2">
                           <Calendar size={13} className="text-ash shrink-0" />
-                          <span className="font-medium">{booking.date} — {formatTimeSlotSAST(booking.timeSlot)}</span>
+                          <span className="font-medium">{booking.date} | {formatTimeSlotSAST(booking.timeSlot)}</span>
                         </div>
                       </div>
 
@@ -397,22 +397,22 @@ export default function AdministrativeView({
       ) : (
         <>
           {/* Corporate Dashboard Statistics panel for Referrals */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border border-border bg-surface p-4">
-            <div className="bg-white p-4 border border-border text-center">
-              <span className="text-[9px] font-mono font-bold text-ash uppercase tracking-widest block">Total Referrals</span>
-              <span className="font-serif text-primary text-xl font-bold mt-2 block">{totalReferrals}</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border border-border bg-surface p-2.5 sm:p-4 rounded-xl">
+            <div className="bg-white p-2.5 sm:p-4 border border-border text-center overflow-hidden rounded-lg">
+              <span className="text-[8px] sm:text-[9px] font-mono font-bold text-ash uppercase tracking-wider block leading-tight break-words">Total Referrals</span>
+              <span className="font-serif text-primary text-lg sm:text-xl font-bold mt-1 sm:mt-2 block">{totalReferrals}</span>
             </div>
-            <div className="bg-white p-4 border border-border text-center">
-              <span className="text-[9px] font-mono font-bold text-[#B68A35] uppercase tracking-widest block">Manual Followup Req.</span>
-              <span className="font-serif text-[#B68A35] text-xl font-bold mt-2 block">{refPendingCount}</span>
+            <div className="bg-white p-2.5 sm:p-4 border border-border text-center overflow-hidden rounded-lg">
+              <span className="text-[8px] sm:text-[9px] font-mono font-bold text-[#B68A35] uppercase tracking-wider block leading-tight break-words">Manual Followup Req.</span>
+              <span className="font-serif text-[#B68A35] text-lg sm:text-xl font-bold mt-1 sm:mt-2 block">{refPendingCount}</span>
             </div>
-            <div className="bg-white p-4 border border-border text-center">
-              <span className="text-[9px] font-mono font-bold text-primary uppercase tracking-widest block">Registered with Partner</span>
-              <span className="font-serif text-primary text-xl font-bold mt-2 block">{refCompleteCount}</span>
+            <div className="bg-white p-2.5 sm:p-4 border border-border text-center overflow-hidden rounded-lg">
+              <span className="text-[8px] sm:text-[9px] font-mono font-bold text-primary uppercase tracking-wider block leading-tight break-words">Registered with Partner</span>
+              <span className="font-serif text-primary text-lg sm:text-xl font-bold mt-1 sm:mt-2 block">{refCompleteCount}</span>
             </div>
-            <div className="bg-white p-4 border border-border text-center">
-              <span className="text-[9px] font-mono font-bold text-ash uppercase tracking-widest block">Logged Link Clicks</span>
-              <span className="font-serif text-ash text-xl font-bold mt-2 block">{refClickOnlyCount}</span>
+            <div className="bg-white p-2.5 sm:p-4 border border-border text-center overflow-hidden rounded-lg">
+              <span className="text-[8px] sm:text-[9px] font-mono font-bold text-ash uppercase tracking-wider block leading-tight break-words">Logged Link Clicks</span>
+              <span className="font-serif text-ash text-lg sm:text-xl font-bold mt-1 sm:mt-2 block">{refClickOnlyCount}</span>
             </div>
           </div>
 

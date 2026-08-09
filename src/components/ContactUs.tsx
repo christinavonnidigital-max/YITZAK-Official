@@ -126,68 +126,64 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-[1280px] mx-auto w-full">
       {/* Sidebar - Corporate Context & Addresses */}
-      <div className="lg:col-span-5 bg-primary text-white p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden border border-[#023625] shadow-xl rounded-2xl">
-        {/* Background decorative badge */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-secondary opacity-5 rounded-full blur-2xl transform translate-x-20 -translate-y-20"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary opacity-5 rounded-full blur-2xl transform -translate-x-20 translate-y-20"></div>
-
+      <div className="lg:col-span-5 bg-[#132B22] text-white p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden border border-[#1E4235] shadow-xl rounded-2xl">
         <div className="relative z-10 space-y-8">
           <div>
-            <span className="text-xs uppercase tracking-widest text-[#7d5800] font-bold block mb-2 font-mono">
+            <span className="text-xs uppercase tracking-widest text-[#DFC181] font-bold block mb-2 font-mono">
               Get In Touch
             </span>
-            <h3 className="font-display-hero text-headline-md font-bold mb-4 text-surface-container-lowest">
+            <h3 className="font-display-hero text-headline-md font-bold mb-4 text-white">
               Let's build competence and compliance together.
             </h3>
-            <p className="text-sm text-ash leading-relaxed max-w-sm">
+            <p className="text-sm text-slate-200/90 leading-relaxed max-w-sm">
               Developing Competence. Enabling Compliance. Reach out to our head office in Randburg, South Africa.
             </p>
           </div>
 
-          <div className="space-y-6 pt-4 border-t border-white/10">
+          <div className="space-y-6 pt-4 border-t border-white/15">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary rounded-lg">
+              <div className="p-3 bg-white/10 border border-white/15 shrink-0 text-[#DFC181] rounded-lg">
                 <Building2 size={18} />
               </div>
               <div>
-                <h4 className="text-xs uppercase tracking-wider text-[#7d5800] font-bold font-mono">
+                <h4 className="text-xs uppercase tracking-wider text-[#DFC181] font-bold font-mono">
                   Head Office
                 </h4>
-                <p className="text-sm mt-1 text-[#E5E5E5] font-semibold">
+                <p className="text-sm mt-1 text-white font-semibold">
                   359 Surrey Avenue, Randburg
                 </p>
-                <p className="text-xs text-ash">
+                <p className="text-xs text-slate-300">
                   South Africa
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary rounded-lg">
+              <div className="p-3 bg-white/10 border border-white/15 shrink-0 text-[#DFC181] rounded-lg">
                 <Mail size={18} />
               </div>
               <div>
-                <h4 className="text-xs uppercase tracking-wider text-[#7d5800] font-bold font-mono">
+                <h4 className="text-xs uppercase tracking-wider text-[#DFC181] font-bold font-mono">
                   Official Email Enquiries
                 </h4>
-                <p className="text-sm mt-1 text-[#E5E5E5] font-mono">
+                <p className="text-sm mt-1 text-white font-mono">
                   info@yitzak.co.za
                 </p>
-                <p className="text-xs text-ash font-mono">
+                <p className="text-xs text-slate-300 font-mono">
                   cgumpo@yitzak.co.za
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/5 border border-white/10 shrink-0 text-secondary rounded-lg">
+              <div className="p-3 bg-white/10 border border-white/15 shrink-0 text-[#DFC181] rounded-lg">
                 <ShieldCheck size={18} />
               </div>
               <div>
-                <h4 className="text-xs uppercase tracking-wider text-[#7d5800] font-bold font-mono">
+                <h4 className="text-xs uppercase tracking-wider text-[#DFC181] font-bold font-mono">
                   Institutional Mission
                 </h4>
-                <p className="text-xs text-ash mt-1 italic">
+                <p className="text-xs text-slate-300 mt-1 italic">
                   Developing Competence. Enabling Compliance.
                 </p>
               </div>
@@ -195,12 +191,12 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
           </div>
         </div>
 
-        <div className="relative z-10 mt-12 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-ash font-mono">
+        <div className="relative z-10 mt-12 pt-6 border-t border-white/15 flex items-center justify-between text-xs text-slate-300 font-mono">
           <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
             Advisory Desk Available
           </span>
-          <span>YITZAK Institutional</span>
+          <span className="text-[#DFC181]">YITZAK Institutional</span>
         </div>
       </div>
 

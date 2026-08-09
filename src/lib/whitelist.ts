@@ -24,20 +24,28 @@ export interface WhitelistedGuest {
 // document ID, so a repeated address silently overwrites the earlier entry.
 export const INITIAL_WHITELIST_SEEDS: Omit<WhitelistedGuest, 'id'>[] = [
   {
-    email: 'christinavonnidigital@gmail.com',
-    name: 'Christina Vonn Digital (Primary)',
+    email: 'admin@yitzak.co.za',
+    name: 'Yitzak Admin Desk',
     status: 'active',
     role: 'admin',
     addedAt: new Date().toISOString(),
-    notes: 'Pre-registered Primary Account',
+    notes: 'Internal Verification Desk',
   },
   {
-    email: 'christinagumpo@gmail.com',
-    name: 'Christina Gumpo',
+    email: 'cgumpo@yitzak.co.za',
+    name: 'Christina Gumpo (Yitzak Institutional)',
     status: 'active',
     role: 'admin',
     addedAt: new Date().toISOString(),
-    notes: 'Pre-registered Developer Admin',
+    notes: 'Institutional Advisory Lead',
+  },
+  {
+    email: 'compliance@clientcompany.com',
+    name: 'Corporate Client Portal Lead',
+    status: 'active',
+    role: 'client',
+    addedAt: new Date().toISOString(),
+    notes: 'Institutional Client Account',
   },
   {
     email: 'guest@yitzak.co.za',
@@ -46,14 +54,6 @@ export const INITIAL_WHITELIST_SEEDS: Omit<WhitelistedGuest, 'id'>[] = [
     role: 'guest',
     addedAt: new Date().toISOString(),
     notes: 'Default Portal Guest Account',
-  },
-  {
-    email: 'admin@yitzak.co.za',
-    name: 'Yitzak Admin Desk',
-    status: 'active',
-    role: 'admin',
-    addedAt: new Date().toISOString(),
-    notes: 'Internal Verification Desk',
   }
 ];
 

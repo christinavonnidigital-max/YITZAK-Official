@@ -259,7 +259,7 @@ export default function NewsletterSubscribersManager() {
         <form onSubmit={handleAddSubscriber} className="flex flex-col sm:flex-row gap-2 pt-2">
           <input 
             type="email"
-            placeholder="Pre-register email (e.g. christinagumpo@gmail.com)"
+            placeholder="Pre-register email (e.g. subscriber@company.com)"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             className="flex-1 p-2.5 border border-border bg-mist text-xs text-charcoal outline-none focus:border-primary rounded-lg font-sans"
@@ -322,7 +322,7 @@ export default function NewsletterSubscribersManager() {
                     <td className="p-3.5 font-medium text-charcoal flex items-center gap-2">
                       <Mail className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                       <span>{sub.email}</span>
-                      {sub.email === 'christinagumpo@gmail.com' && (
+                      {sub.email.endsWith('@yitzak.co.za') && (
                         <span className="text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-mono font-bold">
                           VIP Executive
                         </span>

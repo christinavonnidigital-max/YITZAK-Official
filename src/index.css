@@ -1,81 +1,83 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Spectral:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Montserrat:wght@500;600;700;800&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Spectral", ui-serif, Georgia, serif;
-  --font-label-btn: "Inter", sans-serif;
-  --font-label-kicker: "Inter", sans-serif;
-  --font-display-hero-mobile: "Spectral", serif;
-  --font-headline-lg: "Spectral", serif;
-  --font-headline-md: "Spectral", serif;
-  --font-display-hero: "Spectral", serif;
-  --font-body-std: "Inter", sans-serif;
-  --font-body-lg: "Inter", sans-serif;
+  --font-sans: "Source Sans 3", "Source Sans Pro", "Lato", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "IBM Plex Sans", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-merriweather: "IBM Plex Sans", sans-serif;
+  --font-label-btn: "Montserrat", sans-serif;
+  --font-label-kicker: "Montserrat", sans-serif;
+  --font-display-hero-mobile: "IBM Plex Sans", sans-serif;
+  --font-headline-lg: "IBM Plex Sans", sans-serif;
+  --font-headline-md: "IBM Plex Sans", sans-serif;
+  --font-display-hero: "IBM Plex Sans", sans-serif;
+  --font-body-std: "Source Sans 3", "Source Sans Pro", sans-serif;
+  --font-body-lg: "Source Sans 3", "Source Sans Pro", sans-serif;
 
-  --color-primary: #023625;
-  --color-secondary: #7d5800;
+  --color-primary: #183A2E;
+  --color-secondary: #C49A3A;
   --color-tertiary: #4c2121;
   --color-ash: #737373;
-  --color-charcoal: #2B2B2B;
-  --color-surface: #F9F9F9;
+  --color-charcoal: #333333;
+  --color-surface: #FFFFFF;
   --color-border: #E5E5E5;
-  --color-background: #f9f9f9;
-  --color-gold-hover: #9B752C;
-  --color-secondary-container: #fdca6e;
-  --color-on-secondary-container: #775300;
+  --color-background: #FFFFFF;
+  --color-gold-hover: #A67C2E;
+  --color-secondary-container: #f7e8c3;
+  --color-on-secondary-container: #8c6a1e;
   --color-on-primary: #ffffff;
-  --color-on-background: #1a1c1c;
-  --color-on-surface: #1a1c1c;
-  --color-primary-container: #1f4d3a;
-  --color-on-primary-container: #8dbda4;
+  --color-on-background: #333333;
+  --color-on-surface: #333333;
+  --color-primary-container: #224A3B;
+  --color-on-primary-container: #a1d6d7;
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
   --color-error: #ba1a1a;
 
   --color-tertiary-fixed: #e4e2e1;
-  --color-surface-dim: #dadada;
-  --color-primary-fixed: #bceed3;
-  --color-surface-bright: #f9f9f9;
+  --color-surface-dim: #f5f5f5;
+  --color-primary-fixed: #bce9ea;
+  --color-surface-bright: #ffffff;
   --color-secondary-fixed: #ffdea9;
   --color-outline: #717973;
-  --color-surface-container-highest: #e2e2e2;
-  --color-surface-container-low: #f3f3f3;
-  --color-on-surface-variant: #414944;
-  --color-inverse-primary: #a1d1b8;
+  --color-surface-container-highest: #e5e5e5;
+  --color-surface-container-low: #f5f5f5;
+  --color-on-surface-variant: #4a524d;
+  --color-inverse-primary: #a1d6d7;
   --color-on-secondary: #ffffff;
   --color-on-tertiary: #ffffff;
   --color-inverse-on-surface: #f1f1f1;
-  --color-primary-fixed-dim: #a1d1b8;
+  --color-primary-fixed-dim: #a1d6d7;
   --color-on-primary-fixed: #002114;
   --color-tertiary-container: #454545;
-  --color-surface-container-high: #e8e8e8;
-  --color-surface-container: #eeeeee;
+  --color-surface-container-high: #eaeaea;
+  --color-surface-container: #f0f0f0;
   --color-surface-container-lowest: #ffffff;
   --color-outline-variant: #c0c9c2;
-  --color-surface-variant: #e2e2e2;
+  --color-surface-variant: #f5f5f5;
   --color-on-tertiary-fixed: #1b1c1c;
   --color-on-secondary-fixed-variant: #5e4200;
   --color-on-tertiary-fixed-variant: #474746;
   --color-secondary-fixed-dim: #f1bf64;
-  --color-on-primary-fixed-variant: #214f3c;
+  --color-on-primary-fixed-variant: #224A3B;
   --color-inverse-surface: #2f3131;
   --color-on-tertiary-container: #b4b2b2;
-  --color-surface-tint: #3a6753;
+  --color-surface-tint: #183A2E;
   --color-on-secondary-fixed: #271900;
   --color-tertiary-fixed-dim: #c8c6c5;
-  --color-antique-gold: #B68A35;
-  --color-forest-green: #1F4D3A;
-  --color-mist: #F9F9F9;
+  --color-antique-gold: #C49A3A;
+  --color-forest-green: #183A2E;
+  --color-mist: #F5F5F5;
   --color-hairline: #E5E5E5;
 
   --radius-none: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
-  --radius-3xl: 0px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
 }
 
 /* Custom styling from target design */
@@ -89,42 +91,73 @@
   transform: translateY(0);
 }
 .technical-badge {
-  background-color: rgba(31, 77, 58, 0.1);
-  color: #1F4D3A;
+  background-color: rgba(15, 61, 62, 0.1);
+  color: #0F3D3E;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 4px;
 }
+/* Brand Style Sheet Button Specifications */
 .btn-primary {
-  background-color: #B68A35;
-  color: white;
-  font-family: 'Inter', sans-serif;
+  background-color: #C49A3A;
+  color: #FFFFFF;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
   padding: 12px 24px;
   border-radius: 4px;
-  display: inline-block;
-  transition: opacity 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.25s ease, transform 0.15s ease;
+  cursor: pointer;
 }
 .btn-primary:hover {
-  opacity: 0.9;
+  background-color: #A67C2E;
 }
 .btn-secondary {
-  background-color: transparent;
-  color: #1F4D3A;
-  border: 1px solid #1F4D3A;
-  font-family: 'Inter', sans-serif;
+  background-color: #0F3D3E;
+  color: #FFFFFF;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
   padding: 12px 24px;
   border-radius: 4px;
-  display: inline-block;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.25s ease, opacity 0.25s ease;
+  cursor: pointer;
 }
 .btn-secondary:hover {
-  background-color: #1F4D3A;
-  color: white;
+  background-color: #0b2e2f;
+  opacity: 0.95;
+}
+.btn-outline {
+  background-color: transparent;
+  color: #0F3D3E;
+  border: 2px solid #0F3D3E;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 22px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  cursor: pointer;
+}
+.btn-outline:hover {
+  background-color: #0F3D3E;
+  color: #FFFFFF;
 }
 .card-consultancy {
   background-color: white;
@@ -209,6 +242,15 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #7d5800;
+}
+
+/* Hide scrollbars for horizontal snap carousels */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* ==========================================================================

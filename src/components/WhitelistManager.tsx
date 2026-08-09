@@ -12,7 +12,12 @@ import {
   Database,
   Mail,
   User,
-  ShieldAlert
+  ShieldAlert,
+  ExternalLink,
+  TrendingUp,
+  Tag,
+  Check,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   WhitelistedGuest, 
@@ -22,15 +27,29 @@ import {
   checkEmailWhitelist 
 } from '../lib/whitelist';
 
+export interface ReferralClickLog {
+  id: string;
+  targetUrl: string;
+  trackingUrl: string;
+  userEmail: string;
+  createdAt: string;
+  status?: 'Click-Out' | 'In Contact' | 'Enrolled' | 'Ineligible';
+  notes?: string;
+}
+
 interface WhitelistManagerProps {
   onClose?: () => void;
   onSelectGuest?: (guest: WhitelistedGuest) => void;
 }
 
 export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistManagerProps) {
+  const [activeTab, setActiveTab] = useState<'whitelist' | 'referrals'>('whitelist');
   const [guests, setGuests] = useState<WhitelistedGuest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Referral Tracking state
+  const [referrals, setReferrals] = useState<ReferralClickLog[]>([]);
   
   // New Guest Form
   const [newEmail, setNewEmail] = useState('');
@@ -56,9 +75,51 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
     }
   };
 
+  const loadReferrals = () => {
+    try {
+      const stored = localStorage.getItem('yitzak_referral_clicks');
+      if (stored) {
+        setReferrals(JSON.parse(stored));
+      } else {
+        // Sample default data for demonstration
+        const mock: ReferralClickLog[] = [
+          {
+            id: 'ref_01',
+            targetUrl: 'https://www.foodchainid.com/academy/fssc22000-v6-lead-auditor',
+            trackingUrl: 'https://www.foodchainid.com/academy/fssc22000-v6-lead-auditor?utm_source=yitzak&utm_medium=partner_referral',
+            userEmail: 'qa.lead@foodmfg.co.za',
+            createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+            status: 'Enrolled',
+            notes: 'Reconciled via FoodChain ID monthly statement - FSSC Lead Auditor'
+          },
+          {
+            id: 'ref_02',
+            targetUrl: 'https://www.foodchainid.com/services/brcgs-food-safety-v9',
+            trackingUrl: 'https://www.foodchainid.com/services/brcgs-food-safety-v9?utm_source=yitzak&utm_medium=partner_referral',
+            userEmail: 'cgumpo@yitzak.co.za',
+            createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+            status: 'In Contact',
+            notes: 'Yitzak Advisory assisting with group enrolment quote'
+          }
+        ];
+        setReferrals(mock);
+      }
+    } catch (err) {
+      console.error('Error loading referrals:', err);
+    }
+  };
+
   useEffect(() => {
     loadWhitelist();
+    loadReferrals();
   }, []);
+
+  const updateReferralStatus = (id: string, newStatus: ReferralClickLog['status'], notes?: string) => {
+    const updated = referrals.map(r => r.id === id ? { ...r, status: newStatus, notes: notes ?? r.notes } : r);
+    setReferrals(updated);
+    localStorage.setItem('yitzak_referral_clicks', JSON.stringify(updated));
+    setMessage({ type: 'success', text: 'Updated partner referral conversion status.' });
+  };
 
   const handleAddGuest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,35 +244,73 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
         </div>
       )}
 
-      {/* Quick Add Presets */}
-      <div className="bg-surface/50 border border-border/80 p-3.5 rounded-xl space-y-2">
+      {/* Top Section Navigation Tabs */}
+      <div className="flex border-b border-border gap-2 text-xs font-bold font-mono">
+        <button
+          type="button"
+          onClick={() => setActiveTab('whitelist')}
+          className={`pb-2 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'whitelist'
+              ? 'border-emerald-600 text-emerald-900 font-bold'
+              : 'border-transparent text-ash hover:text-charcoal'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          Portal Whitelist ({guests.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('referrals')}
+          className={`pb-2 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'referrals'
+              ? 'border-emerald-600 text-emerald-900 font-bold'
+              : 'border-transparent text-ash hover:text-charcoal'
+          }`}
+        >
+          <TrendingUp className="w-3.5 h-3.5 text-amber-600" />
+          Partner Referrals &amp; Enrolments ({referrals.length})
+        </button>
+      </div>
+
+      {activeTab === 'whitelist' ? (
+        <>
+          {/* Quick Add Presets */}
+          <div className="bg-surface/50 border border-border/80 p-3.5 rounded-xl space-y-2">
         <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-ash block">
           ⚡ 1-Click Pre-register Accounts
         </span>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => handleQuickAdd('christinagumpo@gmail.com', 'Christina Gumpo', 'admin')}
-            className="text-xs bg-white hover:bg-emerald-50 border border-border hover:border-emerald-300 text-charcoal hover:text-emerald-900 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+            onClick={() => handleQuickAdd('cgumpo@yitzak.co.za', 'Christina Gumpo (Yitzak Institutional)', 'admin')}
+            className="text-xs bg-white hover:bg-emerald-50 border border-border hover:border-emerald-300 text-charcoal hover:text-emerald-900 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer font-bold"
           >
             <Sparkles className="w-3 h-3 text-amber-500" />
-            + christinagumpo@gmail.com
+            + cgumpo@yitzak.co.za
           </button>
           <button
             type="button"
-            onClick={() => handleQuickAdd('christinavonnidigital@gmail.com', 'Christina Vonn Digital', 'admin')}
+            onClick={() => handleQuickAdd('admin@yitzak.co.za', 'Yitzak Admin Desk', 'admin')}
             className="text-xs bg-white hover:bg-emerald-50 border border-border hover:border-emerald-300 text-charcoal hover:text-emerald-900 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Sparkles className="w-3 h-3 text-amber-500" />
-            + christinavonnidigital@gmail.com
+            + admin@yitzak.co.za
           </button>
           <button
             type="button"
-            onClick={() => handleQuickAdd('christinagumpo@gmail.com', 'Christina Gumpo', 'admin')}
+            onClick={() => handleQuickAdd('compliance@clientcompany.com', 'Client Compliance Lead', 'vip')}
             className="text-xs bg-white hover:bg-emerald-50 border border-border hover:border-emerald-300 text-charcoal hover:text-emerald-900 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Sparkles className="w-3 h-3 text-amber-500" />
-            + christinagumpo@gmail.com
+            + compliance@clientcompany.com
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickAdd('auditor@foodchainid.com', 'FoodChain ID Auditor', 'vip')}
+            className="text-xs bg-white hover:bg-emerald-50 border border-border hover:border-emerald-300 text-charcoal hover:text-emerald-900 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <Sparkles className="w-3 h-3 text-amber-500" />
+            + auditor@foodchainid.com
           </button>
           <button
             type="button"
@@ -435,6 +534,102 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
           </div>
         </div>
       </div>
+        </>
+      ) : (
+        /* Partner Referral & Enrolment Conversion Tracker Tab */
+        <div className="space-y-4">
+          <div className="bg-amber-50/60 border border-amber-200/80 p-4 rounded-xl space-y-2">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-amber-700" />
+              <h4 className="text-xs font-bold text-amber-900 font-mono uppercase tracking-wider">
+                How Partner Enrolment Verification Works
+              </h4>
+            </div>
+            <p className="text-xs text-amber-900/80 leading-relaxed">
+              When visitors click FoodChain ID links on Yitzak, we automatically attach referral parameters (<code>utm_source=yitzak</code>). Because FoodChain ID is an external site, actual course completions &amp; fee conversions are verified via <strong>FoodChain ID’s monthly partner statements</strong> or direct Yitzak consultation requests. Admins can reconcile enrolment statuses below.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between border-b border-border pb-2">
+            <span className="text-xs font-bold text-primary font-mono uppercase tracking-wider">
+              Outbound Referral Logs &amp; Conversion Status
+            </span>
+            <span className="text-xs text-ash font-mono">
+              {referrals.length} clicks recorded
+            </span>
+          </div>
+
+          <div className="border border-border rounded-xl overflow-hidden divide-y divide-border bg-white">
+            {referrals.length === 0 ? (
+              <div className="p-8 text-center text-xs text-ash">
+                No outbound referral clicks logged yet. When visitors click FoodChain ID links on the site, they will appear here automatically.
+              </div>
+            ) : (
+              referrals.map((ref) => (
+                <div key={ref.id} className="p-4 space-y-3 hover:bg-surface/40 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-primary">
+                          {ref.userEmail}
+                        </span>
+                        <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
+                          ref.status === 'Enrolled'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : ref.status === 'In Contact'
+                            ? 'bg-amber-100 text-amber-800 border-amber-300'
+                            : 'bg-slate-100 text-slate-700 border-slate-300'
+                        }`}>
+                          {ref.status || 'Click-Out'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-mono text-ash truncate max-w-lg">
+                        Target URL: <span className="text-charcoal">{ref.targetUrl}</span>
+                      </p>
+                    </div>
+
+                    <span className="text-[10px] text-ash font-mono shrink-0">
+                      {new Date(ref.createdAt).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}
+                    </span>
+                  </div>
+
+                  {ref.notes && (
+                    <p className="text-xs text-ash/90 bg-mist p-2 rounded border border-border/50 text-left">
+                      <strong>Reconciliation Notes:</strong> {ref.notes}
+                    </p>
+                  )}
+
+                  {/* Admin Quick Status Update Actions */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[10px] font-mono text-ash uppercase font-bold">Set Status:</span>
+                    <button
+                      type="button"
+                      onClick={() => updateReferralStatus(ref.id, 'Enrolled', 'Enrolment confirmed via FoodChain ID monthly statement.')}
+                      className="px-2 py-1 text-[11px] bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-mono font-bold cursor-pointer transition-colors"
+                    >
+                      ✓ Mark Enrolled
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateReferralStatus(ref.id, 'In Contact', 'Yitzak Advisory team assisting with registration quote.')}
+                      className="px-2 py-1 text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded font-mono font-bold cursor-pointer transition-colors"
+                    >
+                      ⏱ In Contact
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateReferralStatus(ref.id, 'Ineligible', 'User did not complete course registration.')}
+                      className="px-2 py-1 text-[11px] bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 rounded font-mono font-bold cursor-pointer transition-colors"
+                    >
+                      ✗ Not Enrolled
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

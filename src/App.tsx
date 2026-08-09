@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Shield, BookOpen, Download, HelpCircle, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronRight, ChevronDown, Globe, Mail, Share2, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, Lightbulb, AlertCircle, ShieldCheck, Database, Clock, Send, User, Printer } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
+import { Shield, BookOpen, Download, HelpCircle, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Share2, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, Lightbulb, AlertCircle, ShieldCheck, Database, Clock, Send, User, Printer, Workflow, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
 import BookingModal from './components/BookingModal';
@@ -10,10 +10,11 @@ import ContactUs from './components/ContactUs';
 import ComplianceCalculator from './components/ComplianceCalculator';
 import FAQSection from './components/FAQSection';
 import WhitelistManager from './components/WhitelistManager';
+import KnowledgeCenter from './components/KnowledgeCenter';
 import { checkEmailWhitelist, preRegisterGuest } from './lib/whitelist';
-import { exportPortfolioToCSV, exportPortfolioToPDF } from './utils/portfolioExport';
+import { exportPortfolioToCSV, exportPortfolioToPDF, triggerSmartPrint, exportCapabilitySheetPDF } from './utils/portfolioExport';
 import ScrollReveal from './components/ScrollReveal';
-import OutboundBridgeModal from './components/OutboundBridgeModal';
+import BreadcrumbNav from './components/BreadcrumbNav';
 import { PILLARS } from './data';
 
 const portfolioCategories = [
@@ -166,6 +167,18 @@ const portfolioCategories = [
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+
+  // Parallax Scroll Effect for Core Service Cards
+  const servicesSectionRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress: servicesScrollProgress } = useScroll({
+    target: servicesSectionRef,
+    offset: ["start end", "end start"]
+  });
+
+  const parallaxY1 = useTransform(servicesScrollProgress, [0, 1], [15, -15]);
+  const parallaxY2 = useTransform(servicesScrollProgress, [0, 1], [35, -35]);
+  const parallaxY3 = useTransform(servicesScrollProgress, [0, 1], [15, -15]);
+  const parallaxY4 = useTransform(servicesScrollProgress, [0, 1], [35, -35]);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedPillarId, setSelectedPillarId] = useState('compliance');
@@ -174,7 +187,9 @@ export default function App() {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMsg, setNotificationMsg] = useState('');
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge'>('home');
+  const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(true);
   const [activeSidebarSection, setActiveSidebarSection] = useState('food-safety');
   const [selectedBookingNotes, setSelectedBookingNotes] = useState('');
   const [portalGuestName, setPortalGuestName] = useState('');
@@ -183,59 +198,182 @@ export default function App() {
   const [verifyingWhitelist, setVerifyingWhitelist] = useState(false);
   const [showWhitelistModal, setShowWhitelistModal] = useState(false);
 
-  const handleVerifyAndEnterPortal = async () => {
-    if (!portalGuestName.trim() || !portalGuestEmail.trim()) {
-      triggerNotification('Please enter both your name and email to proceed.');
+  // Portal Authentication Flow State
+  const [portalMode, setPortalMode] = useState<'work_email' | 'guest'>('work_email');
+  const [portalWorkEmail, setPortalWorkEmail] = useState('');
+  const [portalAuthMethod, setPortalAuthMethod] = useState<'password' | 'code'>('code');
+  const [portalPassword, setPortalPassword] = useState('');
+  const [portalOneTimeCode, setPortalOneTimeCode] = useState('');
+  const [portalCodeSent, setPortalCodeSent] = useState(false);
+  const [portalSendingCode, setPortalSendingCode] = useState(false);
+  const [portalLoginError, setPortalLoginError] = useState<string | null>(null);
+  const [portalGuestWorkEmail, setPortalGuestWorkEmail] = useState('');
+  const [activeApproachPhase, setActiveApproachPhase] = useState<number>(0);
+
+  const isBusinessEmail = (email: string): boolean => {
+    if (!email || !email.includes('@')) return false;
+    const parts = email.trim().toLowerCase().split('@');
+    if (parts.length !== 2) return false;
+    const domain = parts[1];
+    if (!domain || !domain.includes('.') || domain.endsWith('.')) return false;
+
+    const freeDomains = [
+      'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+      'icloud.com', 'aol.com', 'mail.com', 'protonmail.com', 
+      'gmx.com', 'zoho.com', 'yandex.com', 'live.com', 
+      'msn.com', 'me.com', 'sbcglobal.net', 'comcast.net',
+      'rediffmail.com', 'ymail.com', 'cox.net', 'googlemail.com'
+    ];
+
+    return !freeDomains.includes(domain);
+  };
+
+  const handlePortalWorkEmailLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setPortalLoginError(null);
+
+    const emailToValidate = portalWorkEmail.trim();
+    if (!emailToValidate) {
+      setPortalLoginError("Please enter your work email address.");
       return;
     }
-    if (!portalGuestEmail.includes('@')) {
-      triggerNotification('Please enter a valid email address.');
+
+    if (!isBusinessEmail(emailToValidate)) {
+      setPortalLoginError("Please use your registered work email to access the portal.");
+      return;
+    }
+
+    if (portalAuthMethod === 'password') {
+      if (!portalPassword.trim()) {
+        setPortalLoginError("Please enter your account password.");
+        return;
+      }
+    } else if (portalAuthMethod === 'code') {
+      if (!portalCodeSent) {
+        setPortalSendingCode(true);
+        setTimeout(() => {
+          setPortalSendingCode(false);
+          setPortalCodeSent(true);
+          triggerNotification(`✓ One-time verification code sent to ${emailToValidate}`);
+        }, 700);
+        return;
+      }
+
+      if (!portalOneTimeCode.trim()) {
+        setPortalLoginError("Please enter the 6-digit one-time code sent to your email.");
+        return;
+      }
+    }
+
+    setVerifyingWhitelist(true);
+    try {
+      const check = await checkEmailWhitelist(emailToValidate);
+      let displayName = emailToValidate.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
+      displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+
+      if (check.isWhitelisted && check.guest?.name && check.guest.name !== 'Authorized Guest') {
+        displayName = check.guest.name;
+      } else if (!check.isWhitelisted) {
+        await preRegisterGuest(
+          emailToValidate,
+          displayName,
+          'Registered via Secure Work Email Portal',
+          'client',
+          'active'
+        );
+      }
+
+      const mockUser: FirebaseUser = {
+        uid: 'work_' + Date.now(),
+        displayName,
+        email: emailToValidate,
+        photoURL: null,
+        emailVerified: true,
+        isAnonymous: false
+      } as unknown as FirebaseUser;
+
+      setCurrentUser(mockUser);
+      triggerNotification(`✓ Access Granted. Welcome ${displayName}.`);
+    } catch (err) {
+      console.error('Portal login error:', err);
+      const displayName = emailToValidate.split('@')[0];
+      const mockUser: FirebaseUser = {
+        uid: 'work_' + Date.now(),
+        displayName,
+        email: emailToValidate,
+        photoURL: null,
+        emailVerified: true,
+        isAnonymous: false
+      } as unknown as FirebaseUser;
+      setCurrentUser(mockUser);
+      triggerNotification(`✓ Access Granted. Welcome ${displayName}.`);
+    } finally {
+      setVerifyingWhitelist(false);
+    }
+  };
+
+  const handlePortalGuestAccess = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setPortalLoginError(null);
+
+    const name = portalGuestName.trim();
+    const email = portalGuestWorkEmail.trim();
+
+    if (!name) {
+      setPortalLoginError("Please enter your full name.");
+      return;
+    }
+
+    if (!email) {
+      setPortalLoginError("Please enter your work email address.");
+      return;
+    }
+
+    if (!isBusinessEmail(email)) {
+      setPortalLoginError("Please use your registered work email to access the portal.");
       return;
     }
 
     setVerifyingWhitelist(true);
     try {
-      const check = await checkEmailWhitelist(portalGuestEmail);
-      let displayName = portalGuestName.trim();
+      const check = await checkEmailWhitelist(email);
+      let displayName = name;
 
-      if (check.isWhitelisted) {
-        if (check.guest?.name && check.guest.name !== 'Authorized Guest') {
-          displayName = check.guest.name;
-        }
-        triggerNotification(`✓ Whitelist Verified! Welcome ${displayName}.`);
-      } else {
+      if (check.isWhitelisted && check.guest?.name && check.guest.name !== 'Authorized Guest') {
+        displayName = check.guest.name;
+      } else if (!check.isWhitelisted) {
         await preRegisterGuest(
-          portalGuestEmail, 
-          portalGuestName, 
-          'Pre-registered on Guest Portal Entry', 
-          'guest', 
+          email,
+          name,
+          'Guest Access Session Entry',
+          'guest',
           'active'
         );
-        triggerNotification(`✓ Guest email registered! Welcome ${displayName || portalGuestEmail.trim()}.`);
       }
 
       const mockUser: FirebaseUser = {
         uid: 'guest_' + Date.now(),
         displayName,
-        email: portalGuestEmail.trim(),
+        email,
         photoURL: null,
-        emailVerified: false,
-        isAnonymous: true
+        emailVerified: true,
+        isAnonymous: false
       } as unknown as FirebaseUser;
 
       setCurrentUser(mockUser);
-    } catch (e) {
-      console.error('Whitelist check error:', e);
+      triggerNotification(`✓ Guest access granted. Welcome ${displayName}.`);
+    } catch (err) {
+      console.error('Guest portal entry error:', err);
       const mockUser: FirebaseUser = {
         uid: 'guest_' + Date.now(),
-        displayName: portalGuestName.trim(),
-        email: portalGuestEmail.trim(),
+        displayName: name,
+        email,
         photoURL: null,
-        emailVerified: false,
-        isAnonymous: true
+        emailVerified: true,
+        isAnonymous: false
       } as unknown as FirebaseUser;
       setCurrentUser(mockUser);
-      triggerNotification('Logged in as guest.');
+      triggerNotification(`✓ Guest access granted. Welcome ${name}.`);
     } finally {
       setVerifyingWhitelist(false);
     }
@@ -258,9 +396,10 @@ export default function App() {
   const [showBriefingPreview, setShowBriefingPreview] = useState(false);
   const [resendingDigest, setResendingDigest] = useState(false);
 
-  const navigateTo = (view: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact', elementId?: string) => {
+  const navigateTo = (view: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge', elementId?: string) => {
     setCurrentView(view);
     setMobileMenuOpen(false);
+    setServicesDropdownOpen(false);
     if (elementId) {
       setTimeout(() => {
         const element = document.getElementById(elementId);
@@ -302,30 +441,46 @@ export default function App() {
     };
   }, []);
 
-  // Intercept FoodChain ID external links to capture and track partner attribution
+  // Track FoodChain ID partner links seamlessly in the background with UTM attribution
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const anchor = target.closest('a');
       if (anchor && anchor.href && anchor.href.includes('foodchainid.com')) {
         e.preventDefault();
-        const url = anchor.href;
+        const rawUrl = anchor.href;
         
-        // Extract a friendly scheme name from inner text or title
-        let schemeName = anchor.title || anchor.innerText || 'FoodChain ID Partner Scheme';
-        schemeName = schemeName.replace('↗', '').trim();
-        if (!schemeName || schemeName.length < 3) {
-          schemeName = 'FoodChain ID Academy or Scheme';
+        try {
+          const utmUrl = new URL(rawUrl);
+          if (!utmUrl.searchParams.has('utm_source')) {
+            utmUrl.searchParams.set('utm_source', 'yitzak');
+            utmUrl.searchParams.set('utm_medium', 'partner_referral');
+            utmUrl.searchParams.set('utm_campaign', 'yitzak_partner_deal');
+          }
+
+          // Silently log click locally for internal partner attribution analytics
+          const logData = {
+            id: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            targetUrl: rawUrl,
+            trackingUrl: utmUrl.toString(),
+            userEmail: currentUser?.email || 'guest@yitzak.co.za',
+            createdAt: new Date().toISOString()
+          };
+          const existingLogs = JSON.parse(localStorage.getItem('yitzak_referral_clicks') || '[]');
+          existingLogs.push(logData);
+          localStorage.setItem('yitzak_referral_clicks', JSON.stringify(existingLogs));
+
+          window.open(utmUrl.toString(), '_blank', 'noopener,noreferrer');
+        } catch (err) {
+          window.open(rawUrl, '_blank', 'noopener,noreferrer');
         }
-        
-        setReferralTarget({ url, schemeName });
       }
     };
     document.addEventListener('click', handleGlobalClick, true);
     return () => {
       document.removeEventListener('click', handleGlobalClick, true);
     };
-  }, []);
+  }, [currentUser]);
 
   // Monitor scroll for Back to Top button visibility
   useEffect(() => {
@@ -340,6 +495,18 @@ export default function App() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Prevent background body scrolling when mobile navigation drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -501,7 +668,7 @@ export default function App() {
   };
 
   return (
-    <div className="bg-surface-container-lowest text-on-surface font-sans selection:bg-antique-gold selection:text-white overflow-x-hidden min-h-screen flex flex-col">
+    <div className="bg-surface-container-lowest text-on-surface font-sans selection:bg-antique-gold selection:text-white overflow-x-clip min-h-screen flex flex-col">
       
       {/* Top Notification Toast */}
       <AnimatePresence>
@@ -519,145 +686,190 @@ export default function App() {
       </AnimatePresence>
 
       {/* TopNavBar */}
-      <header className="bg-surface-container-lowest text-secondary docked full-width top-0 sticky border-b border-outline-variant flat no shadows z-50">
-        <div className="flex justify-between items-center w-full px-4 sm:px-6 lg:px-8 py-3.5 max-w-[1400px] mx-auto gap-4">
+      <header className="bg-white/98 backdrop-blur-md text-primary sticky top-0 border-b border-border/80 shadow-xs z-50 transition-all">
+        <div className="flex justify-between items-center w-full px-4 sm:px-8 lg:px-12 py-2.5 sm:py-4 max-w-[1280px] mx-auto gap-4">
+          
+          {/* Logo */}
           <button 
             onClick={() => navigateTo('home')}
-            className="cursor-pointer text-left focus:outline-none flex items-center shrink-0 min-w-0 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+            className="cursor-pointer text-left focus:outline-none flex items-center shrink-0 transition-transform duration-200 hover:opacity-85 active:scale-98"
           >
-            <span className="font-serif font-extrabold text-xl sm:text-2xl tracking-wider text-primary dark:text-white uppercase whitespace-nowrap">YITZAK</span>
+            <span className="font-serif font-bold text-xl sm:text-2xl tracking-wider text-primary uppercase whitespace-nowrap">YITZAK</span>
           </button>
           
-          <nav className="hidden lg:flex gap-3 xl:gap-6 items-center font-sans text-xs xl:text-sm shrink-0">
-            <button 
-              onClick={() => {
-                navigateTo('home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
-                currentView === 'home' 
-                  ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
-                  : 'text-on-surface-variant hover:text-secondary'
-              }`}
-            >
-              About
-            </button>
-            <button 
-              onClick={() => navigateTo('consulting')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
-                currentView === 'consulting' 
-                  ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
-                  : 'text-on-surface-variant hover:text-secondary'
-              }`}
-            >
-              Consulting
-            </button>
-            <button 
-              onClick={() => navigateTo('training')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
-                currentView === 'training' 
-                  ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
-                  : 'text-on-surface-variant hover:text-secondary'
-              }`}
-            >
-              Training
-            </button>
-            <button 
-              onClick={() => navigateTo('certifications')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
-                currentView === 'certifications' 
-                  ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
-                  : 'text-on-surface-variant hover:text-secondary'
-              }`}
-            >
-              Certifications
-            </button>
-            <button 
-              onClick={() => navigateTo('calendar')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                currentView === 'calendar' 
-                  ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
-                  : 'text-on-surface-variant hover:text-secondary'
-              }`}
-            >
-              <Calendar size={14} className="text-[#B68A35] shrink-0" />
-              <span>Calendar</span>
-            </button>
-            <button 
-              onClick={handleDownloadWhitepaper}
-              className="text-on-surface-variant font-semibold hover:text-secondary transition-colors duration-200 cursor-pointer whitespace-nowrap"
-            >
-              Knowledge Centre
-            </button>
-            <button 
-              onClick={() => navigateTo('contact')}
-              className={`font-semibold transition-colors duration-200 cursor-pointer whitespace-nowrap ${
-                currentView === 'contact' 
-                  ? 'text-secondary border-b-2 border-secondary pb-0.5 font-bold' 
-                  : 'text-on-surface-variant hover:text-secondary'
-              }`}
-            >
-              Contact Us
-            </button>
-          </nav>
-
-          <div className="hidden lg:flex items-center gap-2.5 xl:gap-3.5 shrink-0">
-            <button 
-              onClick={() => {
-                navigateTo('home');
-                setTimeout(() => {
-                  const el = document.getElementById('portal');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-              }}
-              className={`text-xs xl:text-sm font-semibold hover:text-secondary transition-colors cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded border border-border/60 whitespace-nowrap ${
-                currentUser ? 'bg-primary/5 text-primary border-primary/30 font-bold' : 'text-on-surface-variant bg-mist/60 hover:bg-mist'
-              }`}
-            >
-              <User size={14} className="text-[#B68A35]" />
-              <span>{currentUser ? 'Client Portal' : 'Portal'}</span>
-            </button>
-
-            <button 
-              onClick={() => handleOpenBooking()}
-              className="btn-primary text-xs xl:text-sm px-3.5 xl:px-4 py-2 cursor-pointer focus:outline-none font-bold uppercase tracking-wider shrink-0 shadow-xs whitespace-nowrap"
-            >
-              Request a Consultation
-            </button>
-          </div>
-
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden text-primary cursor-pointer p-2 focus:outline-none rounded-lg hover:bg-mist/80 transition-colors"
-            aria-label="Toggle Navigation Menu"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-
-        {/* Mobile Navigation Slide-out Drawer */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <>
-              {/* Backdrop Overlay */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                onClick={() => setMobileMenuOpen(false)}
-                className="fixed inset-0 bg-black/65 backdrop-blur-sm z-50 lg:hidden"
-              />
-
-              {/* Slide-out Drawer Panel */}
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 26, stiffness: 230 }}
-                className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-[#012B1D] text-white z-50 shadow-2xl flex flex-col justify-between overflow-y-auto lg:hidden border-l border-[#02402c]"
+          {/* Desktop Right Navigation & CTA Area */}
+          <div className="flex items-center gap-6 xl:gap-8">
+            {/* Desktop Core Links */}
+            <nav className="hidden lg:flex gap-5 xl:gap-7 items-center font-serif text-sm font-medium shrink-0">
+              <button 
+                onClick={() => {
+                  navigateTo('home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`transition-colors duration-200 cursor-pointer whitespace-nowrap relative py-1 ${
+                  currentView === 'home' 
+                    ? 'text-[#B68A35] font-semibold border-b-2 border-[#B68A35] pb-0.5' 
+                    : 'text-primary hover:text-[#B68A35]'
+                }`}
               >
-                {/* Drawer Header */}
+                About
+              </button>
+
+              {/* Services Dropdown */}
+              <div 
+                className="relative"
+                onMouseEnter={() => setServicesDropdownOpen(true)}
+                onMouseLeave={() => setServicesDropdownOpen(false)}
+              >
+                <button 
+                  onClick={() => {
+                    if (currentView !== 'home') {
+                      navigateTo('home');
+                      setTimeout(() => {
+                        const el = document.getElementById('services');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
+                    } else {
+                      const el = document.getElementById('services');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className={`transition-colors duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 py-1 ${
+                    ['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView)
+                      ? 'text-[#B68A35] font-semibold border-b-2 border-[#B68A35] pb-0.5' 
+                      : 'text-primary hover:text-[#B68A35]'
+                  }`}
+                >
+                  <span>Services</span>
+                  <ChevronDown size={14} className={`text-[#B68A35] transition-transform duration-200 ${servicesDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {servicesDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-0 w-80 bg-white rounded-xl shadow-xl border border-border/80 p-2 z-50 space-y-1 mt-2"
+                    >
+                      <button
+                        onClick={() => { setServicesDropdownOpen(false); navigateTo('training'); }}
+                        className="w-full text-left p-2.5 rounded-lg hover:bg-mist transition-colors group flex items-start gap-3 cursor-pointer"
+                      >
+                        <GraduationCap size={18} className="text-[#B68A35] mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                        <div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#B68A35] transition-colors">Professional Training</div>
+                          <div className="text-[10px] text-ash">Accredited curricula &amp; workforce capability</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => { setServicesDropdownOpen(false); navigateTo('certifications'); }}
+                        className="w-full text-left p-2.5 rounded-lg hover:bg-mist transition-colors group flex items-start gap-3 cursor-pointer"
+                      >
+                        <Award size={18} className="text-[#B68A35] mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                        <div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#B68A35] transition-colors">Certification Support</div>
+                          <div className="text-[10px] text-ash">FoodChain ID accredited scheme alignment</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => { setServicesDropdownOpen(false); navigateTo('consulting'); }}
+                        className="w-full text-left p-2.5 rounded-lg hover:bg-mist transition-colors group flex items-start gap-3 cursor-pointer"
+                      >
+                        <Sliders size={18} className="text-[#B68A35] mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                        <div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#B68A35] transition-colors">Consulting &amp; Advisory</div>
+                          <div className="text-[10px] text-ash">Gap analysis, FSMS/QMS formulation &amp; audits</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => { setServicesDropdownOpen(false); navigateTo('process_implementation'); }}
+                        className="w-full text-left p-2.5 rounded-lg hover:bg-mist transition-colors group flex items-start gap-3 cursor-pointer"
+                      >
+                        <Workflow size={18} className="text-[#B68A35] mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                        <div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#B68A35] transition-colors">Business Process Implementation</div>
+                          <div className="text-[10px] text-ash">Phase 1/2 mapping, HR &amp; accounting setup</div>
+                        </div>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <button 
+                onClick={() => navigateTo('knowledge')}
+                className={`transition-colors duration-200 cursor-pointer whitespace-nowrap relative py-1 ${
+                  currentView === 'knowledge' 
+                    ? 'text-[#B68A35] font-semibold border-b-2 border-[#B68A35] pb-0.5' 
+                    : 'text-primary hover:text-[#B68A35]'
+                }`}
+              >
+                Knowledge Centre
+              </button>
+
+              <button 
+                onClick={() => navigateTo('contact')}
+                className={`transition-colors duration-200 cursor-pointer whitespace-nowrap relative py-1 ${
+                  currentView === 'contact' 
+                    ? 'text-[#B68A35] font-semibold border-b-2 border-[#B68A35] pb-0.5' 
+                    : 'text-primary hover:text-[#B68A35]'
+                }`}
+              >
+                Contact
+              </button>
+            </nav>
+
+            {/* Right Action Area (Desktop CTA + Mobile Hamburger) */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {/* Request Consultation Gold Button - Desktop/Tablet Only */}
+              <button 
+                onClick={() => handleOpenBooking()}
+                className="hidden sm:flex bg-[#B68A35] hover:bg-[#9E7528] text-white font-serif font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 items-center gap-1.5 sm:gap-2"
+              >
+                <span>Request Consultation</span>
+              </button>
+
+              {/* Mobile Hamburger Icon */}
+              <button 
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden text-primary bg-mist/80 hover:bg-mist active:scale-95 cursor-pointer p-2 sm:p-2.5 focus:outline-none rounded-xl border border-border/60 transition-all flex items-center justify-center shrink-0"
+                aria-label="Toggle Navigation Menu"
+              >
+                {mobileMenuOpen ? <X size={22} className="text-[#023625]" /> : <Menu size={22} className="text-[#023625]" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Navigation Slide-out Drawer (Outside header to avoid backdrop-blur container clipping) */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[100] lg:hidden"
+            />
+
+            {/* Slide-out Drawer Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 230 }}
+              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-[#012B1D] text-white z-[100] shadow-2xl flex flex-col justify-between overflow-y-auto lg:hidden border-l border-[#02402c] h-full"
+            >
+                {/* Drawer Top / Header */}
                 <div>
                   <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#002015]">
                     <div className="flex flex-col">
@@ -673,114 +885,168 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* Drawer Navigation Menu */}
-                  <nav className="p-6 space-y-1.5">
+                  {/* Drawer Stacked Menu Items */}
+                  <nav className="p-6 space-y-2">
+                    {/* 1. About */}
                     <button
                       onClick={() => {
                         navigateTo('home');
                         setMobileMenuOpen(false);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                         currentView === 'home'
                           ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
                           : 'text-white/80 hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <Building2 size={16} className={currentView === 'home' ? 'text-[#B68A35]' : 'text-white/60'} />
-                      <span>About Us</span>
+                      <div className="flex items-center gap-3">
+                        <Building2 size={16} className={currentView === 'home' ? 'text-[#B68A35]' : 'text-white/60'} />
+                        <span>About</span>
+                      </div>
                     </button>
 
+                    {/* 2. Services (Expandable) */}
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
+                        className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                          ['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView)
+                            ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                            : 'text-white/80 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <GraduationCap size={16} className="text-[#B68A35]" />
+                          <span>Services</span>
+                        </div>
+                        <ChevronDown 
+                          size={16} 
+                          className={`text-[#B68A35] transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180' : ''}`} 
+                        />
+                      </button>
+
+                      {/* Expanded Services Sub-Items */}
+                      <AnimatePresence>
+                        {mobileServicesOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-[#B68A35]/30 ml-4 overflow-hidden"
+                          >
+                            <button
+                              onClick={() => {
+                                navigateTo('training');
+                                setMobileMenuOpen(false);
+                              }}
+                              className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                                currentView === 'training'
+                                  ? 'bg-[#B68A35]/20 text-[#B68A35]'
+                                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <GraduationCap size={14} className="text-[#B68A35]" />
+                              <span>Professional Training</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                navigateTo('certifications');
+                                setMobileMenuOpen(false);
+                              }}
+                              className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                                currentView === 'certifications'
+                                  ? 'bg-[#B68A35]/20 text-[#B68A35]'
+                                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <Award size={14} className="text-[#B68A35]" />
+                              <span>Certification Support</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                navigateTo('consulting');
+                                setMobileMenuOpen(false);
+                              }}
+                              className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                                currentView === 'consulting'
+                                  ? 'bg-[#B68A35]/20 text-[#B68A35]'
+                                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <Sliders size={14} className="text-[#B68A35]" />
+                              <span>Consulting &amp; Advisory</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                navigateTo('process_implementation');
+                                setMobileMenuOpen(false);
+                              }}
+                              className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                                currentView === 'process_implementation'
+                                  ? 'bg-[#B68A35]/20 text-[#B68A35]'
+                                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <Workflow size={14} className="text-[#B68A35]" />
+                              <span>Business Process Implementation</span>
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* 3. Knowledge Centre */}
                     <button
                       onClick={() => {
-                        navigateTo('consulting');
+                        navigateTo('knowledge');
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                        currentView === 'consulting'
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        currentView === 'knowledge'
                           ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
                           : 'text-white/80 hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <BookOpen size={16} className={currentView === 'consulting' ? 'text-[#B68A35]' : 'text-white/60'} />
-                      <span>Consulting Services</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        navigateTo('training');
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                        currentView === 'training'
-                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
-                          : 'text-white/80 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <GraduationCap size={16} className={currentView === 'training' ? 'text-[#B68A35]' : 'text-white/60'} />
-                      <span>Training Curricula</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        navigateTo('certifications');
-                      }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                        currentView === 'certifications'
-                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
-                          : 'text-white/80 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <Award size={16} className={currentView === 'certifications' ? 'text-[#B68A35]' : 'text-white/60'} />
-                      <span>Accredited Certifications</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        navigateTo('calendar');
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                        currentView === 'calendar'
-                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
-                          : 'text-white/80 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <Calendar size={16} className="text-[#B68A35]" />
-                      <span>Training Calendar</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        handleDownloadWhitepaper();
-                      }}
-                      className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider text-white/80 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
-                    >
-                      <FileText size={16} className="text-white/60" />
+                      <FileText size={16} className={currentView === 'knowledge' ? 'text-[#B68A35]' : 'text-white/60'} />
                       <span>Knowledge Centre</span>
                     </button>
 
+                    {/* 4. Contact */}
                     <button
                       onClick={() => {
                         navigateTo('contact');
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                         currentView === 'contact'
                           ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
                           : 'text-white/80 hover:text-white hover:bg-white/5'
                       }`}
                     >
                       <Mail size={16} className={currentView === 'contact' ? 'text-[#B68A35]' : 'text-white/60'} />
-                      <span>Contact Us</span>
+                      <span>Contact</span>
                     </button>
                   </nav>
                 </div>
 
-                {/* Drawer Actions & Footer */}
-                <div className="p-6 border-t border-white/10 space-y-3 bg-[#002015]">
+                {/* Drawer Bottom Action Area (Pinned Request Consultation CTA) */}
+                <div className="p-6 border-t border-white/10 space-y-3 bg-[#002015] sticky bottom-0">
+                  {/* Standout Gold Request Consultation Button */}
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleOpenBooking();
+                    }}
+                    className="w-full text-center py-3.5 px-4 rounded-xl bg-[#B68A35] hover:bg-[#a3792b] text-[#012B1D] text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <span>Request Consultation</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       navigateTo('home');
@@ -790,23 +1056,13 @@ export default function App() {
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }, 100);
                     }}
-                    className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border border-white/10"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 text-xs font-semibold tracking-wider transition-all cursor-pointer border border-white/10"
                   >
-                    <User size={15} className="text-[#B68A35]" />
+                    <User size={14} className="text-[#B68A35]" />
                     <span>{currentUser ? 'Client Portal' : 'Portal Log In'}</span>
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      handleOpenBooking();
-                    }}
-                    className="w-full text-center py-3.5 px-4 rounded-lg bg-[#B68A35] hover:bg-[#a3792b] text-[#012B1D] text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all cursor-pointer"
-                  >
-                    Request a Consultation
-                  </button>
-
-                  <p className="text-[10px] text-white/40 text-center font-mono pt-2">
+                  <p className="text-[10px] text-white/40 text-center font-mono pt-1">
                     Developing Competence. Enabling Compliance.
                   </p>
                 </div>
@@ -814,956 +1070,974 @@ export default function App() {
             </>
           )}
         </AnimatePresence>
-      </header>
+
+      {/* Breadcrumb Navigation Bar (Only displayed on sub-pages/inner views) */}
+      {currentView !== 'home' && (
+        <BreadcrumbNav
+          currentView={currentView}
+          navigateTo={navigateTo}
+          activeSidebarSection={activeSidebarSection}
+          setActiveSidebarSection={setActiveSidebarSection}
+          portfolioCategories={portfolioCategories}
+        />
+      )}
 
       {/* Main Container */}
       <main className="flex-grow">
         {currentView === 'home' && (
           <>
-            {/* Elegant Corporate Hero Section */}
-            <section className="relative pt-12 md:pt-20 pb-20 px-4 md:px-16 max-w-[1280px] mx-auto overflow-hidden">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                <div className="lg:col-span-7 space-y-6 z-10">
+            {/* 1. Hero Section */}
+            <section className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-8 md:px-12 max-w-[1280px] mx-auto overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10 items-center">
+                <div className="lg:col-span-7 space-y-3.5 sm:space-y-5 z-10">
                   <ScrollReveal direction="up" delay={0.05}>
-                    <div className="inline-flex items-center gap-2 bg-primary/5 border border-primary/10 px-3.5 py-1.5 rounded-full mb-6">
+                    <div className="inline-flex items-center gap-2 bg-[#023625]/5 border border-[#023625]/15 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full mb-1">
                       <span className="w-2 h-2 rounded-full bg-[#B68A35] animate-pulse"></span>
-                      <span className="text-primary font-sans text-[11px] uppercase tracking-widest font-bold">
-                        Developing Competence. Enabling Compliance.
+                      <span className="text-[#023625] font-sans text-[10px] sm:text-[11px] uppercase tracking-widest font-bold">
+                        Yitzak Institutional Advisory &amp; Compliance
                       </span>
                     </div>
+                  </ScrollReveal>
 
-                    <h1 className="font-serif text-[44px] md:text-[62px] leading-[48px] md:leading-[68px] tracking-tight text-primary font-bold mb-6">
-                      Build Competence.<br />
-                      <span className="text-[#B68A35]">Strengthen Performance.</span>
+                  <ScrollReveal direction="up" delay={0.1}>
+                    <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight text-primary font-bold tracking-tight">
+                      Empowering Organisations Through Compliance &amp; Capability.
                     </h1>
+                  </ScrollReveal>
 
-                    <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed max-w-xl mb-6">
-                      Yitzak is a professional training and capability-development company. We help organisations across many industries develop capable people, strengthen management systems, and meet industry requirements with confidence, through professional training, consulting, and certification support.
+                  <ScrollReveal direction="up" delay={0.15}>
+                    <p className="font-sans text-xs sm:text-sm md:text-lg text-on-surface-variant max-w-2xl leading-relaxed">
+                      From ISO and BRCGS to GLOBALG.A.P. and beyond. We help teams build competence, strengthen systems, and achieve certification success.
                     </p>
+                  </ScrollReveal>
 
-                    <div className="flex flex-col sm:flex-row gap-4 pt-2 mb-6">
-                      <button 
-                        onClick={() => navigateTo('training')}
-                        className="bg-primary hover:bg-primary/95 text-white font-sans font-bold text-xs uppercase tracking-widest py-4 px-8 rounded cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-2 shadow-md"
+                  <ScrollReveal direction="up" delay={0.2}>
+                    <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-4">
+                      <button
+                        onClick={() => {
+                          const el = document.getElementById('services');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 sm:py-4 sm:px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md flex items-center justify-center gap-2.5 w-full sm:w-auto"
                       >
-                        <span>Explore Training Portfolio</span>
-                        <ArrowRight size={14} />
+                        <Workflow size={16} className="shrink-0" />
+                        <span>Explore Our Services</span>
                       </button>
-                      <button 
-                        onClick={() => handleOpenBooking()}
-                        className="border border-[#B68A35] text-[#B68A35] hover:bg-[#B68A35]/5 font-sans font-bold text-xs uppercase tracking-widest py-4 px-8 rounded cursor-pointer transition-all active:scale-95 text-center"
+                      <button
+                        onClick={() => handleOpenBooking('consulting')}
+                        className="bg-[#023625] hover:bg-[#034d35] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 sm:py-4 sm:px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md flex items-center justify-center gap-2.5 w-full sm:w-auto"
                       >
-                        Book a Consultation
+                        <Calendar size={16} className="text-[#B68A35] shrink-0" />
+                        <span>Book a Consultation</span>
                       </button>
                     </div>
+                  </ScrollReveal>
 
-                    <div className="pt-6 border-t border-border flex flex-wrap gap-x-6 gap-y-3 items-center text-xs text-on-surface-variant font-sans">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-[#B68A35] rounded-full"></div>
-                        <span>Official FoodChain ID Partner</span>
+                  <ScrollReveal direction="up" delay={0.25}>
+                    <div className="pt-4 sm:pt-6 border-t border-border/60 grid grid-cols-3 gap-2 sm:gap-4 text-center sm:text-left">
+                      <div>
+                        <div className="font-serif text-lg sm:text-2xl font-bold text-primary">100%</div>
+                        <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">Audit Success</div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-[#B68A35] rounded-full"></div>
-                        <span>20+ ISO & GFSI Standards</span>
+                      <div>
+                        <div className="font-serif text-lg sm:text-2xl font-bold text-primary">Global</div>
+                        <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">ISO / BRCGS / GFSI</div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-[#B68A35] rounded-full"></div>
-                        <span>Interactive Client Portal</span>
+                      <div>
+                        <div className="font-serif text-lg sm:text-2xl font-bold text-primary">Partner</div>
+                        <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">FoodChain ID</div>
                       </div>
                     </div>
                   </ScrollReveal>
                 </div>
 
-                {/* Floating Modern Image Layout */}
-                <div className="lg:col-span-5 relative mt-8 lg:mt-0">
-                  <ScrollReveal direction="left" delay={0.15}>
-                    <div className="relative z-10 rounded-2xl overflow-hidden aspect-[4/3.5] border-4 border-white shadow-ambient bg-surface">
-                      <img 
-                        className="w-full h-full object-cover filter brightness-95" 
-                        alt="Corporate executive workshop" 
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCh8qjKo1mwyVEx2R4hcz_37lRzkxGHkT6V-oq1p6-aNLPzSIK1PeKocPwmsavBw-jzyWVB7YGBWC7mQGezHM9vJgXqXzW6XP-LZ0F3KVj7xjUPf9A30emofQLCDZzMztfEV_elrnRp7EgBGuSsJrD3EK0M9h-zOPiHOpehrbBdtNYBmiSgUTd0LjaWVrc-kU93-69KQ9lqCIkb1UTr7OvswZEbEAmW5BkzB5_ThEx55RADoHMnem4L" 
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-primary/45 to-transparent"></div>
-                    </div>
+                {/* Hero Visual: Abstract Compliance Graphic & Interactive Badge Card */}
+                <div className="lg:col-span-5 relative z-10 mt-2 lg:mt-0">
+                  <ScrollReveal direction="left" delay={0.2}>
+                    <div className="relative mx-auto max-w-md lg:max-w-none">
+                      {/* Decorative geometric blurred shapes */}
+                      <div className="absolute -top-10 -right-10 w-72 h-72 bg-[#B68A35]/15 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+                      <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-[#023625]/15 rounded-full blur-3xl -z-10 pointer-events-none"></div>
 
-                    {/* Absolute Badge Card 1 */}
-                    <a 
-                      href="https://www.foodchainid.com/academy/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="absolute -left-6 bottom-8 z-20 bg-[#023625] text-white p-4 rounded-xl shadow-lg border border-white/10 max-w-[200px] hidden sm:block hover:bg-[#034d35] hover:scale-105 transition-all group duration-200 cursor-pointer"
-                      title="Visit FoodChain ID Academy (Opens in new tab)"
-                    >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <Award className="text-[#B68A35]" size={18} />
-                        <span className="font-serif text-xs font-bold group-hover:text-[#B68A35] transition-colors">Partner Ecosystem</span>
-                      </div>
-                      <p className="font-sans text-[10px] text-white/80 leading-relaxed">
-                        Integrated access to global courses via FoodChain ID Academy.
-                      </p>
-                      <div className="mt-2 text-[#B68A35] font-sans text-[9px] uppercase tracking-wider font-bold flex items-center gap-1">
-                        <span>Visit Academy</span>
-                        <span className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">↗</span>
-                      </div>
-                    </a>
+                      {/* Main Card Container */}
+                      <div className="bg-white/95 backdrop-blur-md border border-border p-5 sm:p-8 rounded-2xl shadow-xl space-y-4 sm:space-y-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#B68A35]/10 to-transparent rounded-bl-full pointer-events-none"></div>
 
-                    {/* Absolute Badge Card 2 */}
-                    <div className="absolute -right-6 top-8 z-20 bg-white border border-border p-4 rounded-xl shadow-lg max-w-[180px] hidden sm:block">
-                      <span className="font-serif text-2xl font-bold text-primary block">2026</span>
-                      <span className="font-sans text-[9px] uppercase tracking-widest text-on-surface-variant font-bold">Latest Edition Curricula</span>
-                    </div>
+                        <div className="flex items-center justify-between border-b border-border/80 pb-3 sm:pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#023625] flex items-center justify-center text-white font-serif font-bold">
+                              Y
+                            </div>
+                            <div>
+                              <h3 className="font-serif font-bold text-primary text-sm sm:text-base">Certification &amp; Compliance</h3>
+                              <p className="text-[10px] sm:text-[11px] font-mono text-ash">System Standard Verification</p>
+                            </div>
+                          </div>
+                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] sm:text-[10px] font-mono uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full flex items-center gap-1">
+                            <CheckCircle2 size={12} className="text-emerald-600" /> Verified
+                          </span>
+                        </div>
 
-                    {/* Geometric background elements */}
-                    <div className="absolute -bottom-6 -right-6 w-48 h-48 rounded-full bg-[#B68A35]/10 z-0"></div>
-                    <div className="absolute -top-6 -left-6 w-32 h-32 rounded-full bg-primary/5 z-0"></div>
-                  </ScrollReveal>
-                </div>
-              </div>
-            </section>
-
-            {/* About YITZAK & Interactive Focus (Page 2 transition) */}
-            <section className="py-16 md:py-24 bg-mist border-t border-b border-border">
-              <div className="max-w-[1280px] mx-auto px-4 md:px-16">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                  
-                  {/* Left Column: Who We Are */}
-                  <div className="lg:col-span-6 space-y-6">
-                    <ScrollReveal direction="right" delay={0.05}>
-                      <div className="space-y-1 mb-6">
-                        <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold block">About YITZAK</span>
-                        <h2 className="font-serif text-3xl md:text-[40px] leading-tight text-primary font-bold">
-                          Empowering Teams.<br />Elevating Operational Standards.
-                        </h2>
-                      </div>
-                      <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed mb-6">
-                        We partner with forward-thinking organisations to cultivate workforce expertise, optimize quality management systems, and navigate complex regulatory benchmarks with total confidence.
-                      </p>
-                      <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed opacity-90">
-                        Combining practical industry experience with internationally aligned standards, our advisory services turn compliance requirements into measurable business value—from workforce development to external audit readiness.
-                      </p>
-                    </ScrollReveal>
-                  </div>
-
-                  {/* Right Column: Interactive Focus Principles */}
-                  <div className="lg:col-span-6">
-                    <ScrollReveal direction="left" delay={0.1}>
-                      <div className="bg-white border border-border rounded-2xl p-6 md:p-8 shadow-sm">
-                        <span className="text-[#B68A35] font-sans text-[11px] uppercase tracking-widest font-bold block mb-4">
-                          Our Guiding Principles
-                        </span>
-                        <h3 className="font-serif text-lg text-primary font-bold mb-4">Our Core Focus is Simple</h3>
-                        
-                        <div className="space-y-4">
-                          {[
-                            {
-                              id: '01',
-                              title: 'Develop capable people.',
-                              summary: 'Practical knowledge tailored for execution.',
-                              desc: 'Yitzak designs and delivers training that builds deep personal competence. We translate dense standards and regulations into clean, actionable work practices that employees can apply the very next day.'
-                            },
-                            {
-                              id: '02',
-                              title: 'Build stronger organisations.',
-                              summary: 'Systematizing compliance, eliminating risk.',
-                              desc: 'We support organisations in constructing, configuring, and refining their standard operating procedures (SOPs). This alignment creates smooth workflows that easily withstand demanding external audits.'
-                            },
-                            {
-                              id: '03',
-                              title: 'Create sustainable performance.',
-                              summary: 'Long-term partnership values.',
-                              desc: 'We do not believe in one-and-done events. We maintain deep strategic partnerships, assisting with system overrides, continuous refresher learning, and custom assessments as standards evolve.'
-                            }
-                          ].map((p) => {
-                            const isActive = activeFocusPrinciple === p.id;
-                            return (
-                              <div 
-                                key={p.id}
-                                onClick={() => setActiveFocusPrinciple(p.id)}
-                                className={`border rounded-xl p-4 cursor-pointer transition-all ${
-                                  isActive 
-                                    ? 'bg-primary/5 border-primary shadow-sm' 
-                                    : 'bg-transparent border-border hover:bg-surface'
-                                }`}
-                              >
-                                <div className="flex justify-between items-center">
-                                  <div className="flex items-center gap-3">
-                                    <span className={`font-mono text-sm font-bold ${isActive ? 'text-[#B68A35]' : 'text-outline'}`}>
-                                      {p.id}
-                                    </span>
-                                    <h4 className="font-serif text-sm font-bold text-primary">{p.title}</h4>
-                                  </div>
-                                  <ChevronDown 
-                                    size={18} 
-                                    className={`transition-transform duration-200 ${
-                                      isActive ? 'rotate-180 text-[#B68A35]' : 'text-outline hover:text-primary'
-                                    }`} 
-                                  />
-                                </div>
-                                
-                                <AnimatePresence>
-                                  {isActive && (
-                                    <motion.div
-                                      initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                                      animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
-                                      exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                                      transition={{ duration: 0.3 }}
-                                      className="overflow-hidden border-t border-border/60 pt-3"
-                                    >
-                                      <p className="font-sans text-[11px] uppercase tracking-wider text-[#B68A35] font-bold mb-1">{p.summary}</p>
-                                      <p className="font-sans text-xs text-on-surface-variant leading-relaxed">{p.desc}</p>
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
+                        <div className="space-y-3">
+                          <div className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider text-[#B68A35]">Supported Global Standards</div>
+                          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+                            {[
+                              { name: 'ISO 22000 / FSSC 22000', desc: 'Food Safety Management' },
+                              { name: 'BRCGS Issue 9', desc: 'Global Standard Safety' },
+                              { name: 'GLOBALG.A.P.', desc: 'Farm Assurance Scheme' },
+                              { name: 'ISO 9001 / 14001', desc: 'Quality & Environment' }
+                            ].map((item, idx) => (
+                              <div key={idx} className="p-2.5 sm:p-3 bg-mist/80 rounded-xl border border-border/80 text-left hover:border-[#B68A35]/50 transition-colors">
+                                <div className="font-serif font-bold text-[11px] sm:text-xs text-primary">{item.name}</div>
+                                <div className="text-[9px] sm:text-[10px] text-ash mt-0.5">{item.desc}</div>
                               </div>
-                            );
-                          })}
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-border/80 flex items-center justify-between text-[11px] sm:text-xs text-ash font-mono">
+                          <span>Official FoodChain ID Partner</span>
+                          <span className="text-[#023625] font-bold">Verified Excellence</span>
                         </div>
                       </div>
-                    </ScrollReveal>
-                  </div>
-
+                    </div>
+                  </ScrollReveal>
                 </div>
               </div>
             </section>
 
-            {/* Strategic Service Pillars (Page 3 transition) */}
-            <section id="expertise" className="py-16 md:py-24 bg-white border-b border-border scroll-mt-24">
-              <div className="max-w-[1280px] mx-auto px-4 md:px-16 space-y-16">
+            {/* 2. Our Core Services */}
+            <section ref={servicesSectionRef} id="services" className="py-10 sm:py-16 md:py-20 bg-mist/60 border-y border-border px-4 sm:px-8 md:px-16 scroll-mt-20 overflow-hidden">
+              <div className="max-w-[1280px] mx-auto space-y-8 sm:space-y-12">
                 <ScrollReveal direction="up" delay={0.05}>
-                  <div className="text-center space-y-3">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Strategic Support</span>
-                    <h2 className="font-serif text-3xl md:text-[44px] text-primary font-bold">Our core services</h2>
-                    <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                      Three integrated areas, with professional training at the heart, fully backed by strategic consulting and internationally accredited certification.
+                  <div className="text-center space-y-3 max-w-3xl mx-auto">
+                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Comprehensive Capabilities</span>
+                    <h2 className="font-serif text-3xl md:text-5xl text-primary font-bold">Our Core Services</h2>
+                    <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed">
+                      Integrated advisory, training, and auditing solutions designed to guide your team through every stage of compliance.
                     </p>
                     <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
                   </div>
                 </ScrollReveal>
 
-                <motion.div 
+                {/* Core Services Grid with Staggered Entrance Animation & Parallax Depth */}
+                <motion.div
                   initial="hidden"
                   whileInView="visible"
-                  viewport={{ once: true, margin: "-100px" }}
+                  viewport={{ once: true, amount: 0.15 }}
                   variants={{
-                    hidden: {},
+                    hidden: { opacity: 0 },
                     visible: {
+                      opacity: 1,
                       transition: {
-                        staggerChildren: 0.15
-                      }
-                    }
+                        staggerChildren: 0.12,
+                        delayChildren: 0.1,
+                      },
+                    },
                   }}
-                  className="grid grid-cols-1 gap-8 lg:grid-cols-3"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
                 >
-                  {/* Service 1 */}
-                  <motion.div 
+                  {/* Service 1: Professional Training (Capability Building) */}
+                  <motion.div
                     variants={{
                       hidden: { opacity: 0, y: 30 },
-                      visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+                      visible: {
+                        opacity: 1,
+                        y: 0,
+                        transition: {
+                          duration: 0.5,
+                          ease: [0.16, 1, 0.3, 1],
+                        },
+                      },
                     }}
                     className="h-full"
                   >
-                    <div 
-                      onClick={() => navigateTo('training')}
-                      className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between h-full shadow-sm hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer group"
-                    >
-                      <div className="space-y-6">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                          <GraduationCap className="text-primary group-hover:text-white transition-colors" size={24} />
-                        </div>
-                        <div className="space-y-2">
-                          <h3 className="font-serif text-xl md:text-2xl text-primary font-bold group-hover:text-secondary transition-colors flex items-center justify-between">
-                            <span>Professional Training</span>
-                            <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                          </h3>
-                          <span className="text-xs uppercase tracking-widest text-[#B68A35] font-bold block">The Heart of Our Business</span>
-                        </div>
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Practical, instructor-led training that builds knowledge, competence, and confidence across management systems and industry disciplines.
-                        </p>
-                      </div>
-                      <div className="mt-8 pt-6 border-t border-border/60">
-                        <span className="text-[10px] font-mono uppercase text-outline tracking-wider block mb-2">Streams &amp; Methods:</span>
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {['Yitzak Programmes', 'FoodChain ID Courses', 'In-House & Customised'].map((item, idx) => (
-                            <button 
-                              key={idx} 
-                              onClick={(e) => { e.stopPropagation(); navigateTo('training', 'portfolio'); }}
-                              className="bg-white hover:bg-forest-green/10 border border-border/40 hover:border-forest-green/30 text-[10px] text-primary px-2.5 py-1 font-sans rounded font-semibold transition-colors cursor-pointer"
-                            >
-                              {item}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="text-xs font-bold uppercase tracking-wider text-primary group-hover:text-secondary inline-flex items-center gap-1.5 transition-colors">
-                          <span>Explore Professional Training</span>
-                          <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Service 2 */}
-                  <motion.div 
-                    variants={{
-                      hidden: { opacity: 0, y: 30 },
-                      visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
-                    }}
-                    className="h-full"
-                  >
-                    <div 
-                      onClick={() => navigateTo('consulting')}
-                      className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between h-full shadow-sm hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer group"
-                    >
-                      <div className="space-y-6">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                          <Lightbulb className="text-primary group-hover:text-white transition-colors" size={24} />
-                        </div>
-                        <div className="space-y-2">
-                          <h3 className="font-serif text-xl md:text-2xl text-primary font-bold group-hover:text-secondary transition-colors flex items-center justify-between">
-                            <span>Consulting &amp; Advisory</span>
-                            <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                          </h3>
-                          <span className="text-xs uppercase tracking-widest text-[#B68A35] font-bold block">Apply What You Learn</span>
-                        </div>
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Practical guidance that helps organisations implement learning and improve systems, processes, and performance.
-                        </p>
-                      </div>
-                      <div className="mt-8 pt-6 border-t border-border/60">
-                        <span className="text-[10px] font-mono uppercase text-outline tracking-wider block mb-2">Service Areas:</span>
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {['Gap Assessments', 'System Development', 'Documentation Support', 'Internal Audits'].map((item, idx) => (
-                            <span key={idx} className="bg-white border border-border/40 text-[10px] text-primary px-2.5 py-1 font-sans rounded font-semibold">
-                              {item}
+                    <motion.div style={{ y: parallaxY1 }} className="h-full">
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
+                        <div className="space-y-5">
+                          <div className="flex items-center justify-between">
+                            <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
+                              <GraduationCap size={24} />
+                            </div>
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2.5 py-1 rounded-full">
+                              Capability Building
                             </span>
-                          ))}
+                          </div>
+                          <div className="space-y-1.5">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors">
+                              Professional Training
+                            </h3>
+                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                              Instructor-led programmes that build competence across management systems and industry disciplines.
+                            </p>
+                          </div>
+                          <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Yitzak professional programmes</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>FoodChain ID Academy courses</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Corporate &amp; in-house delivery</span>
+                            </li>
+                          </ul>
                         </div>
-                        <div className="text-xs font-bold uppercase tracking-wider text-primary group-hover:text-secondary inline-flex items-center gap-1.5 transition-colors">
-                          <span>Explore Consulting Services</span>
-                          <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                        <div className="pt-5 mt-5 border-t border-border/80">
+                          <button
+                            onClick={() => navigateTo('training')}
+                            className="text-xs font-bold uppercase tracking-wider text-[#023625] hover:text-[#B68A35] inline-flex items-center gap-2 transition-colors cursor-pointer"
+                          >
+                            <span>Explore Curricula</span>
+                            <ArrowRight size={14} />
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </motion.div>
 
-                  {/* Service 3 */}
-                  <motion.div 
+                  {/* Service 2: Certification Support (Capability Building) */}
+                  <motion.div
                     variants={{
                       hidden: { opacity: 0, y: 30 },
-                      visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+                      visible: {
+                        opacity: 1,
+                        y: 0,
+                        transition: {
+                          duration: 0.5,
+                          ease: [0.16, 1, 0.3, 1],
+                        },
+                      },
                     }}
                     className="h-full"
                   >
-                    <div 
-                      onClick={() => navigateTo('certifications')}
-                      className="bg-mist border border-border p-8 rounded-xl flex flex-col justify-between h-full shadow-sm hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer group"
-                    >
-                      <div className="space-y-6">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                          <Award className="text-primary group-hover:text-white transition-colors" size={24} />
+                    <motion.div style={{ y: parallaxY2 }} className="h-full">
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
+                        <div className="space-y-5">
+                          <div className="flex items-center justify-between">
+                            <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
+                              <Award size={24} />
+                            </div>
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2.5 py-1 rounded-full">
+                              Capability Building
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors">
+                              Certification Support
+                            </h3>
+                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                              Accredited, internationally recognised schemes guiding organisations from audit readiness to valid certification.
+                            </p>
+                          </div>
+                          <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Scheme selection &amp; pre-assessment</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Audit preparation &amp; evidence</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>FoodChain ID accredited alignment</span>
+                            </li>
+                          </ul>
                         </div>
-                        <div className="space-y-2">
-                          <h3 className="font-serif text-xl md:text-2xl text-primary font-bold group-hover:text-secondary transition-colors flex items-center justify-between">
-                            <span>Certifications</span>
-                            <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                          </h3>
-                          <span className="text-xs uppercase tracking-widest text-[#B68A35] font-bold block">With FoodChain ID</span>
+                        <div className="pt-5 mt-5 border-t border-border/80">
+                          <button
+                            onClick={() => navigateTo('certifications')}
+                            className="text-xs font-bold uppercase tracking-wider text-[#023625] hover:text-[#B68A35] inline-flex items-center gap-2 transition-colors cursor-pointer"
+                          >
+                            <span>Explore Schemes</span>
+                            <ArrowRight size={14} />
+                          </button>
                         </div>
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Accredited, internationally recognised certification schemes. We guide organisations from scoping and audit readiness through to a valid certificate.
-                        </p>
                       </div>
-                      <div className="mt-8 pt-6 border-t border-border/60">
-                        <span className="text-[10px] font-mono uppercase text-outline tracking-wider block mb-2">Accredited Schemes:</span>
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {[
-                            { name: 'Product & Label Certification', url: 'https://www.foodchainid.com/product-and-label-certification/' },
-                            { name: 'GLOBALG.A.P.', url: 'https://www.foodchainid.com/globalg-a-p/' },
-                            { name: 'BRCGS Certifications', url: 'https://www.foodchainid.com/brcgs-certifications/' }
-                          ].map((item, idx) => (
-                            <button 
-                              key={idx} 
-                              onClick={(e) => { e.stopPropagation(); navigateTo('certifications'); }}
-                              className="bg-white hover:bg-forest-green/10 border border-border/40 hover:border-forest-green/30 text-[10px] text-primary px-2.5 py-1 font-sans rounded font-semibold transition-colors cursor-pointer"
-                              title={`Explore ${item.name} scheme details`}
-                            >
-                              <span>{item.name}</span>
-                            </button>
-                          ))}
+                    </motion.div>
+                  </motion.div>
+
+                  {/* Service 3: Consulting & Advisory (Advisory) */}
+                  <motion.div
+                    variants={{
+                      hidden: { opacity: 0, y: 30 },
+                      visible: {
+                        opacity: 1,
+                        y: 0,
+                        transition: {
+                          duration: 0.5,
+                          ease: [0.16, 1, 0.3, 1],
+                        },
+                      },
+                    }}
+                    className="h-full"
+                  >
+                    <motion.div style={{ y: parallaxY3 }} className="h-full">
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
+                        <div className="space-y-5">
+                          <div className="flex items-center justify-between">
+                            <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
+                              <Sliders size={24} />
+                            </div>
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
+                              Advisory
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors">
+                              Consulting &amp; Advisory
+                            </h3>
+                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                              Practical guidance to implement learning, improve systems, and strengthen organisational performance.
+                            </p>
+                          </div>
+                          <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Gap assessments &amp; reviews</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Management system formulation</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Documentation &amp; internal audits</span>
+                            </li>
+                          </ul>
                         </div>
-                        <div className="text-xs font-bold uppercase tracking-wider text-primary group-hover:text-secondary inline-flex items-center gap-1.5 transition-colors">
-                          <span>View Accredited Certifications</span>
-                          <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                        <div className="pt-5 mt-5 border-t border-border/80">
+                          <button
+                            onClick={() => navigateTo('consulting')}
+                            className="text-xs font-bold uppercase tracking-wider text-[#023625] hover:text-[#B68A35] inline-flex items-center gap-2 transition-colors cursor-pointer"
+                          >
+                            <span>Explore Advisory</span>
+                            <ArrowRight size={14} />
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
+                  </motion.div>
+
+                  {/* Service 4: Business Process Implementation (Advisory) */}
+                  <motion.div
+                    variants={{
+                      hidden: { opacity: 0, y: 30 },
+                      visible: {
+                        opacity: 1,
+                        y: 0,
+                        transition: {
+                          duration: 0.5,
+                          ease: [0.16, 1, 0.3, 1],
+                        },
+                      },
+                    }}
+                    className="h-full"
+                  >
+                    <motion.div style={{ y: parallaxY4 }} className="h-full">
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
+                        <div className="space-y-5">
+                          <div className="flex items-center justify-between">
+                            <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
+                              <Workflow size={24} />
+                            </div>
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
+                              Advisory
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors">
+                              Business Process Implementation
+                            </h3>
+                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                              Building operational foundations from zero: process mapping, risk controls, and HR/accounting setup.
+                            </p>
+                          </div>
+                          <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Phase 1: Mapping &amp; Governance</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Phase 2: Lean Audits &amp; Efficiency</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>HR, Accounting &amp; Operations Systems</span>
+                            </li>
+                          </ul>
+                        </div>
+                        <div className="pt-5 mt-5 border-t border-border/80">
+                          <button
+                            onClick={() => handleOpenBooking('process_implementation', 'Interested in Business Process Implementation (Phase 1/2 mapping, HR & Accounting systems setup)')}
+                            className="text-xs font-bold uppercase tracking-wider text-[#023625] hover:text-[#B68A35] inline-flex items-center gap-2 transition-colors cursor-pointer"
+                          >
+                            <span>Request Consultation</span>
+                            <ArrowRight size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
                   </motion.div>
                 </motion.div>
+              </div>
+            </section>
 
-                {/* Trust bar */}
-                <ScrollReveal direction="up" delay={0.1}>
-                  <div className="bg-[#023625]/5 border border-primary/10 p-6 md:p-8 rounded-2xl flex flex-col md:flex-row items-center gap-6">
-                    <div className="w-12 h-12 rounded-full bg-[#023625] flex items-center justify-center flex-shrink-0 text-[#B68A35] shadow-sm">
-                      <CheckCircle size={22} />
-                    </div>
-                    <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                      On completion, participants receive the applicable certificate from Yitzak or FoodChain ID, depending on the programme. Certification is delivered through our partnership with <strong className="text-primary font-bold">FoodChain ID</strong> and its accredited certification bodies, giving clients a single, trusted route from training to certification.
+            {/* 3. Why Work With Us */}
+            <section className="py-20 px-4 md:px-16 max-w-[1280px] mx-auto">
+              <div className="space-y-12">
+                <ScrollReveal direction="up" delay={0.05}>
+                  <div className="text-center space-y-3 max-w-3xl mx-auto">
+                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Institutional Advantage</span>
+                    <h2 className="font-serif text-3xl md:text-5xl text-primary font-bold">Why Work With Us</h2>
+                    <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed">
+                      Five key principles that define Yitzak Consulting as your long-term compliance partner.
                     </p>
+                    <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
                   </div>
                 </ScrollReveal>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                  {[
+                    {
+                      icon: <Globe size={26} className="text-[#B68A35]" />,
+                      title: "Global Standards Expertise",
+                      desc: "Deep understanding of international frameworks."
+                    },
+                    {
+                      icon: <Workflow size={26} className="text-[#B68A35]" />,
+                      title: "Structured Methodology",
+                      desc: "Discover → Assess → Develop → Deliver → Improve."
+                    },
+                    {
+                      icon: <ShieldCheck size={26} className="text-[#B68A35]" />,
+                      title: "FoodChain ID Partnership",
+                      desc: "Access to accredited certification programmes."
+                    },
+                    {
+                      icon: <Target size={26} className="text-[#B68A35]" />,
+                      title: "Tailored Solutions",
+                      desc: "Designed around your organisation’s objectives."
+                    },
+                    {
+                      icon: <TrendingUp size={26} className="text-[#B68A35]" />,
+                      title: "Long-Term Value",
+                      desc: "Building competence for lasting success."
+                    }
+                  ].map((item, idx) => (
+                    <ScrollReveal key={idx} direction="up" delay={0.08 * (idx + 1)}>
+                      <div className="bg-white p-6 rounded-2xl border border-border shadow-xs hover:border-[#B68A35] hover:shadow-md transition-all flex flex-col justify-between h-full text-center sm:text-left space-y-4">
+                        <div className="w-12 h-12 rounded-xl bg-[#B68A35]/10 flex items-center justify-center mx-auto sm:mx-0 shrink-0">
+                          {item.icon}
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="font-serif font-bold text-primary text-base leading-snug">
+                            {item.title}
+                          </h3>
+                          <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                            {item.desc}
+                          </p>
+                        </div>
+                      </div>
+                    </ScrollReveal>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* 4. Our Approach */}
+            <section id="approach" className="py-8 sm:py-12 md:py-14 bg-[#023625] text-white px-4 sm:px-8 md:px-12 scroll-mt-20 relative overflow-hidden">
+              <div className="max-w-[1280px] mx-auto space-y-6 sm:space-y-10 relative z-10">
+                <ScrollReveal direction="up" delay={0.05}>
+                  <div className="text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[#B68A35] font-mono text-[10px] sm:text-xs uppercase tracking-widest font-bold shadow-xs">
+                      <Workflow size={13} />
+                      <span>5-Phase Implementation Framework</span>
+                    </div>
+                    <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-white">Our Approach</h2>
+                    <p className="text-white/80 font-sans text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
+                      A structured methodology engineered to transform complex compliance requirements into permanent operational excellence.
+                    </p>
+                    <div className="w-16 sm:w-20 h-1 bg-[#B68A35] mx-auto mt-2 rounded-full"></div>
+                  </div>
+                </ScrollReveal>
+
+                {/* 5-Phase Implementation Framework Navigation */}
+                {(() => {
+                  const approachPhasesData = [
+                    {
+                      num: "01",
+                      phase: "Discover",
+                      subtitle: "Diagnostic Mapping",
+                      fullSubtitle: "Diagnostic Mapping & Scoping",
+                      icon: Target,
+                      summary: "Exhaustive operational & organizational scoping to map risk baselines.",
+                      description: "We initiate every client engagement with a deep-dive diagnostic mapping exercise. By examining organizational structures, facility workflows, existing documentation, and operational pain points, we construct an accurate, unfiltered baseline of your management systems.",
+                      deliverables: [
+                        "Comprehensive Contextual Scoping & Process Mapping",
+                        "Management System Readiness & Resource Evaluation",
+                        "Preliminary Risk Profile & Regulatory Alignment Scoping"
+                      ],
+                      outcome: "Complete operational transparency with clear baseline metrics and zero diagnostic blindspots.",
+                      benefitTag: "Foundation Scoping"
+                    },
+                    {
+                      num: "02",
+                      phase: "Assess",
+                      subtitle: "Gap Analysis & Audit",
+                      fullSubtitle: "Gap Analysis & Technical Audit",
+                      icon: FileText,
+                      summary: "Line-by-line evaluation against GFSI & management standards.",
+                      description: "Our certified lead auditors conduct rigorous gap analyses against targeted GFSI-recognized food safety schemes (BRCGS, FSSC 22000, GLOBALG.A.P.) and quality standards (ISO 9001, ISO 22000). We systematically identify non-conformances before certification bodies arrive.",
+                      deliverables: [
+                        "Line-by-Line Gap Analysis Scorecard & Findings Matrix",
+                        "Hazard Analysis & Critical Control Point (HACCP) Re-validation",
+                        "Prioritised Risk Mitigation & CAPA Action Plan"
+                      ],
+                      outcome: "Data-driven clarity on audit vulnerability, non-conformance root causes, and exact steps required for certification.",
+                      benefitTag: "Audit Readiness"
+                    },
+                    {
+                      num: "03",
+                      phase: "Develop",
+                      subtitle: "System Engineering",
+                      fullSubtitle: "System Engineering & SOP Architecture",
+                      icon: Sliders,
+                      summary: "Architecting bespoke FSMS & QMS standard operating procedures.",
+                      description: "We design and build customized Management Systems (FSMS/QMS) tailored to your operational realities. Rather than imposing rigid, generic templates, we craft intuitive procedures, record-keeping tools, and traceability workflows that integrate seamlessly into daily shifts.",
+                      deliverables: [
+                        "Custom Standard Operating Procedures (SOPs), Manuals & Work Instructions",
+                        "Integrated Traceability, Mock Recall & Supplier Verification Frameworks",
+                        "Root-Cause Analysis & Corrective Action (CAPA) Toolkits"
+                      ],
+                      outcome: "An audit-ready, lean, and user-friendly management system that eliminates administrative burden.",
+                      benefitTag: "Tailored Engineering"
+                    },
+                    {
+                      num: "04",
+                      phase: "Deliver",
+                      subtitle: "Capability Building",
+                      fullSubtitle: "Capability Building & Workforce Training",
+                      icon: GraduationCap,
+                      summary: "Instructor-led workforce training & practical system implementation.",
+                      description: "Systems only succeed when personnel understand and own them. In partnership with FoodChain ID Academy, we deliver instructor-led training, practical simulations, and change management workshops to build verifiable capability across shop-floor workers, supervisors, and executives.",
+                      deliverables: [
+                        "Instructor-Led Accredited Training Programs & Curricula",
+                        "Interactive Internal Audit Simulations & Mock Inspection Drills",
+                        "Management Review Workshops & System Handover Verification"
+                      ],
+                      outcome: "Empowered teams possessing real operational competence, capable of maintaining standards independently.",
+                      benefitTag: "Verifiable Competence"
+                    },
+                    {
+                      num: "05",
+                      phase: "Improve",
+                      subtitle: "Sustained Governance",
+                      fullSubtitle: "Sustained Governance & Recertification",
+                      icon: TrendingUp,
+                      summary: "Continuous monitoring, surveillance audits & recertification support.",
+                      description: "Achieving compliance is a milestone; sustaining it is a discipline. Yitzak provides continuous surveillance support, periodic internal audits, and regulatory update advisories to keep your business permanently audit-ready and compliant year-round.",
+                      deliverables: [
+                        "Periodic Internal Surveillance & System Health Audits",
+                        "Standards Evolution Briefings & SOP Regulatory Patches",
+                        "Executive Compliance Dashboards & Annual Recertification Support"
+                      ],
+                      outcome: "Long-term compliance resilience, protection against unannounced audits, and sustained brand trust.",
+                      benefitTag: "Permanent Compliance"
+                    }
+                  ];
+
+                  const currentPhase = approachPhasesData[activeApproachPhase] || approachPhasesData[0];
+                  const PhaseIcon = currentPhase.icon;
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Mobile View: 5-Phase Step Bar - All 5 phases visible on screen */}
+                      <div className="block md:hidden space-y-2">
+                        <div className="grid grid-cols-5 gap-1.5 p-1 bg-white/10 rounded-xl border border-white/15">
+                          {approachPhasesData.map((step, idx) => {
+                            const StepIcon = step.icon;
+                            const isActive = activeApproachPhase === idx;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setActiveApproachPhase(idx)}
+                                className={`flex flex-col items-center justify-center p-1.5 rounded-lg text-center transition-all duration-200 cursor-pointer border ${
+                                  isActive
+                                    ? 'bg-[#B68A35] text-[#023625] border-[#B68A35] font-bold shadow-md'
+                                    : 'bg-white/5 text-white/80 border-transparent hover:bg-white/10'
+                                }`}
+                              >
+                                <span className={`w-5 h-5 rounded font-mono text-[10px] font-extrabold flex items-center justify-center shrink-0 mb-0.5 ${
+                                  isActive ? 'bg-[#023625] text-[#B68A35]' : 'bg-white/15 text-white'
+                                }`}>
+                                  {step.num}
+                                </span>
+                                <span className="font-serif font-bold text-[9px] leading-tight truncate w-full">
+                                  {step.phase}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] font-mono text-[#B68A35] px-1">
+                          <span>Phase {activeApproachPhase + 1} of 5</span>
+                          <span className="font-bold text-white uppercase text-[10px]">{currentPhase.phase}: {currentPhase.subtitle}</span>
+                        </div>
+                      </div>
+
+                      {/* Desktop View: 5-Phase Infographic Nav Cards Grid */}
+                      <div className="hidden md:grid md:grid-cols-5 gap-3">
+                        {approachPhasesData.map((step, idx) => {
+                          const StepIcon = step.icon;
+                          const isActive = activeApproachPhase === idx;
+
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setActiveApproachPhase(idx)}
+                              className={`w-full text-left p-4 sm:p-5 rounded-2xl transition-all duration-300 flex flex-col justify-between h-full space-y-3 group cursor-pointer border ${
+                                isActive
+                                  ? 'bg-white text-[#023625] border-[#B68A35] shadow-2xl scale-[1.01]'
+                                  : 'bg-white/10 backdrop-blur-md border-white/15 text-white hover:bg-white/15 hover:border-white/30'
+                              }`}
+                            >
+                              <div className="space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                  <div className={`w-9 h-9 rounded-xl font-mono font-bold text-xs flex items-center justify-center transition-colors ${
+                                    isActive ? 'bg-[#023625] text-[#B68A35]' : 'bg-[#B68A35] text-[#023625]'
+                                  }`}>
+                                    {step.num}
+                                  </div>
+                                  <StepIcon size={18} className={isActive ? 'text-[#023625]' : 'text-[#B68A35]'} />
+                                </div>
+
+                                <div>
+                                  <h3 className={`font-serif text-base font-bold transition-colors ${
+                                    isActive ? 'text-[#023625]' : 'text-white group-hover:text-[#B68A35]'
+                                  }`}>
+                                    {step.phase}
+                                  </h3>
+                                  <p className={`text-[10px] font-mono tracking-wider uppercase font-semibold mt-0.5 ${
+                                    isActive ? 'text-[#7d5800]' : 'text-[#B68A35]'
+                                  }`}>
+                                    {step.subtitle}
+                                  </p>
+                                </div>
+
+                                <p className={`font-sans text-xs leading-relaxed ${
+                                  isActive ? 'text-[#023625]/85 font-medium' : 'text-white/75'
+                                }`}>
+                                  {step.summary}
+                                </p>
+                              </div>
+
+                              <div className={`pt-2.5 border-t text-[10px] font-mono font-bold uppercase tracking-widest flex items-center justify-between ${
+                                isActive ? 'border-[#023625]/15 text-[#023625]' : 'border-white/10 text-[#B68A35]'
+                              }`}>
+                                <span>Phase {step.num}</span>
+                                <span className={`text-[9px] px-2 py-0.5 rounded font-sans font-semibold ${
+                                  isActive ? 'bg-[#023625] text-white' : 'bg-[#B68A35]/20 text-[#B68A35]'
+                                }`}>
+                                  {isActive ? 'Active View' : 'Inspect →'}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Detailed Phase Spotlight Banner */}
+                      <motion.div
+                        key={activeApproachPhase}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="bg-white text-primary border border-[#B68A35]/40 rounded-2xl p-5 sm:p-7 shadow-2xl space-y-4"
+                      >
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-4 border-b border-border/80 pb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#023625] text-[#B68A35] font-serif font-extrabold text-sm sm:text-base flex items-center justify-center shadow-sm font-mono shrink-0">
+                              {currentPhase.num}
+                            </div>
+                            <div>
+                              <span className="text-[#B68A35] font-mono text-[9px] sm:text-[10px] uppercase tracking-widest font-bold block">
+                                Phase {currentPhase.num} Deep Dive
+                              </span>
+                              <h3 className="font-serif text-base sm:text-xl font-bold text-[#023625]">
+                                {currentPhase.phase}: {currentPhase.fullSubtitle}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#B68A35]/10 border border-[#B68A35]/30 text-[#7d5800] text-[10px] sm:text-[11px] font-mono font-bold">
+                            <PhaseIcon size={12} className="text-[#B68A35]" />
+                            <span>{currentPhase.benefitTag}</span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                          <div className="lg:col-span-7 space-y-3">
+                            <p className="font-sans text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+                              {currentPhase.description}
+                            </p>
+
+                            <div className="space-y-1.5 pt-1">
+                              <h4 className="font-serif font-bold text-[11px] sm:text-xs text-[#023625] uppercase tracking-wider flex items-center gap-1.5">
+                                <CheckCircle2 size={14} className="text-[#B68A35]" />
+                                <span>Key Deliverables &amp; Actions</span>
+                              </h4>
+                              <ul className="space-y-1 sm:space-y-1.5">
+                                {currentPhase.deliverables.map((item, dIdx) => (
+                                  <li key={dIdx} className="flex items-start gap-2 text-xs text-primary font-sans">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35] shrink-0 mt-1.5"></span>
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+
+                          <div className="lg:col-span-5 bg-mist border border-border p-3.5 sm:p-4 rounded-xl space-y-2">
+                            <div className="flex items-center gap-1.5 text-[#023625] font-serif font-bold text-[10px] sm:text-[11px] uppercase tracking-wider">
+                              <Award size={14} className="text-[#B68A35]" />
+                              <span>Primary Business Outcome</span>
+                            </div>
+                            <p className="font-sans text-xs text-primary leading-relaxed font-medium bg-white p-2.5 sm:p-3 rounded-lg border border-border shadow-xs">
+                              "{currentPhase.outcome}"
+                            </p>
+                            <div className="pt-1 text-[10px] text-ash font-mono flex items-center justify-between">
+                              <span>YITZAK Guarantee</span>
+                              <span className="text-[#B68A35] font-bold">GFSI Aligned</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Mobile Prev/Next Phase Controls */}
+                        <div className="flex items-center justify-between pt-3 border-t border-border/80 md:hidden">
+                          <button
+                            type="button"
+                            disabled={activeApproachPhase === 0}
+                            onClick={() => setActiveApproachPhase(prev => Math.max(0, prev - 1))}
+                            className={`inline-flex items-center gap-1 text-xs font-mono font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                              activeApproachPhase === 0
+                                ? 'opacity-40 border-border text-ash cursor-not-allowed'
+                                : 'bg-mist border-border text-[#023625] hover:bg-[#023625] hover:text-white'
+                            }`}
+                          >
+                            <ChevronLeft size={14} />
+                            <span>Prev Phase</span>
+                          </button>
+
+                          <span className="text-[11px] font-mono font-bold text-[#B68A35]">
+                            Phase {activeApproachPhase + 1} / 5
+                          </span>
+
+                          <button
+                            type="button"
+                            disabled={activeApproachPhase === approachPhasesData.length - 1}
+                            onClick={() => setActiveApproachPhase(prev => Math.min(approachPhasesData.length - 1, prev + 1))}
+                            className={`inline-flex items-center gap-1 text-xs font-mono font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                              activeApproachPhase === approachPhasesData.length - 1
+                                ? 'opacity-40 border-border text-ash cursor-not-allowed'
+                                : 'bg-[#023625] text-white border-[#023625] shadow-xs'
+                            }`}
+                          >
+                            <span>Next Phase</span>
+                            <ChevronRight size={14} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </section>
+
+            {/* 4b. Methodology Foundations / Why Our Implementation Delivers Results */}
+            <section className="py-16 bg-[#F9F8F6] border-y border-border px-4 sm:px-8 md:px-12">
+              <div className="max-w-[1280px] mx-auto space-y-10">
+                <ScrollReveal direction="up" delay={0.05}>
+                  <div className="text-center space-y-2 max-w-3xl mx-auto">
+                    <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold">Methodology Foundations</span>
+                    <h2 className="font-serif text-2xl sm:text-3xl font-bold text-primary">Why Our Implementation Delivers Results</h2>
+                    <p className="font-sans text-xs sm:text-sm text-ash max-w-xl mx-auto">
+                      Four core structural pillars engineered into every advisory engagement.
+                    </p>
+                    <div className="w-16 h-1 bg-[#B68A35] mx-auto mt-2 rounded-full"></div>
+                  </div>
+                </ScrollReveal>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    {
+                      title: "Practical Grounding",
+                      icon: ShieldCheck,
+                      desc: "No abstract theory. Built around actual floor shifts, operational constraints, and commercial targets."
+                    },
+                    {
+                      title: "Zero-Distortion Systems",
+                      icon: Layers,
+                      desc: "Eliminating burdensome paperwork. Lightweight, intuitive procedures that staff actually follow."
+                    },
+                    {
+                      title: "Verifiable Competence",
+                      icon: GraduationCap,
+                      desc: "Focusing on human capability. Hands-on training ensures your team owns every control point."
+                    },
+                    {
+                      title: "Permanent Readiness",
+                      icon: Shield,
+                      desc: "Continuous surveillance and recertification support keep you prepared for unannounced audits 365 days a year."
+                    }
+                  ].map((pillar, pIdx) => {
+                    const PIcon = pillar.icon;
+                    return (
+                      <ScrollReveal key={pIdx} direction="up" delay={0.08 * (pIdx + 1)}>
+                        <div className="bg-white border border-border hover:border-[#B68A35] p-6 rounded-2xl space-y-3 shadow-xs hover:shadow-md transition-all h-full flex flex-col justify-between">
+                          <div className="space-y-3">
+                            <div className="w-11 h-11 rounded-xl bg-[#023625] text-[#B68A35] flex items-center justify-center shadow-xs">
+                              <PIcon size={22} />
+                            </div>
+                            <h3 className="font-serif font-bold text-base text-primary">{pillar.title}</h3>
+                            <p className="font-sans text-xs text-ash leading-relaxed">{pillar.desc}</p>
+                          </div>
+                        </div>
+                      </ScrollReveal>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* 5. Knowledge & Insights */}
+            <section className="py-20 bg-mist/60 border-b border-border px-4 md:px-16">
+              <div className="max-w-[1280px] mx-auto">
+                <div className="bg-white border border-border p-8 md:p-12 rounded-3xl shadow-xs grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                  <div className="lg:col-span-7 space-y-4">
+                    <div className="inline-flex items-center gap-2 bg-[#B68A35]/10 border border-[#B68A35]/30 px-3 py-1 rounded-full">
+                      <Sparkles size={14} className="text-[#B68A35]" />
+                      <span className="text-[#7d5800] text-[11px] font-mono uppercase font-bold tracking-wider">The YITZAK Digest</span>
+                    </div>
+                    <h2 className="font-serif text-3xl md:text-4xl text-primary font-bold">
+                      Stay Ahead of Compliance Trends.
+                    </h2>
+                    <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed max-w-xl">
+                      Subscribe to The YITZAK Digest for monthly updates and strategic insights.
+                    </p>
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <form onSubmit={handleNewsletterSubmit} className="space-y-3">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="email"
+                          value={newsletterEmail}
+                          onChange={(e) => setNewsletterEmail(e.target.value)}
+                          placeholder="Enter your email address"
+                          required
+                          className="flex-grow px-4 py-3.5 bg-mist border border-border rounded-lg text-xs md:text-sm text-primary placeholder:text-ash focus:outline-none focus:border-[#B68A35]"
+                        />
+                        <button
+                          type="submit"
+                          disabled={newsletterSubmitting}
+                          className="bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-widest px-6 py-3.5 rounded-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50 shrink-0 inline-flex items-center justify-center gap-2 shadow-xs"
+                        >
+                          {newsletterSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Subscribe'}
+                        </button>
+                      </div>
+
+                      {newsletterSuccess && (
+                        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center justify-between">
+                          <span>Subscription confirmed! Thank you for joining.</span>
+                          <button
+                            type="button"
+                            onClick={() => setShowBriefingPreview(true)}
+                            className="font-bold underline text-emerald-900 ml-2 cursor-pointer"
+                          >
+                            View Digest
+                          </button>
+                        </div>
+                      )}
+
+                      {newsletterError && (
+                        <p className="text-xs text-red-600 pl-1">{newsletterError}</p>
+                      )}
+
+                      <p className="text-[11px] text-ash font-mono">
+                        Zero spam. Unsubscribe anytime with one click.
+                      </p>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Newsletter Briefing Modal Preview */}
+                {showBriefingPreview && (
+                  <div className="mt-8 bg-white border border-[#B68A35] rounded-2xl p-6 md:p-8 shadow-xl max-w-4xl mx-auto space-y-6">
+                    <div className="flex justify-between items-center border-b border-border pb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-serif font-extrabold text-lg text-[#023625]">THE YITZAK DIGEST</span>
+                        <span className="bg-[#B68A35]/10 text-[#7d5800] text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase">Monthly Executive Briefing</span>
+                      </div>
+                      <button
+                        onClick={() => setShowBriefingPreview(false)}
+                        className="text-xs text-ash hover:text-primary font-bold cursor-pointer"
+                      >
+                        Close Preview ✕
+                      </button>
+                    </div>
+
+                    <div className="space-y-4 text-xs md:text-sm text-on-surface-variant">
+                      <h3 className="font-serif font-bold text-base text-primary">Strategic Compliance &amp; Standards Radar</h3>
+                      <p className="leading-relaxed">
+                        The Global Food Safety Initiative (GFSI) has mandated tightened benchmarking criteria for auditor competence, allergen management protocols, and environmental monitoring programs (EMP). Operations preparing for unannounced audits under FSSC 22000 v6 and BRCGS Issue 9 must re-verify risk assessments.
+                      </p>
+                      <div className="p-4 bg-mist rounded-xl border border-border space-y-2">
+                        <h4 className="font-serif font-bold text-xs text-primary">Regulatory Sanitation &amp; Allergen Control Cross-Contamination</h4>
+                        <p className="text-ash leading-relaxed">
+                          Recent industry enforcement actions highlight strict validated cleaning verification for shared production lines. YITZAK recommends implementing rapid ATP testing alongside swab validation protocols for top 9 priority allergens.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-border pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <span className="text-[11px] text-ash">
+                        Subscriber: <strong className="text-primary">{subscribedEmail || 'admin@yitzak.co.za'}</strong>
+                      </span>
+                      <button
+                        onClick={() => handleManualDispatchDigest(subscribedEmail)}
+                        disabled={resendingDigest}
+                        className="bg-[#023625] hover:bg-primary text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {resendingDigest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                        Email Briefing To Inbox
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
             {/* Interactive Compliance & ROI Calculator Section */}
             <ComplianceCalculator onInquire={(notes) => handleOpenBooking('compliance', notes)} />
 
-
-
-            {/* Accredited Certifications Detail (Page 5 transition) */}
-            <section className="py-16 md:py-24 bg-white border-b border-border">
-              <div className="max-w-[1280px] mx-auto px-4 md:px-16 space-y-16">
-                {/* Quote block */}
-                <ScrollReveal direction="up" delay={0.1}>
-                  <div className="bg-[#023625] text-white p-8 rounded-2xl relative overflow-hidden">
-                    <div className="absolute right-0 bottom-0 w-96 h-96 bg-white/5 rounded-full pointer-events-none -mr-24 -mb-24"></div>
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center z-10 relative">
-                      <div className="md:col-span-6 space-y-2 border-b md:border-b-0 md:border-r border-white/10 pb-6 md:pb-0 md:pr-8">
-                        <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold block">Our Philosophy</span>
-                        <blockquote className="font-serif text-xl md:text-2xl font-semibold leading-snug">
-                          "From first gap assessment to final certificate, one partner carries you through."
-                        </blockquote>
-                      </div>
-                      <div className="md:col-span-6 md:pl-8">
-                        <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                          Training, readiness, and accredited certification in a single relationship. No hand-offs, no lost context, no starting over.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </ScrollReveal>
-              </div>
-            </section>
-
-            {/* Interactive Industries We Serve */}
-            <section id="industries" className="py-16 md:py-24 bg-mist border-b border-border scroll-mt-24">
-              <div className="max-w-[1280px] mx-auto px-4 md:px-16 space-y-12">
-                <ScrollReveal direction="up" delay={0.05}>
-                  <div className="text-center space-y-3">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Markets &amp; Sectors</span>
-                    <h2 className="font-serif text-3xl md:text-[44px] text-primary font-bold">Industries We Serve</h2>
-                    <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                      We support organisations across diverse sectors, adapting our training, consulting, and certification solutions to the realities of each operating environment.
-                    </p>
-                    <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
-                  </div>
-                </ScrollReveal>
-
-                {/* Streamlined Sector Filters & Search */}
-                <ScrollReveal direction="up" delay={0.1}>
-                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between max-w-4xl mx-auto">
-                    {/* Category Tabs */}
-                    <div className="flex flex-wrap gap-2 w-full md:w-auto justify-center md:justify-start">
-                      {[
-                        { id: 'all', label: 'All Sectors' },
-                        { id: 'food', label: 'Food & Agriculture' },
-                        { id: 'industrial', label: 'Industrial & Manufacturing' },
-                        { id: 'services', label: 'Logistics & Services' },
-                        { id: 'enterprise', label: 'Enterprise & Public' }
-                      ].map((btn) => (
-                        <button
-                          key={btn.id}
-                          onClick={() => {
-                            setIndustrySectorFilter(btn.id);
-                            setIndustrySearchQuery('');
-                          }}
-                          className={`px-4 py-2.5 text-xs font-sans font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
-                            industrySectorFilter === btn.id && !industrySearchQuery
-                              ? 'bg-primary text-white shadow-xs'
-                              : 'bg-white border border-border text-on-surface-variant hover:bg-mist'
-                          }`}
-                        >
-                          {btn.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Quick Search */}
-                    <div className="relative w-full md:w-64 shrink-0">
-                      <input 
-                        type="text"
-                        value={industrySearchQuery}
-                        onChange={(e) => setIndustrySearchQuery(e.target.value)}
-                        placeholder="Search sector or standard..."
-                        className="w-full text-xs font-sans border border-border rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#B68A35] text-primary placeholder-outline bg-white"
-                      />
-                      {industrySearchQuery && (
-                        <button 
-                          onClick={() => setIndustrySearchQuery('')}
-                          className="absolute right-3 top-2.5 text-xs text-outline font-sans font-bold hover:text-primary"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </ScrollReveal>
-
-                {/* Display Area: Pillar Overview in "All Sectors" or Specific Sub-sector Cards when filtered */}
-                <ScrollReveal direction="up" delay={0.15}>
-                  {(() => {
-                    // Defined 4 Core Pillar Clusters for clean "All Sectors" view
-                    const pillarClusters = [
-                      {
-                        id: 'food-agri',
-                        title: 'Food & Agriculture',
-                        badge: 'Food Safety & GFSI',
-                        icon: ShieldCheck,
-                        desc: 'End-to-end compliance for food processing, beverage manufacturing, packaging plants, and agricultural supply chains.',
-                        highlights: ['BRCGS Food Safety', 'GLOBALG.A.P. Farm Assurance', 'HACCP & ISO 22000', 'Non-GMO & Organic'],
-                        action: 'Inquiry: Food & Agri Compliance'
-                      },
-                      {
-                        id: 'ind-mfg',
-                        title: 'Industrial & Manufacturing',
-                        badge: 'GMP & Safety ISOs',
-                        icon: Building2,
-                        desc: 'Engineering cleanrooms, pharmaceutical GMP compliance, assembly line quality systems, and construction safety frameworks.',
-                        highlights: ['ISO 9001 QMS', 'ISO 45001 Occupational Safety', 'Pharmaceutical GMP', 'Cleanroom Protocols'],
-                        action: 'Inquiry: Industrial & Manufacturing'
-                      },
-                      {
-                        id: 'log-serv',
-                        title: 'Logistics, Retail & Healthcare',
-                        badge: 'Storage & Supply Chain',
-                        icon: Award,
-                        desc: 'Cold storage monitoring, retail fresh supply governance, distribution auditing, and healthcare facility sanitation.',
-                        highlights: ['BRCGS Storage & Distribution', 'Cold Chain GDP Audits', 'Retail Vendor Governance', 'Healthcare Hygiene'],
-                        action: 'Inquiry: Logistics & Supply Chain'
-                      },
-                      {
-                        id: 'corp-pub',
-                        title: 'Enterprise & Public Sector',
-                        badge: 'Scalable Institutional Frameworks',
-                        icon: Globe,
-                        desc: 'Lean, scalable compliance for growing SMEs, integrated multi-site ISO management for corporate groups, and public sector roadmaps.',
-                        highlights: ['ISO 14001 Environmental', 'Integrated ISO Systems', 'SME Scale-up Systems', 'Institutional Governance'],
-                        action: 'Inquiry: Enterprise Governance'
-                      }
-                    ];
-
-                    const detailedSectors = [
-                      { id: '01', name: 'Food Manufacturing', category: 'food', desc: 'Core packaging, food hygiene compliance and GFSI standards implementation.', standards: ['BRCGS', 'HACCP'] },
-                      { id: '02', name: 'Beverage Production', category: 'food', desc: 'SOP layouts, water resource conservation and pasteurisation audits.', standards: ['ISO 22000', 'SOPs'] },
-                      { id: '03', name: 'Agriculture & Produce', category: 'food', desc: 'Farm assurance schemes, GLOBALG.A.P. audits, and crop safety procedures.', standards: ['GLOBALG.A.P.', 'GRASP'] },
-                      { id: '04', name: 'Pharmaceuticals & Medical', category: 'industrial', desc: 'Cleanroom engineering, GMP alignment and rigorous regulatory compliance.', standards: ['GMP', 'Cleanroom'] },
-                      { id: '05', name: 'General Manufacturing', category: 'industrial', desc: 'Hardware assembly, quality guidelines (ISO 9001), and operational safety.', standards: ['ISO 9001', 'Lean'] },
-                      { id: '06', name: 'Logistics & Warehousing', category: 'services', desc: 'Storage and distribution standards, cold chain monitoring, and BRCGS alignment.', standards: ['BRCGS S&D', 'Cold Chain'] },
-                      { id: '07', name: 'Retail & Supermarket Supply', category: 'services', desc: 'Supplier audit management, shelf freshness protocols, and local vendor governance.', standards: ['Vendor Audits', 'QMS'] },
-                      { id: '08', name: 'Hospitality & Catering', category: 'services', desc: 'Hotel sanitation, catering hazards assessment, and customer experience QMS.', standards: ['HACCP', 'Hygiene'] },
-                      { id: '09', name: 'Healthcare Facilities', category: 'services', desc: 'Inpatient safety metrics, sterilisation assurance, and occupational risk compliance.', standards: ['ISO 45001', 'Infection Control'] },
-                      { id: '10', name: 'Construction & Civil', category: 'industrial', desc: 'ISO 45001 safety structures, protective gear deployment, and emergency setups.', standards: ['ISO 45001', 'Site Safety'] },
-                      { id: '11', name: 'SMEs & Growing Enterprises', category: 'enterprise', desc: 'Lean compliance systems designed to scale without heavy operational overhead.', standards: ['Lean QMS', 'Scalable'] },
-                      { id: '12', name: 'Large Corporate & Public Sector', category: 'enterprise', desc: 'Multi-site integrated management frameworks linking ISO 9001, 14001 & 45001.', standards: ['ISO 9001', '14001', '45001'] }
-                    ];
-
-                    // If user searched OR clicked a specific category filter, show detailed items matching criteria
-                    if (industrySearchQuery || industrySectorFilter !== 'all') {
-                      const filtered = detailedSectors.filter(sector => {
-                        const matchesCategory = industrySectorFilter === 'all' || sector.category === industrySectorFilter;
-                        const matchesSearch = !industrySearchQuery || 
-                          sector.name.toLowerCase().includes(industrySearchQuery.toLowerCase()) || 
-                          sector.desc.toLowerCase().includes(industrySearchQuery.toLowerCase()) ||
-                          sector.standards.some(s => s.toLowerCase().includes(industrySearchQuery.toLowerCase()));
-                        return matchesCategory && matchesSearch;
-                      });
-
-                      if (filtered.length === 0) {
-                        return (
-                          <div className="bg-white border border-border p-10 text-center rounded-2xl max-w-lg mx-auto space-y-4 shadow-sm">
-                            <HelpCircle className="mx-auto text-outline" size={32} />
-                            <div className="space-y-1">
-                              <h4 className="font-serif text-base text-primary font-bold">No specific sectors matched "{industrySearchQuery}"</h4>
-                              <p className="font-sans text-xs text-on-surface-variant max-w-xs mx-auto leading-relaxed">
-                                We design custom compliance frameworks across all specialized industrial markets. Contact our technical team directly.
-                              </p>
-                            </div>
-                            <button 
-                              onClick={() => handleOpenBooking('compliance', `Inquiry: Sector Assessment for ${industrySearchQuery}`)}
-                              className="btn-primary text-xs py-2.5 px-6 uppercase tracking-wider inline-block cursor-pointer"
-                            >
-                              Request Custom Sector Assessment
-                            </button>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                          {filtered.map((sector) => (
-                            <div 
-                              key={sector.id} 
-                              className="bg-white border border-border rounded-xl p-6 hover:border-[#B68A35]/50 hover:shadow-md transition-all flex flex-col justify-between group"
-                            >
-                              <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                  <span className="font-serif text-base font-bold text-primary group-hover:text-[#B68A35] transition-colors">
-                                    {sector.name}
-                                  </span>
-                                  <span className="font-mono text-[10px] text-[#B68A35] bg-[#B68A35]/10 px-2 py-0.5 rounded font-bold uppercase">
-                                    {sector.category}
-                                  </span>
-                                </div>
-                                <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                                  {sector.desc}
-                                </p>
-                                <div className="flex flex-wrap gap-1.5 pt-2">
-                                  {sector.standards.map((st, i) => (
-                                    <span key={i} className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">
-                                      {st}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="mt-5 pt-3 border-t border-border/50 flex justify-end">
-                                <button
-                                  onClick={() => handleOpenBooking('compliance', `Inquiry: ${sector.name}`)}
-                                  className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
-                                >
-                                  <span>Inquire Solutions</span>
-                                  <ArrowRight size={12} />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    }
-
-                    // Default "All Sectors" View: Clean 4-Pillar Cluster Grid (Executive & Clean)
-                    return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                        {pillarClusters.map((pillar) => {
-                          const IconComp = pillar.icon;
-                          return (
-                            <div 
-                              key={pillar.id}
-                              className="bg-white border border-border rounded-2xl p-8 hover:border-[#B68A35]/50 hover:shadow-md transition-all flex flex-col justify-between group space-y-6"
-                            >
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <div className="w-12 h-12 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-[#B68A35]">
-                                    <IconComp size={22} />
-                                  </div>
-                                  <span className="bg-[#B68A35]/10 text-[#7a5a1f] border border-[#B68A35]/30 text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                                    {pillar.badge}
-                                  </span>
-                                </div>
-
-                                <div>
-                                  <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors">
-                                    {pillar.title}
-                                  </h3>
-                                  <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed mt-2">
-                                    {pillar.desc}
-                                  </p>
-                                </div>
-
-                                <div className="space-y-2 pt-2">
-                                  <span className="text-[10px] font-mono uppercase tracking-wider text-outline font-bold block">Key Standards &amp; Focus Areas</span>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {pillar.highlights.map((item, idx) => (
-                                      <span key={idx} className="text-[11px] bg-mist text-primary border border-border px-2.5 py-1 rounded-md font-medium inline-flex items-center gap-1">
-                                        <Check size={12} className="text-[#B68A35]" />
-                                        <span>{item}</span>
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="pt-4 border-t border-border flex items-center justify-between">
-                                <button
-                                  onClick={() => setIndustrySectorFilter(pillar.id === 'food-agri' ? 'food' : pillar.id === 'ind-mfg' ? 'industrial' : pillar.id === 'log-serv' ? 'services' : 'enterprise')}
-                                  className="text-xs font-sans text-on-surface-variant hover:text-primary font-bold transition-colors cursor-pointer"
-                                >
-                                  View specific sectors →
-                                </button>
-                                <button
-                                  onClick={() => handleOpenBooking('compliance', pillar.action)}
-                                  className="bg-primary/5 hover:bg-primary text-primary hover:text-white border border-primary/20 text-xs font-sans font-bold uppercase tracking-wider py-2.5 px-4 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5"
-                                >
-                                  <span>Inquire</span>
-                                  <ArrowRight size={12} />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </ScrollReveal>
-
-                {/* Sector banner quote */}
-                <ScrollReveal direction="up" delay={0.1}>
-                  <div className="bg-white border border-border p-6 rounded-xl flex items-center gap-4 max-w-3xl mx-auto shadow-xs">
-                    <Shield className="text-[#023625] shrink-0" size={24} />
-                    <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed italic">
-                      "Whatever the sector, the constants are the same: capable people, sound systems, and standards applied with practical judgement."
-                    </p>
-                  </div>
-                </ScrollReveal>
-              </div>
-            </section>
-
-            {/* Interactive Our Approach Workflow (Page 7 transition) */}
-            <section className="py-16 md:py-24 bg-white border-b border-border">
-              <div className="max-w-[1280px] mx-auto px-4 md:px-16 space-y-16">
-                <ScrollReveal direction="up" delay={0.05}>
-                  <div className="text-center space-y-3">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Structured Method</span>
-                    <h2 className="font-serif text-3xl md:text-[44px] text-primary font-bold">Our interactive approach</h2>
-                    <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                      A partnership-driven method that turns organisational goals into measurable and compliant outcomes. Click on any phase to see what we deliver.
-                    </p>
-                    <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
-                  </div>
-                </ScrollReveal>
-
-                {/* 5 steps of approach (Interactive Stepper layout) */}
-                <ScrollReveal direction="up" delay={0.1}>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {[
-                      { num: '01', title: 'Discover', short: 'Organisation mapping' },
-                      { num: '02', title: 'Assess', short: 'Protocol audit' },
-                      { num: '03', title: 'Develop', short: 'Bespoke solutions' },
-                      { num: '04', title: 'Deliver', short: 'Class & System setup' },
-                      { num: '05', title: 'Improve', short: 'Ongoing review' },
-                    ].map((step) => {
-                      const isSelected = activeFocusStep === step.num;
-                      return (
-                        <button
-                          key={step.num}
-                          onClick={() => setActiveFocusStep(step.num)}
-                          className={`text-left p-4 border rounded-xl transition-all cursor-pointer flex flex-col justify-between min-h-[110px] ${
-                            isSelected 
-                              ? 'bg-primary text-white border-primary shadow-md scale-[1.02]'
-                              : 'bg-mist border-border hover:bg-surface text-primary'
-                          }`}
-                        >
-                          <span className={`font-serif text-xl font-extrabold block border-b pb-2 ${
-                            isSelected ? 'text-[#B68A35] border-white/20' : 'text-[#B68A35] border-border'
-                          }`}>
-                            {step.num}
-                          </span>
-                          <div>
-                            <h4 className="font-serif text-xs md:text-sm font-bold block">{step.title}</h4>
-                            <span className={`font-sans text-[10px] block opacity-80 ${isSelected ? 'text-white/80' : 'text-on-surface-variant'}`}>
-                              {step.short}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </ScrollReveal>
-
-                {/* Selected Step Expanded Card details */}
-                <div className="bg-[#023625] text-white p-6 md:p-8 rounded-2xl relative overflow-hidden transition-all duration-300">
-                  <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full pointer-events-none -mr-16 -mt-16"></div>
-                  
-                  {(() => {
-                    const detailsMap: Record<string, { title: string; motto: string; core: string; activity: string[]; deliverable: string }> = {
-                      '01': {
-                        title: 'Phase 01: Discover',
-                        motto: 'Understanding your unique business environment and strategic targets.',
-                        core: 'We map out your current scale, target GFSI or ISO standards, regulatory pain points, and specific department capabilities.',
-                        activity: [
-                          'Host initial technical workshops with key department leads.',
-                          'Map legislative requirements and global trade goals.',
-                          'Define custom key performance indicators (KPIs).'
-                        ],
-                        deliverable: 'Discovery Report & Standards Roadmap Document'
-                      },
-                      '02': {
-                        title: 'Phase 02: Assess',
-                        motto: 'Rigorous gap analysis to uncover compliance vulnerabilities.',
-                        core: 'We perform on-site walkthroughs or documentation audits to test if standard operating procedures (SOPs) are functional in production.',
-                        activity: [
-                          'Review current record-keeping and data integrity systems.',
-                          'Perform mock audit drills mimicking third-party inspectors.',
-                          'Assess physical production facilities or safety boundaries.'
-                        ],
-                        deliverable: 'Rigor Gap Assessment Matrix & Remediation Report'
-                      },
-                      '03': {
-                        title: 'Phase 03: Develop',
-                        motto: 'Tailoring blueprints that perfectly fit your organization.',
-                        core: 'We structure custom curricula, build and draft robust standard operating procedures, and set up classroom scheduling overrides.',
-                        activity: [
-                          'Author streamlined documentation, avoiding administrative bloat.',
-                          'Design modular in-house training plans aligned to standards.',
-                          'Define technical roles, responsibilities, and clear CAPA workflows.'
-                        ],
-                        deliverable: 'Custom Management System Draft & Curricula Blueprint'
-                      },
-                      '04': {
-                        title: 'Phase 04: Deliver',
-                        motto: 'Enabling workforce competence and starting operations.',
-                        core: 'Facilitators run hands-on, instructor-led lessons and implement systems in-situ. We ensure teams absorb the theory and execute it.',
-                        activity: [
-                          'Deliver accredited classroom modules (Food Safety, Quality, Environmental, OHS).',
-                          'Initiate active standard operating procedures in real production runs.',
-                          'Train internal audit teams on ISO 19011 methods.'
-                        ],
-                        deliverable: 'Accredited Certification preparation & Active Systems Hand-off'
-                      },
-                      '05': {
-                        title: 'Phase 05: Improve',
-                        motto: 'Safeguarding compliance through continuous feedback loops.',
-                        core: 'We support continual improvement, system reviews, and help clients adjust protocols as international standards update.',
-                        activity: [
-                          'Schedule periodic audit overrides and safety reviews.',
-                          'Deliver advanced refresher workshops.',
-                          'Provide instant access to calendar overrides via YITZAK portal.'
-                        ],
-                        deliverable: 'Partnership SLA & Continuous Compliance Oversight'
-                      }
-                    };
-
-                    const selected = detailsMap[activeFocusStep] || detailsMap['01'];
-                    return (
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start relative z-10">
-                        {/* Summary */}
-                        <div className="md:col-span-5 space-y-4">
-                          <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold block">Active Method Details</span>
-                          <h3 className="font-serif text-2xl font-bold leading-tight">{selected.title}</h3>
-                          <p className="font-serif text-sm text-[#B68A35] italic leading-relaxed">{selected.motto}</p>
-                          <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">{selected.core}</p>
-                        </div>
-                        
-                        {/* Tasks & Deliverables */}
-                        <div className="md:col-span-7 space-y-6 md:pl-8 border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0">
-                          <div className="space-y-3">
-                            <span className="text-white/60 font-sans text-[10px] uppercase tracking-widest block font-bold">Key Activities In This Phase:</span>
-                            <ul className="space-y-2">
-                              {selected.activity.map((item, idx) => (
-                                <li key={idx} className="flex gap-2 items-start text-xs font-sans text-white/90">
-                                  <span className="text-[#B68A35] mt-1 flex-shrink-0">✓</span>
-                                  <span>{item}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          
-                          <div className="bg-white/5 border border-white/10 p-4 rounded-xl space-y-1">
-                            <span className="text-white/60 font-sans text-[9px] uppercase tracking-widest block">Phase Key Outcome:</span>
-                            <span className="font-sans text-xs font-bold text-white block">{selected.deliverable}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
+            {/* Client Portal & Access Verification Section */}
+            <section id="portal" className="py-16 bg-[#F9F9F9] border-t border-border px-4 md:px-16 scroll-mt-24">
+              <div className="max-w-[1280px] mx-auto space-y-8">
+                <div className="text-center space-y-2">
+                  <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Client Portal &amp; Management</span>
+                  <h2 className="font-serif text-2xl md:text-3xl text-primary font-bold">Secure Client Portal</h2>
+                  <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-xl mx-auto">
+                    Access restricted to verified institutional accounts. Manage bookings, review compliance records, and download accredited audit frameworks.
+                  </p>
                 </div>
-
-                {/* Bottom step alliance note */}
-                <ScrollReveal direction="up" delay={0.1}>
-                  <div className="bg-[#023625]/5 border border-primary/10 p-8 rounded-2xl relative overflow-hidden">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                      <div className="md:col-span-5 border-b md:border-b-0 md:border-r border-primary/10 pb-6 md:pb-0 md:pr-8 space-y-1">
-                        <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold block">Core Alliance</span>
-                        <h3 className="font-serif text-xl md:text-2xl font-bold text-primary">One partner. Local expertise, plus a global portfolio.</h3>
-                      </div>
-                      <div className="md:col-span-7 md:pl-8">
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Yitzak offers its own professional programmes while giving clients access to a respected global portfolio through FoodChain ID.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </ScrollReveal>
-              </div>
-            </section>
-
-            {/* Why Organisations Choose Us (Page 8 transition) */}
-            <section className="py-16 md:py-24 px-4 md:px-16 bg-mist border-b border-border">
-              <div className="max-w-[1280px] mx-auto space-y-16">
-                <ScrollReveal direction="up" delay={0.05}>
-                  <div className="text-center space-y-3">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">The Yitzak Difference</span>
-                    <h2 className="font-serif text-3xl md:text-[44px] text-primary font-bold">Why organisations choose us</h2>
-                    <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
-                  </div>
-                </ScrollReveal>
-
-                {/* Choose Us Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-6 border-b border-border pb-12 items-stretch">
-                  {[
-                    { title: 'Practical Industry Experience', text: 'Solutions built around real operational environments, not theory.' },
-                    { title: 'World-Class Training', text: 'Programmes aligned with recognised international standards and delivered to a global benchmark.' },
-                    { title: 'Tailored Solutions', text: 'Every programme is adapted to your organisation’s objectives.' },
-                    { title: 'Professional Delivery', text: 'Experienced facilitators delivering practical, engaging learning.' },
-                    { title: 'Long-Term Partnerships', text: 'Supporting organisations well beyond individual training events.' },
-                  ].map((item, idx) => (
-                    <ScrollReveal key={idx} direction="up" delay={0.1 + idx * 0.05} className="h-full">
-                      <div className="space-y-3 bg-white border border-border p-5 rounded-xl h-full flex flex-col justify-start shadow-xs hover:border-[#B68A35]/40 transition-all">
-                        <h4 className="font-serif text-md font-bold text-primary border-l-2 border-[#B68A35] pl-3 leading-snug">{item.title}</h4>
-                        <p className="font-sans text-xs text-on-surface-variant leading-relaxed pl-3">{item.text}</p>
-                      </div>
-                    </ScrollReveal>
-                  ))}
-                </div>
-
-                {/* Guides / Values */}
-                <ScrollReveal direction="up" delay={0.1}>
-                  <div className="space-y-8">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold block text-center">What Guides Us</span>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-stretch">
-                      {[
-                        { title: 'Integrity', text: 'Honest, practical advice that serves our clients’ best interests.' },
-                        { title: 'Collaboration', text: 'Strong partnerships create stronger organisations.' },
-                        { title: 'Excellence', text: 'High professional standards in everything we deliver.' },
-                        { title: 'Continuous Improvement', text: 'Learning never stops, and neither do we.' },
-                      ].map((val, idx) => (
-                        <div key={idx} className="bg-white p-6 border border-border space-y-2 rounded-xl shadow-xs h-full flex flex-col justify-start">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-[#B68A35]"></div>
-                            <h4 className="font-sans text-sm font-bold text-primary">{val.title}</h4>
-                          </div>
-                          <p className="font-sans text-xs text-on-surface-variant leading-relaxed">{val.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </ScrollReveal>
-
-                {/* Bottom block commitment */}
-                <ScrollReveal direction="up" delay={0.1}>
-                  <div className="bg-[#023625] text-[#F9F9F9] p-8 rounded-2xl relative overflow-hidden text-center max-w-4xl mx-auto">
-                    <div className="space-y-4 z-10 relative">
-                      <span className="text-[#B68A35] font-sans text-[11px] uppercase tracking-widest font-bold block">Our Commitment</span>
-                      <blockquote className="font-serif text-lg md:text-xl leading-relaxed italic max-w-2xl mx-auto">
-                        "Every organisation is different, so we don't believe in one-size-fits-all solutions. We work closely with every client to understand their objectives, develop practical solutions, and deliver measurable outcomes. Our success is measured by the success of the organisations we support."
-                      </blockquote>
-                    </div>
-                  </div>
-                </ScrollReveal>
-              </div>
-            </section>
-
-            {/* Interactive Schedule Portal (Google Sign In & Schedule Overrides) */}
-            <section id="portal" className="py-16 md:py-24 px-4 md:px-16 bg-white border-b border-border scroll-mt-24">
-              <div className="max-w-4xl mx-auto space-y-8">
-                <ScrollReveal direction="up" delay={0.05}>
-                  <div className="text-center">
-                    <span className="font-sans text-[11px] font-bold text-antique-gold uppercase tracking-widest">Interactive Client Portal</span>
-                    <h2 className="font-serif text-2xl md:text-3xl text-primary font-bold mt-2">Schedule Management</h2>
-                    <p className="font-sans text-xs md:text-sm text-ash max-w-lg mx-auto mt-2 leading-relaxed">
-                      Access your real-time secure dashboard to review corporate schedules, request new consultations, and manage overrides.
-                    </p>
-                  </div>
-                </ScrollReveal>
 
                 {isAuthLoading ? (
                   <div className="bg-mist border border-border p-12 text-center flex flex-col items-center justify-center space-y-4 rounded-xl">
@@ -1781,404 +2055,314 @@ export default function App() {
                     refreshTrigger={refreshTrigger}
                   />
                 ) : (
-                  <div className="bg-mist border border-border p-6 md:p-12 text-center space-y-6 rounded-2xl shadow-sm">
-                    <Lock className="mx-auto text-primary" size={32} />
-                    <div className="space-y-2">
-                      <h4 className="font-serif text-lg text-primary font-bold">Authorized Scheduling Portal</h4>
-                      <p className="font-sans text-xs text-ash max-w-md mx-auto leading-relaxed">
-                        Yitzak partners with Google Auth. Authentication blocks temporary slots globally in real-time, dispatches automated transaction receipts via Gmail, and synchronizes calendar files.
-                      </p>
-                    </div>
+                  <div className="bg-mist/40 border border-border/80 rounded-2xl p-4 sm:p-8 shadow-sm max-w-5xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+                      
+                      {/* Left Column: Work Email Authentication Card */}
+                      <div className="lg:col-span-7 bg-white border border-border p-6 sm:p-8 rounded-xl shadow-xs flex flex-col justify-between space-y-6">
+                        
+                        {/* Tab Switcher: Work Email Login vs Guest Access */}
+                        <div className="flex bg-mist/80 p-1 rounded-xl border border-border/60">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPortalMode('work_email');
+                              setPortalLoginError(null);
+                            }}
+                            className={`flex-1 py-2 px-3 text-xs font-serif font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                              portalMode === 'work_email'
+                                ? 'bg-white text-primary shadow-xs border border-border/40'
+                                : 'text-ash hover:text-primary'
+                            }`}
+                          >
+                            <Mail size={14} className={portalMode === 'work_email' ? 'text-[#B68A35]' : ''} />
+                            <span>Work Email Login</span>
+                          </button>
 
-                    {/* Google Auth Sandbox warning alert */}
-                    <div className="max-w-md mx-auto text-left text-xs text-[#856404] bg-[#fff3cd] border border-[#ffeeba] p-4 rounded space-y-2">
-                      <p className="font-bold flex items-center gap-1.5">
-                        <AlertCircle size={14} className="text-[#856404]" />
-                        <span>Facing a "Google verification" or 403 error?</span>
-                      </p>
-                      <p className="leading-relaxed">
-                        This sandbox testing environment operates within the Google Cloud Sandbox limit. If you see Google's block screen, it is because your Google account has not been added as an authorized "Test User" in the developer's GCP console.
-                      </p>
-                      <p className="font-bold text-[#533f03]">
-                        Bypass Option: Click the guest bypass option below to access the Portal and Bookings immediately.
-                      </p>
-                    </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPortalMode('guest');
+                              setPortalLoginError(null);
+                            }}
+                            className={`flex-1 py-2 px-3 text-xs font-serif font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                              portalMode === 'guest'
+                                ? 'bg-white text-primary shadow-xs border border-border/40'
+                                : 'text-ash hover:text-primary'
+                            }`}
+                          >
+                            <UserCheck size={14} className={portalMode === 'guest' ? 'text-[#B68A35]' : ''} />
+                            <span>Guest Access</span>
+                          </button>
+                        </div>
 
-                    <div className="max-w-md mx-auto pt-2">
-                      <AnimatePresence mode="wait">
-                        {!portalShowGuestForm ? (
+                        {/* Error Banner */}
+                        {portalLoginError && (
                           <motion.div
-                            key="google-signin-view"
-                            initial={{ opacity: 0, y: 15 }}
+                            initial={{ opacity: 0, y: -6 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="max-w-xs mx-auto space-y-4"
+                            className="bg-red-50 border border-red-200 text-red-800 p-3.5 rounded-xl text-xs font-sans flex items-start gap-2.5"
                           >
-                            <button
-                              id="portal_google_login_btn"
-                              onClick={handleGoogleLoginOnly}
-                              className="w-full flex justify-center items-center gap-3 py-3 border border-border bg-white text-charcoal hover:bg-surface transition-all active:scale-95 shadow-sm font-sans font-bold text-xs uppercase tracking-wider rounded cursor-pointer"
-                            >
-                              <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
-                                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-                                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                              </svg>
-                              <span>Sign in with Google</span>
-                            </button>
-
-                            <button
-                              id="portal_guest_bypass_btn"
-                              type="button"
-                              onClick={() => setPortalShowGuestForm(true)}
-                              className="w-full text-center py-2 text-xs text-secondary hover:underline font-semibold cursor-pointer block"
-                            >
-                              Or: Whitelist Email Verification & Guest Entry
-                            </button>
+                            <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
+                            <div className="leading-snug font-medium">{portalLoginError}</div>
                           </motion.div>
-                        ) : (
-                          <motion.div 
-                            key="guest-form-view"
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="text-left border border-border p-6 bg-white space-y-4 rounded-xl shadow-xs"
-                          >
-                            <div className="flex items-center justify-between border-b border-border pb-2.5">
-                              <h6 className="text-xs font-bold text-primary uppercase tracking-wide flex items-center gap-1.5">
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                Whitelisted Guest Entry
-                              </h6>
-                              <span className="font-mono text-[9px] uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-semibold flex items-center gap-1">
-                                Guest Access
-                              </span>
+                        )}
+
+                        {/* Mode 1: Work Email Login */}
+                        {portalMode === 'work_email' ? (
+                          <form onSubmit={handlePortalWorkEmailLogin} className="space-y-4">
+                            <div>
+                              <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1.5 flex items-center justify-between">
+                                <span>Work Email Address</span>
+                                <span className="text-[9px] text-[#B68A35] font-sans font-semibold">Business domains only</span>
+                              </label>
+                              <div className="relative">
+                                <Mail className="absolute left-3 top-3 text-ash/60" size={16} />
+                                <input
+                                  type="email"
+                                  required
+                                  value={portalWorkEmail}
+                                  onChange={(e) => {
+                                    setPortalWorkEmail(e.target.value);
+                                    if (portalLoginError) setPortalLoginError(null);
+                                  }}
+                                  placeholder="name@company.com"
+                                  className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
+                                />
+                              </div>
                             </div>
 
-                            <p className="text-[11px] text-ash leading-relaxed">
-                              Enter your pre-registered guest email address to access the portal.
-                            </p>
+                            {/* Auth Method Selector: Password vs One-Time Code */}
+                            <div className="space-y-2 pt-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-mono uppercase tracking-wider text-ash font-bold">Authentication Method</span>
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPortalAuthMethod('code');
+                                      setPortalLoginError(null);
+                                    }}
+                                    className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                                      portalAuthMethod === 'code' ? 'bg-[#023625] text-white' : 'text-ash hover:text-primary'
+                                    }`}
+                                  >
+                                    Send me a code
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPortalAuthMethod('password');
+                                      setPortalLoginError(null);
+                                    }}
+                                    className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                                      portalAuthMethod === 'password' ? 'bg-[#023625] text-white' : 'text-ash hover:text-primary'
+                                    }`}
+                                  >
+                                    Password
+                                  </button>
+                                </div>
+                              </div>
+
+                              {portalAuthMethod === 'password' ? (
+                                <div className="relative">
+                                  <Lock className="absolute left-3 top-3 text-ash/60" size={16} />
+                                  <input
+                                    type="password"
+                                    value={portalPassword}
+                                    onChange={(e) => {
+                                      setPortalPassword(e.target.value);
+                                      if (portalLoginError) setPortalLoginError(null);
+                                    }}
+                                    placeholder="Enter your account password"
+                                    className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {!portalCodeSent ? (
+                                    <div className="text-[11px] text-ash bg-mist/60 p-2.5 rounded-lg border border-border/60 leading-relaxed">
+                                      A secure 6-digit access code will be dispatched to your corporate email inbox upon verification.
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-1">
+                                      <div className="relative">
+                                        <KeyRound className="absolute left-3 top-3 text-[#B68A35]" size={16} />
+                                        <input
+                                          type="text"
+                                          maxLength={6}
+                                          value={portalOneTimeCode}
+                                          onChange={(e) => {
+                                            setPortalOneTimeCode(e.target.value);
+                                            if (portalLoginError) setPortalLoginError(null);
+                                          }}
+                                          placeholder="Enter 6-digit code"
+                                          className="w-full pl-9 pr-3 py-2.5 border border-[#B68A35] rounded-xl text-xs text-charcoal font-mono tracking-widest outline-none bg-white"
+                                        />
+                                      </div>
+                                      <p className="text-[10px] text-emerald-700 font-medium flex items-center gap-1">
+                                        <CheckCircle size={12} /> Verification code dispatched to {portalWorkEmail}. Check your inbox.
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="pt-2">
+                              <button
+                                type="submit"
+                                disabled={verifyingWhitelist || portalSendingCode}
+                                className="w-full bg-[#B68A35] hover:bg-[#9E7528] text-white py-3 rounded-xl font-serif font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                              >
+                                {verifyingWhitelist || portalSendingCode ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                    <span>Verifying Work Domain...</span>
+                                  </>
+                                ) : portalAuthMethod === 'code' && !portalCodeSent ? (
+                                  <>
+                                    <Send size={14} />
+                                    <span>Send me a one-time code</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock size={14} />
+                                    <span>Login Securely</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          /* Mode 2: Guest Access */
+                          <form onSubmit={handlePortalGuestAccess} className="space-y-4">
+                            <div className="bg-mist/60 border border-border/60 p-3 rounded-xl text-xs text-ash leading-relaxed">
+                              Guest Access enables one-off bookings and audit record queries. Entry requires a valid business work email.
+                            </div>
 
                             <div>
-                              <label htmlFor="portal-guest-name" className="text-[10px] uppercase font-mono tracking-wider text-ash block mb-1 font-semibold">Full Name</label>
-                              <input 
-                                id="portal-guest-name"
-                                type="text" 
+                              <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1">
+                                Full Name
+                              </label>
+                              <input
+                                type="text"
                                 required
                                 value={portalGuestName}
                                 onChange={(e) => setPortalGuestName(e.target.value)}
-                                placeholder="e.g. Christina Vonn"
-                                className="w-full p-2.5 border border-border bg-white text-xs text-charcoal outline-none focus:border-primary rounded-lg font-sans"
+                                placeholder="e.g. Alex Morgan"
+                                className="w-full p-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] bg-white font-sans"
                               />
                             </div>
+
                             <div>
-                              <label htmlFor="portal-guest-email" className="text-[10px] uppercase font-mono tracking-wider text-ash block mb-1 font-semibold">Pre-Registered Guest Email</label>
-                              <input 
-                                id="portal-guest-email"
-                                type="email" 
+                              <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1 flex items-center justify-between">
+                                <span>Work Email Address</span>
+                                <span className="text-[9px] text-[#B68A35] font-sans font-semibold">Business email required</span>
+                              </label>
+                              <input
+                                type="email"
                                 required
-                                value={portalGuestEmail}
-                                onChange={(e) => setPortalGuestEmail(e.target.value)}
-                                placeholder="e.g. christinavonnidigital@gmail.com"
-                                className="w-full p-2.5 border border-border bg-white text-xs text-charcoal outline-none focus:border-primary rounded-lg font-sans"
+                                value={portalGuestWorkEmail}
+                                onChange={(e) => {
+                                  setPortalGuestWorkEmail(e.target.value);
+                                  if (portalLoginError) setPortalLoginError(null);
+                                }}
+                                placeholder="e.g. alex.morgan@company.com"
+                                className="w-full p-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] bg-white font-sans"
                               />
                             </div>
 
-                            <div className="flex justify-between items-center text-[10px] text-ash pt-1">
-                              <span>Need to pre-register an email?</span>
+                            <div className="pt-2">
                               <button
-                                type="button"
-                                onClick={() => setShowWhitelistModal(true)}
-                                className="text-secondary hover:underline font-bold cursor-pointer"
-                              >
-                                Open Whitelist Manager →
-                              </button>
-                            </div>
-
-                            <div className="flex gap-2 pt-2">
-                              <button
-                                id="portal-guest-enter-btn"
-                                type="button"
+                                type="submit"
                                 disabled={verifyingWhitelist}
-                                onClick={handleVerifyAndEnterPortal}
-                                className="flex-1 bg-[#023625] text-white py-2.5 text-xs uppercase font-bold tracking-widest hover:bg-primary active:scale-95 transition-all cursor-pointer rounded-lg text-center flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="w-full bg-[#B68A35] hover:bg-[#9E7528] text-white py-3 rounded-xl font-serif font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
                               >
                                 {verifyingWhitelist ? (
                                   <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    Verifying Email...
+                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                    <span>Verifying Email...</span>
                                   </>
                                 ) : (
-                                  'Verify & Enter Portal'
+                                  <>
+                                    <UserCheck size={14} />
+                                    <span>Verify &amp; Enter Portal</span>
+                                  </>
                                 )}
                               </button>
-                              <button
-                                id="portal-guest-cancel-btn"
-                                type="button"
-                                onClick={() => {
-                                  setPortalShowGuestForm(false);
-                                }}
-                                className="px-4 border border-border text-ash hover:text-primary text-xs cursor-pointer rounded-lg hover:bg-mist transition-colors"
-                              >
-                                Cancel
-                              </button>
                             </div>
-                          </motion.div>
+                          </form>
                         )}
-                      </AnimatePresence>
 
-                      {/* Modal overlay for Whitelist Manager */}
-                      {showWhitelistModal && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-                          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                            <WhitelistManager onClose={() => setShowWhitelistModal(false)} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* CTA Banner Section */}
-            <section className="bg-forest-green py-20 px-4 md:px-16 text-center text-white overflow-hidden">
-              <ScrollReveal direction="up" delay={0.05}>
-                <div className="max-w-[1280px] mx-auto space-y-6">
-                  <h2 className="font-headline-lg text-[32px] md:text-[48px] leading-[40px] md:leading-[56px] font-bold">Ready to elevate your team's competence?</h2>
-                  <p className="font-body-lg text-[18px] text-white/85 max-w-2xl mx-auto">Discover our comprehensive range of professional training programmes designed for modern compliance needs.</p>
-                  <button 
-                    onClick={() => navigateTo('training')}
-                    className="btn-primary cursor-pointer inline-block"
-                  >
-                    Explore Training Programmes
-                  </button>
-                </div>
-              </ScrollReveal>
-            </section>
-
-            {/* Newsletter Subscription Section */}
-            <section id="newsletter" className="py-16 md:py-20 px-4 md:px-16 bg-mist border-t border-b border-border scroll-mt-24">
-              <div className="max-w-[1280px] mx-auto">
-                <ScrollReveal direction="up" delay={0.05}>
-                  <div className="max-w-3xl mx-auto text-center space-y-6">
-                    <div className="inline-flex items-center gap-2 bg-[#B68A35]/10 text-primary border border-[#B68A35]/20 px-3.5 py-1 rounded-full">
-                      <Mail size={14} className="text-[#B68A35]" />
-                      <span className="font-sans text-[10px] uppercase tracking-widest font-bold">Knowledge Newsletter</span>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold tracking-tight">The YITZAK Digest</h2>
-                      <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-xl mx-auto leading-relaxed">
-                        Stay ahead of evolving compliance landscapes. Get monthly technical briefings, ISO & GFSI standard updates, and strategic risk-mitigation insights curated by our principal auditors.
-                      </p>
-                    </div>
-
-                    <div className="max-w-md mx-auto pt-4">
-                      {newsletterSuccess ? (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="bg-[#023625] text-white p-6 md:p-8 rounded-2xl border border-white/10 text-center space-y-5 shadow-lg"
-                        >
-                          <div className="w-12 h-12 bg-[#B68A35]/20 rounded-full flex items-center justify-center text-[#B68A35] mx-auto">
-                            <CheckCircle size={24} />
-                          </div>
-
-                          <div className="space-y-1">
-                            <h3 className="font-serif text-xl font-bold text-white">Subscription Confirmed!</h3>
-                            <p className="text-xs text-[#DFC181] font-mono">{subscribedEmail}</p>
-                          </div>
-
-                          {emailDispatchStatus === 'sent' ? (
-                            <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-full text-xs font-medium">
-                              <CheckCircle size={14} />
-                              <span>Confirmation & Briefing Dispatched to Inbox</span>
-                            </div>
-                          ) : (
-                            <div className="bg-white/10 border border-white/20 p-3.5 rounded-xl text-xs space-y-2 text-left">
-                              <div className="flex items-center justify-between text-white/90">
-                                <span className="font-semibold text-[11px] uppercase tracking-wider text-[#DFC181]">Email Delivery Status</span>
-                                <span className="text-[10px] text-white/70">Ready for dispatch</span>
-                              </div>
-                              <p className="text-white/80 text-[11px] leading-relaxed">
-                                Subscription is active! To send an automated welcome briefing directly to <strong>{subscribedEmail}</strong> via Google Account, click below:
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => handleManualDispatchDigest(subscribedEmail)}
-                                disabled={resendingDigest}
-                                className="w-full bg-[#B68A35] hover:bg-[#a0772d] text-primary py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-                              >
-                                {resendingDigest ? (
-                                  <>
-                                    <Loader2 size={14} className="animate-spin" />
-                                    <span>Sending Email...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Mail size={14} />
-                                    <span>Send Confirmation Email Now</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          )}
-
-                          <p className="font-sans text-xs text-white/90 leading-relaxed max-w-sm mx-auto">
-                            Thank you for joining our professional community. You will receive monthly technical briefings, ISO &amp; GFSI updates, and compliance insights.
-                          </p>
-
-                          <div className="flex flex-col sm:flex-row gap-3 pt-2 justify-center">
-                            <button
-                              type="button"
-                              onClick={() => setShowBriefingPreview(true)}
-                              className="bg-white text-primary hover:bg-ash/20 py-2.5 px-5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
-                            >
-                              <BookOpen className="w-4 h-4" />
-                              <span>Read Latest Briefing On-Screen</span>
-                            </button>
-
-                            <button
-                              id="newsletter-resubscribe-btn"
-                              onClick={() => {
-                                setNewsletterSuccess(false);
-                                setEmailDispatchStatus('pending');
-                              }}
-                              className="bg-white/10 hover:bg-white/20 text-white py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                            >
-                              Subscribe Another Email
-                            </button>
-                          </div>
-                        </motion.div>
-                      ) : (
-                        <form onSubmit={handleNewsletterSubmit} className="space-y-4">
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <div className="relative flex-grow">
-                              <label htmlFor="newsletter-email" className="sr-only">Email address</label>
-                              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-outline">
-                                <Mail size={16} />
-                              </div>
-                              <input
-                                id="newsletter-email"
-                                type="email"
-                                placeholder="Enter your corporate email"
-                                required
-                                value={newsletterEmail}
-                                onChange={(e) => {
-                                  setNewsletterEmail(e.target.value);
-                                  if (newsletterError) setNewsletterError(null);
-                                }}
-                                className="w-full bg-white border border-border pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#B68A35] transition-colors rounded-xl text-primary font-sans h-[48px]"
-                              />
-                            </div>
-                            <button
-                              id="newsletter-submit"
-                              type="submit"
-                              disabled={newsletterSubmitting}
-                              className="bg-[#023625] hover:bg-primary text-white font-sans font-bold text-xs uppercase tracking-widest py-3 px-6 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2 h-[48px] sm:w-auto w-full flex-shrink-0 disabled:opacity-75 disabled:cursor-not-allowed"
-                            >
-                              {newsletterSubmitting ? (
-                                <>
-                                  <Loader2 size={14} className="animate-spin" />
-                                  <span>Subscribing...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <span>Subscribe</span>
-                                  <ChevronRight size={14} />
-                                </>
-                              )}
-                            </button>
-                          </div>
-
-                          {newsletterError && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="text-red-600 flex items-center justify-center gap-1.5 text-xs font-sans font-medium"
-                            >
-                              <AlertCircle size={14} />
-                              <span>{newsletterError}</span>
-                            </motion.div>
-                          )}
-
-                          <p className="font-sans text-[10px] text-outline text-center leading-relaxed">
-                            Zero spam. We respect your confidentiality. Unsubscribe at any time. By subscribing, you agree to receive communications from YITZAK.
-                          </p>
-                        </form>
-                      )}
-                    </div>
-                  </div>
-                </ScrollReveal>
-
-                {/* On-screen Technical Briefing Modal Preview */}
-                {showBriefingPreview && (
-                  <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-                    <div className="bg-white border border-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 space-y-6 shadow-2xl relative text-left">
-                      <button 
-                        onClick={() => setShowBriefingPreview(false)}
-                        className="absolute top-4 right-4 p-2 text-ash hover:text-primary rounded-full bg-mist hover:bg-border transition-colors cursor-pointer"
-                      >
-                        <X size={18} />
-                      </button>
-
-                      <div className="border-b border-border pb-4">
-                        <div className="inline-flex items-center gap-1.5 bg-[#B68A35]/10 text-primary border border-[#B68A35]/20 px-3 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold mb-2">
-                          <Mail className="w-3 h-3 text-[#B68A35]" />
-                          Knowledge Newsletter Briefing Issue #01
-                        </div>
-                        <h3 className="font-serif text-2xl font-bold text-primary">The YITZAK Digest</h3>
-                        <p className="text-xs text-ash mt-0.5">Executive Technical Briefing for Food Safety & Corporate Compliance Officers</p>
-                      </div>
-
-                      <div className="space-y-4 text-xs text-charcoal leading-relaxed">
-                        <div className="p-4 bg-mist rounded-xl border border-border space-y-2">
-                          <h4 className="font-serif font-bold text-sm text-primary">1. GFSI Benchmarking Requirements v2024 & HACCP Updates</h4>
-                          <p className="text-ash leading-relaxed">
-                            The Global Food Safety Initiative (GFSI) has mandated tightened benchmarking criteria for auditor competence, allergen management protocols, and environmental monitoring programs (EMP). Operations preparing for unannounced audits under FSSC 22000 v6 and BRCGS Issue 9 must re-verify risk assessments.
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-mist rounded-xl border border-border space-y-2">
-                          <h4 className="font-serif font-bold text-sm text-primary">2. Regulatory Sanitation & Allergen Control Cross-Contamination</h4>
-                          <p className="text-ash leading-relaxed">
-                            Recent industry enforcement actions highlight strict validated cleaning verification for shared production lines. YITZAK recommends implementing rapid ATP testing alongside swab validation protocols for top 9 priority allergens.
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-mist rounded-xl border border-border space-y-2">
-                          <h4 className="font-serif font-bold text-sm text-primary">3. Supplier Audit Governance & Cold Chain Integrity</h4>
-                          <p className="text-ash leading-relaxed">
-                            Digital traceability platforms and real-time temperature loggers are now integrated into GFSI-compliant vendor qualification workflows to mitigate raw material contamination risks prior to processing.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="border-t border-border pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <span className="text-[11px] text-ash">
-                          Subscriber: <strong className="text-primary">{subscribedEmail || 'christinagumpo@gmail.com'}</strong>
-                        </span>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleManualDispatchDigest(subscribedEmail)}
-                            disabled={resendingDigest}
-                            className="bg-[#023625] hover:bg-primary text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        <div className="border-t border-border/60 pt-3 flex items-center justify-between text-[10px] text-ash">
+                          <span>Need domain pre-registration?</span>
+                          <a
+                            href="mailto:info@yitzak.co.za?subject=Institutional%20Domain%20Pre-Registration%20Request"
+                            className="text-[#B68A35] hover:underline font-bold"
                           >
-                            {resendingDigest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                            Email Briefing To Inbox
-                          </button>
-                          <button
-                            onClick={() => setShowBriefingPreview(false)}
-                            className="border border-border hover:bg-mist text-ash text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg cursor-pointer"
-                          >
-                            Close
-                          </button>
+                            Contact Corporate Support →
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Right Column: Institutional Benefits & Trust Signals */}
+                      <div className="lg:col-span-5 bg-[#023625] text-white p-6 sm:p-8 rounded-xl shadow-xs flex flex-col justify-between space-y-6">
+                        <div className="space-y-5">
+                          {/* Verified Partner Badge */}
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[#B68A35] font-serif font-bold text-xs">
+                            <ShieldCheck size={16} />
+                            <span>Verified Partner | FoodChain ID</span>
+                          </div>
+
+                          <div>
+                            <h3 className="font-serif font-bold text-lg text-white">Institutional Benefits</h3>
+                            <p className="text-xs text-white/70 mt-1 font-sans leading-relaxed">
+                              Empowering corporate partners with seamless scheduling and verified compliance.
+                            </p>
+                          </div>
+
+                          <ul className="space-y-3.5 text-xs text-white/85 font-sans">
+                            <li className="flex items-start gap-3">
+                              <Shield className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-bold text-white block">Secure Audit Records</span>
+                                <span className="text-[11px] text-white/60">Encrypted repository for institutional gap analyses and FSMS reports.</span>
+                              </div>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <CheckCircle2 className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-bold text-white block">Verified Certifications</span>
+                                <span className="text-[11px] text-white/60">Real-time status tracking for accredited FoodChain ID schemes.</span>
+                              </div>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <Download className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-bold text-white block">Compliance Downloads</span>
+                                <span className="text-[11px] text-white/60">On-demand access to whitepapers, course syllabi, and advisory briefs.</span>
+                              </div>
+                            </li>
+                          </ul>
+                        </div>
+
+                        {/* Trust Signal Reassurance */}
+                        <div className="border-t border-white/15 pt-4 text-[11px] text-white/70 leading-relaxed font-sans flex items-start gap-2.5">
+                          <Lock className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
+                          <span>Access restricted to verified business accounts. Your data is encrypted and protected under GDPR &amp; POPIA standards.</span>
                         </div>
                       </div>
                     </div>
+
+                    {/* Modal overlay for Whitelist Manager */}
+                    {showWhitelistModal && (
+                      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+                        <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                          <WhitelistManager onClose={() => setShowWhitelistModal(false)} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2244,9 +2428,9 @@ export default function App() {
                     <ArrowRight size={14} />
                   </button>
                   <button
-                    onClick={() => window.print()}
+                    onClick={() => exportCapabilitySheetPDF('consulting_statement')}
                     className="bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center gap-2"
-                    title="Print Consulting & Advisory Capabilities Statement"
+                    title="Print or Download Consulting & Advisory Capabilities Statement"
                   >
                     <Printer size={14} className="text-[#DFC181]" />
                     <span>Print Capabilities Statement</span>
@@ -2355,55 +2539,8 @@ export default function App() {
               </div>
             </section>
 
-            {/* Strategic Pillars Breakdown Section */}
-            <section className="py-16 px-4 md:px-16 max-w-[1280px] mx-auto space-y-12">
-              <div className="text-center space-y-3">
-                <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Institutional Advisory Pillars</span>
-                <h2 className="font-serif text-2xl md:text-4xl text-primary font-bold">Three Integrated Areas of Expertise</h2>
-                <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                  Tailored consulting solutions structured to elevate governance, verify compliance, and train internal champions.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {PILLARS.map((p) => (
-                  <div key={p.id} className="bg-white border border-border p-8 rounded-2xl shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                    <div className="space-y-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                        <Shield size={22} className="text-primary" />
-                      </div>
-                      <h3 className="font-serif text-xl font-bold text-primary">{p.title}</h3>
-                      <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">{p.description}</p>
-                      
-                      <div className="pt-2 space-y-2">
-                        <span className="text-[10px] font-mono uppercase text-[#7d5800] font-bold block">Key Deliverables:</span>
-                        <ul className="space-y-1.5 pl-1">
-                          {p.details.map((d, dIdx) => (
-                            <li key={dIdx} className="flex items-start gap-2 text-xs text-ash">
-                              <CheckCircle size={12} className="text-green-600 mt-0.5 shrink-0" />
-                              <span>{d}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div className="pt-6 mt-6 border-t border-border no-print">
-                      <button
-                        onClick={() => handleOpenBooking(p.id, `Consulting Inquiry for ${p.title}`)}
-                        className="w-full bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3 px-4 rounded transition-colors cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        <span>Schedule {p.title}</span>
-                        <ArrowRight size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
             {/* Bottom Callout Banner */}
-            <section className="py-16 bg-[#023625] text-white px-4 md:px-16">
+            <section className="py-16 bg-[#132B22] text-white px-4 md:px-16 border-t border-b border-[#1E4235]">
               <div className="max-w-[1280px] mx-auto text-center space-y-6">
                 <h2 className="font-serif text-2xl md:text-4xl font-bold">Ready to turn learning into working systems?</h2>
                 <p className="font-sans text-sm md:text-base text-white/80 max-w-2xl mx-auto leading-relaxed">
@@ -2573,222 +2710,45 @@ export default function App() {
               </div>
             </section>
 
-            {/* Accredited Certification Schemes & FoodChain ID Section */}
-            <section id="certifications" className="py-16 md:py-24 bg-mist border-y border-border scroll-mt-24">
-              <div className="max-w-[1280px] mx-auto px-4 md:px-16 space-y-12">
+            {/* FoodChain ID Partnership & Certification Support Banner on Training Page */}
+            <section className="py-12 bg-mist border-y border-border">
+              <div className="max-w-[1280px] mx-auto px-4 md:px-16">
                 <ScrollReveal direction="up" delay={0.05}>
-                  <div className="text-center space-y-3">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Accredited Routes &amp; Partnerships</span>
-                    <h2 className="font-serif text-3xl md:text-[44px] text-primary font-bold">Accredited Certification Made Simple</h2>
-                    <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-3xl mx-auto leading-relaxed">
-                      Through our partnership with FoodChain ID, we offer internationally recognised certification schemes, supporting clients from scoping and audit readiness through to a valid certificate.
-                    </p>
-                    <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
-                  </div>
-                </ScrollReveal>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {/* Scheme 1 */}
-                  <ScrollReveal direction="up" delay={0.1}>
-                    <div className="bg-white border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full hover:border-[#B68A35]/30 hover:shadow-md transition-all group duration-200">
-                      <div className="space-y-6">
-                        {/* Status Indicators Bar */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                            <ShieldCheck size={12} className="text-emerald-600" />
-                            <span>Accredited</span>
-                          </span>
-                          <span className="bg-[#B68A35]/10 text-[#7a5a1f] border border-[#B68A35]/30 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                            <Award size={12} className="text-[#B68A35]" />
-                            <span>Industry Standard</span>
-                          </span>
-                        </div>
-
-                        <div className="flex items-start gap-4 pt-1">
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-serif font-bold text-lg shrink-0">
-                            P
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors">Product &amp; Label Certification</h3>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-outline block">Products &amp; Claims</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">Non-GMO</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">Organic</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">Identity Preserved</span>
-                        </div>
-
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Certification for product claims that hold up to market and regulatory scrutiny, including organic and Non-GMO. We help you choose the right scheme, prepare your evidence, and move through assessment with confidence.
-                        </p>
-                      </div>
-
-                      <div className="mt-8 pt-4 border-t border-border/60 flex flex-wrap justify-between items-center gap-2">
-                        <a
-                          href="https://www.foodchainid.com/product-and-label-certification/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <span>Scheme details</span>
-                          <span>↗</span>
-                        </a>
-                        <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Product & Label Certification')}
-                          className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Inquire Readiness</span>
-                          <ArrowRight size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </ScrollReveal>
-
-                  {/* Scheme 2 */}
-                  <ScrollReveal direction="up" delay={0.2}>
-                    <div className="bg-white border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full hover:border-[#B68A35]/30 hover:shadow-md transition-all group duration-200">
-                      <div className="space-y-6">
-                        {/* Status Indicators Bar */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                            <ShieldCheck size={12} className="text-emerald-600" />
-                            <span>Accredited</span>
-                          </span>
-                          <span className="bg-sky-50 text-sky-800 border border-sky-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                            <Globe size={12} className="text-sky-600" />
-                            <span>GFSI Benchmarked</span>
-                          </span>
-                        </div>
-
-                        <div className="flex items-start gap-4 pt-1">
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-serif font-bold text-lg shrink-0">
-                            G
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors">GLOBALG.A.P.</h3>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-outline block">Farm Assurance</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">Good Ag Practice</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">Chain of Custody</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">GRASP</span>
-                        </div>
-
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Good agricultural practice certification covering food safety, traceability, and responsible production. GFSI-benchmarked and recognised by retailers worldwide, it opens doors to markets that demand certified supply.
-                        </p>
-                      </div>
-
-                      <div className="mt-8 pt-4 border-t border-border/60 flex flex-wrap justify-between items-center gap-2">
-                        <a
-                          href="https://www.foodchainid.com/globalg-a-p/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <span>Scheme details</span>
-                          <span>↗</span>
-                        </a>
-                        <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: GLOBALG.A.P. Certification')}
-                          className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Inquire Readiness</span>
-                          <ArrowRight size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </ScrollReveal>
-
-                  {/* Scheme 3 */}
-                  <ScrollReveal direction="up" delay={0.3}>
-                    <div className="bg-white border border-border p-8 rounded-xl flex flex-col justify-between shadow-sm h-full hover:border-[#B68A35]/30 hover:shadow-md transition-all group duration-200">
-                      <div className="space-y-6">
-                        {/* Status Indicators Bar */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                            <ShieldCheck size={12} className="text-emerald-600" />
-                            <span>Accredited</span>
-                          </span>
-                          <span className="bg-indigo-50 text-indigo-800 border border-indigo-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                            <Award size={12} className="text-indigo-600" />
-                            <span>Global Standard</span>
-                          </span>
-                        </div>
-
-                        <div className="flex items-start gap-4 pt-1">
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-serif font-bold text-lg shrink-0">
-                            B
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors">BRCGS Certifications</h3>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-outline block">Food Safety &amp; Quality</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">Food Safety Issue 9</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">Packaging</span>
-                          <span className="text-[10px] bg-mist text-primary border border-border px-2 py-0.5 rounded font-medium">Storage &amp; Dist.</span>
-                        </div>
-
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Globally recognised food-safety standards spanning manufacturing, packaging, storage, and distribution. We prepare your team and systems so the audit confirms what is already in place.
-                        </p>
-                      </div>
-
-                      <div className="mt-8 pt-4 border-t border-border/60 flex flex-wrap justify-between items-center gap-2">
-                        <a
-                          href="https://www.foodchainid.com/brcgs-certifications/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <span>Scheme details</span>
-                          <span>↗</span>
-                        </a>
-                        <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: BRCGS Certification')}
-                          className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Inquire Readiness</span>
-                          <ArrowRight size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </ScrollReveal>
-                </div>
-
-                {/* FoodChain ID Banner Quote */}
-                <ScrollReveal direction="up" delay={0.1}>
                   <div className="bg-[#023625] text-white p-8 md:p-10 rounded-2xl relative overflow-hidden shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="space-y-2 max-w-2xl">
-                      <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold block">Exclusive Technical Partnership</span>
-                      <h3 className="font-serif text-xl md:text-2xl font-bold">FoodChain ID &amp; Yitzak Consulting</h3>
+                    <div className="space-y-3 max-w-2xl">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#B68A35]/20 text-[#DFC181] border border-[#B68A35]/40 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">
+                          Exclusive Technical Partnership
+                        </span>
+                        <span className="text-white/60 text-xs font-mono">FoodChain ID Academy</span>
+                      </div>
+                      <h3 className="font-serif text-2xl md:text-3xl font-bold">Accredited Schemes &amp; Global Certification Support</h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        As an Official FoodChain ID Partner, Yitzak gives clients access to selected FoodChain ID Academy courses, with certification delivered through FoodChain ID and its accredited certification bodies.
+                        As an official FoodChain ID Partner, Yitzak provides comprehensive training across accredited schemes—including GFSI, GLOBALG.A.P., Non-GMO, and BRCGS—supported by direct audit readiness assistance.
                       </p>
                     </div>
-                    <a
-                      href="https://www.foodchainid.com/academy/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded transition-all cursor-pointer shrink-0 inline-flex items-center gap-2"
-                    >
-                      <span>Explore Global Academy</span>
-                      <span>↗</span>
-                    </a>
+                    <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+                      <button
+                        onClick={() => navigateTo('certifications')}
+                        className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded transition-all cursor-pointer shadow-sm inline-flex items-center justify-center gap-2"
+                      >
+                        <span>Certification Support</span>
+                        <ArrowRight size={14} />
+                      </button>
+                      <a
+                        href="https://www.foodchainid.com/academy/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="border border-white/30 hover:border-white text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded transition-all cursor-pointer inline-flex items-center justify-center gap-2"
+                      >
+                        <span>Global Academy</span>
+                        <span>↗</span>
+                      </a>
+                    </div>
                   </div>
                 </ScrollReveal>
               </div>
             </section>
-
-            {/* Interactive Compliance & ROI Calculator Section */}
-            <ComplianceCalculator onInquire={(notes) => handleOpenBooking('compliance', notes)} />
 
             {/* Training Portfolio Section */}
             <section id="portfolio" className="py-16 md:py-20 px-4 md:px-16 bg-white scroll-mt-24">
@@ -2822,12 +2782,15 @@ export default function App() {
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
                       <button
-                        onClick={() => window.print()}
+                        onClick={() => {
+                          exportPortfolioToPDF(portfolioCategories);
+                          triggerSmartPrint();
+                        }}
                         className="bg-[#B68A35] hover:bg-[#a37a2e] text-white font-mono text-[11px] font-bold uppercase tracking-wider py-2 px-3.5 transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs active:scale-[0.98] rounded-md"
                         title="Print full training syllabus & portfolio for physical record-keeping"
                       >
                         <Printer size={13} />
-                        <span className="whitespace-nowrap">Print Record</span>
+                        <span className="whitespace-nowrap">Print / PDF Record</span>
                       </button>
                       <button
                         onClick={() => exportPortfolioToPDF(portfolioCategories)}
@@ -2899,11 +2862,11 @@ export default function App() {
                           className="space-y-6"
                         >
                           {/* Category Header */}
-                          <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-4 mb-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#E5E5E5] pb-4 mb-6">
                             <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">
                               {cat.title}
                             </h3>
-                            <span className="text-secondary font-mono text-[11px] uppercase tracking-wider bg-secondary-fixed px-3 py-1 rounded-md font-bold shrink-0 min-w-[95px] text-center border border-secondary/20">
+                            <span className="text-secondary font-mono text-[11px] uppercase tracking-wider bg-secondary-fixed px-3 py-1 rounded-md font-bold shrink-0 text-center border border-secondary/20 self-start sm:self-auto">
                               {cat.badge}
                             </span>
                           </div>
@@ -2913,10 +2876,10 @@ export default function App() {
                             {cat.courses.map((course, idx) => (
                               <div
                                 key={idx}
-                                className="border border-[#E5E5E5] p-5 md:p-6 hover:shadow-ambient transition-all duration-300 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-xl"
+                                className="border border-[#E5E5E5] p-4 sm:p-5 md:p-6 hover:shadow-ambient transition-all duration-300 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 rounded-xl"
                               >
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-sans text-sm md:text-base font-bold text-primary mb-1">
+                                <div className="flex-1 min-w-0 pr-0 sm:pr-2">
+                                  <h4 className="font-sans text-sm md:text-base font-bold text-primary mb-1 leading-snug">
                                     {course.title}
                                   </h4>
                                   <p className="font-sans text-xs text-on-surface-variant leading-relaxed opacity-85">
@@ -2924,11 +2887,11 @@ export default function App() {
                                   </p>
                                 </div>
 
-                                <div className="flex flex-row md:flex-col items-start md:items-end justify-center gap-1.5 shrink-0 min-w-[120px]">
+                                <div className="flex flex-wrap sm:flex-col items-start sm:items-end justify-start sm:justify-center gap-1.5 shrink-0 max-w-full">
                                   {course.tags.map((tag, tagIdx) => (
                                     <span
                                       key={tagIdx}
-                                      className="inline-flex items-center justify-center min-w-[95px] text-center text-[10px] font-mono uppercase tracking-wider bg-forest-green/10 text-forest-green px-3 py-1 font-bold rounded-md border border-forest-green/15 whitespace-nowrap"
+                                      className="inline-flex items-center justify-center text-center text-[10px] font-mono uppercase tracking-wider bg-forest-green/10 text-forest-green px-2.5 py-0.5 font-bold rounded-md border border-forest-green/15 whitespace-nowrap max-w-full"
                                     >
                                       {tag}
                                     </span>
@@ -3037,29 +3000,29 @@ export default function App() {
           >
             {/* Certifications Page Hero */}
             <section className="relative pt-12 md:pt-20 pb-16 px-4 md:px-16 max-w-[1280px] mx-auto overflow-hidden">
-              <div className="text-center max-w-4xl mx-auto space-y-6">
-                <span className="bg-[#B68A35]/10 text-[#7a5a1f] border border-[#B68A35]/30 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest inline-flex items-center gap-1.5 shadow-xs">
+              <div className="max-w-4xl space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-xs font-mono font-bold uppercase tracking-widest">
                   <Award size={14} className="text-[#B68A35]" />
                   <span>Accredited Certification Schemes &amp; Global Partnerships</span>
-                </span>
+                </div>
                 <h1 className="font-serif text-[38px] md:text-[58px] leading-[46px] md:leading-[66px] tracking-tight text-primary font-bold">
                   Internationally Recognised Certification
                 </h1>
-                <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl mx-auto">
+                <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl">
                   As an Official <strong className="text-primary font-bold">FoodChain ID</strong> Partner, Yitzak guides organisations from scope review and audit readiness through to a valid certificate, issued by FoodChain ID and its accredited certification bodies.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2 no-print">
+                <div className="flex flex-wrap items-center gap-4 pt-2 no-print">
                   <button
                     onClick={() => handleOpenBooking('compliance', 'Inquiry: Accredited Certification Readiness')}
-                    className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-7 rounded cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2"
+                    className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2"
                   >
                     <span>Inquire Audit Readiness</span>
                     <ArrowRight size={14} />
                   </button>
                   <button
-                    onClick={() => window.print()}
-                    className="bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-7 rounded cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2"
-                    title="Print certification schemes catalog for physical record-keeping"
+                    onClick={() => exportCapabilitySheetPDF('certification_portfolio')}
+                    className="bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2"
+                    title="Print or Download certification schemes catalog for physical record-keeping"
                   >
                     <Printer size={14} className="text-[#DFC181]" />
                     <span>Print Certification Portfolio</span>
@@ -3068,7 +3031,7 @@ export default function App() {
                     href="https://www.foodchainid.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="border border-primary text-primary hover:bg-primary hover:text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-7 rounded cursor-pointer transition-all active:scale-95 inline-flex items-center justify-center gap-2"
+                    className="border border-primary text-primary hover:bg-primary hover:text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 inline-flex items-center justify-center gap-2"
                   >
                     <span>FoodChain ID Global Portal</span>
                     <Globe size={14} />
@@ -3106,27 +3069,27 @@ export default function App() {
                   </div>
                 </ScrollReveal>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                   {/* Scheme 1: Product & Label Certification */}
                   <ScrollReveal direction="up" delay={0.1}>
-                    <div className="bg-white border border-[#E5E5E5] p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full">
+                    <div className="bg-white border border-[#E5E5E5] p-5 sm:p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full overflow-hidden">
                       <div className="space-y-5">
-                        <div className="flex items-center justify-between gap-2 border-b border-[#F0F0F0] pb-4">
-                          <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-[#F0F0F0] pb-4">
+                          <div className="flex items-center gap-3 min-w-0 max-w-full">
                             <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
                               P
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
                                 Product &amp; Label
                               </h3>
-                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block">
+                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block truncate">
                                 Products &amp; Claims
                               </span>
                             </div>
                           </div>
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1">
-                            <ShieldCheck size={12} className="text-emerald-600" />
+                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1 self-start mt-0.5">
+                            <ShieldCheck size={12} className="text-emerald-600 shrink-0" />
                             <span>Accredited</span>
                           </span>
                         </div>
@@ -3139,7 +3102,7 @@ export default function App() {
                           <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Key Schemes:</span>
                           <div className="flex flex-wrap gap-1.5">
                             {['Non-GMO', 'Organic', 'Identity Preserved', 'Gluten-Free'].map((item, idx) => (
-                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium">
+                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium max-w-full truncate">
                                 {item}
                               </span>
                             ))}
@@ -3170,24 +3133,24 @@ export default function App() {
 
                   {/* Scheme 2: GLOBALG.A.P. */}
                   <ScrollReveal direction="up" delay={0.2}>
-                    <div className="bg-white border border-[#E5E5E5] p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full">
+                    <div className="bg-white border border-[#E5E5E5] p-5 sm:p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full overflow-hidden">
                       <div className="space-y-5">
-                        <div className="flex items-center justify-between gap-2 border-b border-[#F0F0F0] pb-4">
-                          <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-[#F0F0F0] pb-4">
+                          <div className="flex items-center gap-3 min-w-0 max-w-full">
                             <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
                               G
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
                                 GLOBALG.A.P.
                               </h3>
-                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block">
+                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block truncate">
                                 Farm Assurance
                               </span>
                             </div>
                           </div>
-                          <span className="bg-sky-50 text-sky-800 border border-sky-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1">
-                            <Globe size={12} className="text-sky-600" />
+                          <span className="bg-sky-50 text-sky-800 border border-sky-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1 self-start mt-0.5">
+                            <Globe size={12} className="text-sky-600 shrink-0" />
                             <span>GFSI Benchmarked</span>
                           </span>
                         </div>
@@ -3200,7 +3163,7 @@ export default function App() {
                           <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Covered Modules:</span>
                           <div className="flex flex-wrap gap-1.5">
                             {['Good Ag Practice', 'Chain of Custody', 'GRASP', 'Produce Handling'].map((item, idx) => (
-                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium">
+                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium max-w-full truncate">
                                 {item}
                               </span>
                             ))}
@@ -3231,24 +3194,24 @@ export default function App() {
 
                   {/* Scheme 3: BRCGS Certifications */}
                   <ScrollReveal direction="up" delay={0.3}>
-                    <div className="bg-white border border-[#E5E5E5] p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full">
+                    <div className="bg-white border border-[#E5E5E5] p-5 sm:p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full overflow-hidden">
                       <div className="space-y-5">
-                        <div className="flex items-center justify-between gap-2 border-b border-[#F0F0F0] pb-4">
-                          <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-[#F0F0F0] pb-4">
+                          <div className="flex items-center gap-3 min-w-0 max-w-full">
                             <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
                               B
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
                                 BRCGS Standard
                               </h3>
-                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block">
+                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block truncate">
                                 Food Safety &amp; Quality
                               </span>
                             </div>
                           </div>
-                          <span className="bg-indigo-50 text-indigo-800 border border-indigo-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1">
-                            <Award size={12} className="text-indigo-600" />
+                          <span className="bg-indigo-50 text-indigo-800 border border-indigo-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1 self-start mt-0.5">
+                            <Award size={12} className="text-indigo-600 shrink-0" />
                             <span>Global Standard</span>
                           </span>
                         </div>
@@ -3261,7 +3224,7 @@ export default function App() {
                           <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Scope Standards:</span>
                           <div className="flex flex-wrap gap-1.5">
                             {['Food Safety Issue 9', 'Packaging', 'Storage & Dist.', 'Agents & Brokers'].map((item, idx) => (
-                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium">
+                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium max-w-full truncate">
                                 {item}
                               </span>
                             ))}
@@ -3350,9 +3313,159 @@ export default function App() {
                 </ScrollReveal>
               </div>
             </section>
+          </motion.div>
+        )}
 
-            {/* Compliance & ROI Calculator Section */}
-            <ComplianceCalculator onInquire={(notes) => handleOpenBooking('compliance', notes)} />
+        {currentView === 'process_implementation' && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white min-h-screen text-on-surface"
+          >
+            {/* Hero Section */}
+            <section className="relative pt-10 md:pt-16 pb-14 px-4 md:px-16 max-w-[1280px] mx-auto overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+                <div className="lg:col-span-7 z-10 space-y-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-xs font-mono font-bold uppercase tracking-widest">
+                    <Workflow size={14} className="text-[#B68A35]" />
+                    <span>Operational Pillar 04</span>
+                  </div>
+                  <h1 className="font-serif text-[38px] md:text-[54px] leading-[46px] md:leading-[62px] tracking-tight text-primary font-bold">
+                    Business Process Implementation
+                  </h1>
+                  <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed">
+                    Helping organisations build solid operational foundations from zero. From process mapping and risk controls to setting up HR, accounting, and core workflow systems, Yitzak transforms strategic objectives into measurable, scalable execution.
+                  </p>
+                  <p className="font-sans text-xs md:text-sm text-outline border-l-2 border-[#B68A35] pl-4">
+                    Bridge the gap between strategy and operational reality with tailored process governance and automated control frameworks.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-4 pt-2">
+                    <button
+                      onClick={() => handleOpenBooking('process_implementation', 'Inquiry: Business Process Implementation Services')}
+                      className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <span>Request Implementation Plan</span>
+                      <ArrowRight size={14} />
+                    </button>
+                    <button
+                      onClick={() => exportCapabilitySheetPDF('capability_sheet')}
+                      className="border border-forest-green text-forest-green hover:bg-forest-green hover:text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-2"
+                      title="Print or Download Capability Sheet"
+                    >
+                      <Printer size={14} />
+                      <span>Print Capability Sheet</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="lg:col-span-5 relative">
+                  <div className="bg-[#023625] text-white p-8 rounded-2xl border border-white/10 shadow-xl space-y-6">
+                    <h3 className="font-serif text-2xl font-bold text-[#B68A35]">Core Capabilities</h3>
+                    <ul className="space-y-4 font-sans text-xs md:text-sm text-white/90">
+                      <li className="flex items-start gap-3">
+                        <CheckCircle2 size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
+                        <span><strong>Process Mapping & SOP Formulation:</strong> Standardising workflows for error reduction and clarity.</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle2 size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
+                        <span><strong>Governance & Risk Controls:</strong> Establishing internal control checkpoints and risk mitigation protocols.</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle2 size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
+                        <span><strong>HR & Accounting Setup:</strong> Operationalizing foundational HR policies, payroll rules, and financial reporting workflows.</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle2 size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
+                        <span><strong>Lean Audits & Efficiency:</strong> Streamlining repetitive tasks and removing operational bottlenecks.</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Implementation Phased Roadmap */}
+            <section className="bg-[#F9F9F9] py-16 md:py-20 px-4 md:px-16 border-t border-[#E5E5E5]">
+              <div className="max-w-[1280px] mx-auto space-y-12">
+                <div className="text-center space-y-3">
+                  <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold">Execution Framework</span>
+                  <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold">Two-Phase Implementation Journey</h2>
+                  <div className="w-20 h-1 bg-[#B68A35] mx-auto"></div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Phase 1 */}
+                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-8 shadow-sm space-y-6 hover:border-[#B68A35]/40 transition-all">
+                    <div className="flex items-center gap-3 border-b border-[#E5E5E5] pb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#023625] text-[#B68A35] font-serif font-bold text-lg flex items-center justify-center shrink-0">
+                        01
+                      </div>
+                      <div>
+                        <h3 className="font-serif text-xl text-primary font-bold">Phase 1: Foundation & Governance</h3>
+                        <span className="text-xs font-mono text-ash uppercase">Establishing baseline structure & compliance readiness</span>
+                      </div>
+                    </div>
+                    <ul className="space-y-3 font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#B68A35] font-bold">•</span>
+                        <span><strong>Process Mapping & Optimisation:</strong> Documenting end-to-end operational workflows and eliminating operational noise.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#B68A35] font-bold">•</span>
+                        <span><strong>Governance & Risk Controls:</strong> Designing internal governance frameworks and risk control metrics.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#B68A35] font-bold">•</span>
+                        <span><strong>Audit Readiness Framework:</strong> Aligning operating standards with ISO and industry compliance criteria.</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Phase 2 */}
+                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-8 shadow-sm space-y-6 hover:border-[#B68A35]/40 transition-all">
+                    <div className="flex items-center gap-3 border-b border-[#E5E5E5] pb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#023625] text-[#B68A35] font-serif font-bold text-lg flex items-center justify-center shrink-0">
+                        02
+                      </div>
+                      <div>
+                        <h3 className="font-serif text-xl text-primary font-bold">Phase 2: Operational Systems & Scaling</h3>
+                        <span className="text-xs font-mono text-ash uppercase">HR, accounting & lean continuous improvement</span>
+                      </div>
+                    </div>
+                    <ul className="space-y-3 font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#B68A35] font-bold">•</span>
+                        <span><strong>Operational System Integration:</strong> Implementing HR structures, accounting controls, and reporting workflows.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#B68A35] font-bold">•</span>
+                        <span><strong>Lean Audits & Efficiency:</strong> Conducting time-and-motion studies to optimise resource deployment.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#B68A35] font-bold">•</span>
+                        <span><strong>Team Onboarding & Governance Training:</strong> Ensuring operational leaders maintain and enforce updated protocols.</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-[#023625] text-white p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="space-y-2 max-w-2xl">
+                    <h3 className="font-serif text-xl md:text-2xl font-bold">Ready to standardise and scale your operations?</h3>
+                    <p className="font-sans text-xs md:text-sm text-white/80">
+                      Speak with a principal consultant to structure an implementation roadmap tailored to your company's sector and size.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleOpenBooking('process_implementation', 'Inquiry: Business Process Implementation Roadmap')}
+                    className="bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded cursor-pointer transition-all shrink-0 shadow-md"
+                  >
+                    Schedule Consultation
+                  </button>
+                </div>
+              </div>
+            </section>
           </motion.div>
         )}
 
@@ -3369,6 +3482,20 @@ export default function App() {
                 onReserveCourse={(notesStr) => handleOpenBooking('training', notesStr)} 
               />
             </div>
+          </motion.div>
+        )}
+
+        {currentView === 'knowledge' && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <KnowledgeCenter
+              onOpenBooking={handleOpenBooking}
+              onNavigateToContact={() => navigateTo('contact')}
+            />
           </motion.div>
         )}
 
@@ -3392,46 +3519,183 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container full-width">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 px-4 md:px-16 py-16 max-w-[1280px] mx-auto">
-          <div className="col-span-1 md:col-span-2 mb-8 md:mb-0 space-y-4">
-            <div>
-              <span className="font-serif font-extrabold text-2xl tracking-wider text-white uppercase block mb-3">YITZAK</span>
+      {/* 6. Footer (Three Columns: Contact Info, Quick Links, Follow Us) */}
+      <footer className="bg-[#023625] text-white full-width border-t border-white/10">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-16 py-16 space-y-12">
+          {/* Main 3 Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            
+            {/* Column 1: Contact Info */}
+            <div className="space-y-4">
+              <h3 className="text-[#B68A35] font-serif font-bold text-base tracking-wider uppercase">
+                Contact Info
+              </h3>
+              <ul className="space-y-3 font-sans text-xs md:text-sm text-white/80">
+                <li className="flex items-start gap-3">
+                  <Mail size={16} className="text-[#B68A35] mt-0.5 shrink-0" />
+                  <div>
+                    <span className="block text-white/50 text-[10px] uppercase font-mono">Email Us</span>
+                    <a href="mailto:info@yitzak.co.za" className="hover:text-[#B68A35] transition-colors block font-mono text-xs">
+                      info@yitzak.co.za
+                    </a>
+                    <a href="mailto:cgumpo@yitzak.co.za" className="hover:text-[#B68A35] transition-colors block font-mono text-xs text-white/60">
+                      cgumpo@yitzak.co.za
+                    </a>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Phone size={16} className="text-[#B68A35] mt-0.5 shrink-0" />
+                  <div>
+                    <span className="block text-white/50 text-[10px] uppercase font-mono">Phone Enquiries</span>
+                    <p className="font-mono text-xs">+27 (0) 11 463 2000</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <MapPin size={16} className="text-[#B68A35] mt-0.5 shrink-0" />
+                  <div>
+                    <span className="block text-white/50 text-[10px] uppercase font-mono">Head Office</span>
+                    <p className="leading-relaxed">
+                      359 Surrey Avenue, Randburg<br />
+                      South Africa
+                    </p>
+                  </div>
+                </li>
+              </ul>
             </div>
-            <p className="font-body-md text-sm opacity-80 max-w-md leading-relaxed">
-              Official FoodChain ID Partner. Professional training, consulting, and certification support that helps organisations develop capable people and strengthen management systems.
-            </p>
-            <p className="font-sans text-xs opacity-60 pt-2">
-              © 2026 YITZAK. All rights reserved.
-            </p>
+
+            {/* Column 2: Quick Links */}
+            <div className="space-y-4">
+              <h3 className="text-[#B68A35] font-serif font-bold text-base tracking-wider uppercase">
+                Quick Links
+              </h3>
+              <ul className="space-y-3 font-sans text-xs md:text-sm text-white/80">
+                <li>
+                  <button
+                    onClick={() => {
+                      navigateTo('home');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>About</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      navigateTo('home');
+                      setTimeout(() => {
+                        const el = document.getElementById('services');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
+                    }}
+                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Services</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo('training')}
+                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Training</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo('certifications')}
+                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Certifications</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo('consulting')}
+                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Advisory &amp; Consulting</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo('knowledge')}
+                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Knowledge Centre</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo('contact')}
+                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Contact Us</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Follow Us */}
+            <div className="space-y-4">
+              <h3 className="text-[#B68A35] font-serif font-bold text-base tracking-wider uppercase">
+                Follow Us
+              </h3>
+              <p className="font-sans text-xs text-white/70 leading-relaxed">
+                Connect with Yitzak Consulting for monthly industry digests, compliance insights, and accredited training announcements.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <a
+                  href="https://www.linkedin.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-lg bg-white/10 hover:bg-[#B68A35] text-white hover:text-[#023625] flex items-center justify-center transition-all cursor-pointer"
+                  title="Follow us on LinkedIn"
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin size={18} />
+                </a>
+                <a
+                  href="https://www.instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-lg bg-white/10 hover:bg-[#B68A35] text-white hover:text-[#023625] flex items-center justify-center transition-all cursor-pointer"
+                  title="Follow us on Instagram"
+                  aria-label="Instagram"
+                >
+                  <Instagram size={18} />
+                </a>
+                <a
+                  href="mailto:info@yitzak.co.za"
+                  className="w-10 h-10 rounded-lg bg-white/10 hover:bg-[#B68A35] text-white hover:text-[#023625] flex items-center justify-center transition-all cursor-pointer"
+                  title="Send us an email"
+                  aria-label="Email"
+                >
+                  <Mail size={18} />
+                </a>
+              </div>
+            </div>
+
           </div>
 
-          <div className="flex flex-col gap-2.5 font-technical-label text-xs uppercase tracking-wider">
-            <span className="text-[#B68A35] font-bold pb-1 text-[11px] font-mono">Overview</span>
-            <button onClick={() => navigateTo('home')} className="text-left text-on-primary opacity-80 hover:text-secondary transition-opacity cursor-pointer">About Us</button>
-            <button onClick={() => navigateTo('consulting')} className="text-left text-on-primary opacity-80 hover:text-secondary transition-opacity cursor-pointer">Consulting Services</button>
-            <button onClick={() => {
-              navigateTo('home');
-              setTimeout(() => {
-                const el = document.getElementById('portal');
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }, 100);
-            }} className="text-left text-on-primary opacity-80 hover:text-secondary transition-opacity cursor-pointer">Client Portal</button>
-          </div>
-
-          <div className="flex flex-col gap-2.5 font-technical-label text-xs uppercase tracking-wider">
-            <span className="text-[#B68A35] font-bold pb-1 text-[11px] font-mono">Programs &amp; Schemes</span>
-            <button onClick={() => navigateTo('training')} className="text-left text-on-primary opacity-80 hover:text-secondary transition-opacity cursor-pointer">Training Curricula</button>
-            <button onClick={() => navigateTo('certifications')} className="text-left text-on-primary opacity-80 hover:text-secondary transition-opacity cursor-pointer">Accredited Schemes</button>
-            <button onClick={() => navigateTo('calendar')} className="text-left text-on-primary opacity-80 hover:text-secondary transition-opacity cursor-pointer">Schedule &amp; Dates</button>
-          </div>
-
-          <div className="flex flex-col gap-2.5 font-technical-label text-xs uppercase tracking-wider">
-            <span className="text-[#B68A35] font-bold pb-1 text-[11px] font-mono">Knowledge &amp; Contact</span>
-            <button onClick={handleDownloadWhitepaper} className="text-left text-on-primary opacity-80 hover:text-secondary transition-opacity cursor-pointer">Knowledge Centre</button>
-            <button onClick={() => navigateTo('contact')} className="text-left text-on-primary opacity-80 hover:text-secondary transition-opacity cursor-pointer">Contact Us</button>
-            <button onClick={() => handleOpenBooking()} className="text-left text-on-primary opacity-80 hover:text-secondary transition-opacity cursor-pointer">Inquire Advisory</button>
+          {/* Bottom Branding & Legal */}
+          <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-white/50">
+            <div className="flex items-center gap-2">
+              <span className="font-serif font-bold text-white text-base uppercase">YITZAK</span>
+              <span>·</span>
+              <span>Empowering Organisations Through Compliance &amp; Capability</span>
+            </div>
+            <div>
+              © 2026 YITZAK. All rights reserved. Official FoodChain ID Partner.
+            </div>
           </div>
         </div>
       </footer>
@@ -3445,16 +3709,6 @@ export default function App() {
         initialPillarId={selectedPillarId}
         initialNotes={selectedBookingNotes}
         onBookingSuccess={handleBookingSuccess}
-      />
-
-      {/* Outbound Referral Bridge Interstitial Modal */}
-      <OutboundBridgeModal
-        isOpen={referralTarget !== null}
-        onClose={() => setReferralTarget(null)}
-        targetUrl={referralTarget?.url || ''}
-        schemeName={referralTarget?.schemeName || ''}
-        currentUser={currentUser}
-        triggerNotification={triggerNotification}
       />
 
       {/* Floating Back to Top Button */}

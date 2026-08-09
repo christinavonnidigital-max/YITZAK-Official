@@ -41,7 +41,8 @@ export async function createCalendarEvent(
     },
     attendees: [
       { email: details.userEmail },
-      { email: 'christinagumpo@gmail.com' } // Admin
+      { email: 'cgumpo@yitzak.co.za' },
+      { email: 'admin@yitzak.co.za' }
     ],
     reminders: {
       useDefault: true,
@@ -230,7 +231,7 @@ export async function sendConfirmationEmail(
         
         <div class="footer">
           &copy; 2026 YITZAK Institutional Consulting. All rights reserved.<br>
-          London | New York | Singapore | Tokyo<br>
+          Randburg | South Africa<br>
           This is an automated confirmation of services.
         </div>
       </div>
@@ -573,7 +574,7 @@ export async function sendContactInquiryEmail(
         
         <div class="footer">
           &copy; 2026 YITZAK Institutional Consulting. All rights reserved.<br>
-          London | New York | Singapore | Tokyo<br>
+          Randburg | South Africa<br>
           This is an automated delivery of client communications.
         </div>
       </div>
@@ -581,9 +582,9 @@ export async function sendContactInquiryEmail(
     </html>
   `;
 
-  // We send the email to the support email address: christinagumpo@gmail.com
+  // We send the email to institutional support and advisory lead
   const rawEmail = [
-    `To: christinagumpo@gmail.com`,
+    `To: cgumpo@yitzak.co.za, admin@yitzak.co.za`,
     `Cc: ${details.senderEmail}`,
     `Subject: ${mailSubject}`,
     'MIME-Version: 1.0',

@@ -21,8 +21,10 @@ import {
   User,
   MapPin,
   Award,
-  Printer
+  Printer,
+  FileText
 } from 'lucide-react';
+import { exportCourseSyllabusPDF, triggerSmartPrint } from '../utils/portfolioExport';
 
 interface SyllabusModule {
   title: string;
@@ -534,17 +536,14 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
   useEffect(() => {
     if (selectedCourse) {
       document.body.style.overflow = 'hidden';
-      document.body.style.height = '100vh';
-      document.documentElement.style.overflow = 'hidden';
+      document.body.classList.add('has-open-drawer');
     } else {
       document.body.style.overflow = '';
-      document.body.style.height = '';
-      document.documentElement.style.overflow = '';
+      document.body.classList.remove('has-open-drawer');
     }
     return () => {
       document.body.style.overflow = '';
-      document.body.style.height = '';
-      document.documentElement.style.overflow = '';
+      document.body.classList.remove('has-open-drawer');
     };
   }, [selectedCourse]);
 
@@ -1157,7 +1156,7 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
                   <div>
                     <h1 className="font-serif text-xl font-bold text-[#023625]">YITZAK INSTITUTIONAL ADVISORY</h1>
                     <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Official Course Syllabus Specification</p>
-                    <p className="text-[10px] text-gray-600 mt-1">Ref #{selectedCourse.no} — {selectedCourse.name}</p>
+                    <p className="text-[10px] text-gray-600 mt-1">Ref #{selectedCourse.no} | {selectedCourse.name}</p>
                   </div>
                   <div className="text-right text-[10px] font-mono text-gray-500">
                     <p>Printed: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
@@ -1333,14 +1332,17 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
 
               {/* Drawer Actions Footer */}
               <div className="border-t border-[#E5E5E5] p-6 bg-[#F9F9F9] flex flex-col sm:flex-row gap-3 justify-end shrink-0 sticky bottom-0 z-10 shadow-inner no-print">
-                {/* Print Syllabus button */}
+                {/* Print Syllabus / Download PDF button */}
                 <button
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    exportCourseSyllabusPDF(selectedCourse);
+                    triggerSmartPrint();
+                  }}
                   className="bg-primary hover:bg-[#1f4d3a] text-white text-xs font-sans font-bold uppercase tracking-widest py-3 px-5 rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none shadow-sm"
-                  title="Print official course syllabus record"
+                  title="Print official course syllabus or download PDF"
                 >
                   <Printer size={14} />
-                  <span>Print Syllabus</span>
+                  <span>Print / Download Syllabus</span>
                 </button>
 
                 {/* Add to Calendar button */}

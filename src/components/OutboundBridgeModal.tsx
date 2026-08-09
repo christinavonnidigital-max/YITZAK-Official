@@ -137,8 +137,6 @@ export default function OutboundBridgeModal({
         >
           {/* Accent header pattern */}
           <div className="bg-[#023625] text-white p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#B68A35] opacity-10 rounded-full blur-xl transform translate-x-10 -translate-y-10"></div>
-            
             <button
               onClick={onClose}
               className="absolute top-4 right-4 text-white/70 hover:text-white cursor-pointer"
@@ -153,9 +151,9 @@ export default function OutboundBridgeModal({
               </div>
               <div>
                 <span className="text-[9px] uppercase font-mono tracking-widest text-[#B68A35] font-bold">
-                  Yitzak Partner Referral Guard
+                  Yitzak Accredited Partner Gateway
                 </span>
-                <h3 className="font-serif text-lg font-bold">Co-Branded Training & Certification Bridge</h3>
+                <h3 className="font-serif text-lg font-bold">Accredited Training &amp; Certification Bridge</h3>
               </div>
             </div>
           </div>
@@ -163,25 +161,25 @@ export default function OutboundBridgeModal({
           <div className="p-6 space-y-6">
             <div className="space-y-2">
               <span className="text-[10px] font-mono font-bold uppercase text-[#B68A35] bg-[#B68A35]/10 px-2.5 py-1 rounded inline-block">
-                Referral Scheme: {schemeName}
+                Accredited Partner: FoodChain ID Academy
               </span>
               <p className="text-xs text-[#555555] leading-relaxed">
-                You are leaving the **YITZAK Partner Portal** to visit our accredited partner **FoodChain ID**. 
-                To ensure your relationship remains managed by Yitzak and eligible for exclusive partner rates, we have generated an active referral ID below.
+                You are visiting our accredited partner, <strong>FoodChain ID</strong>. 
+                To ensure your organisation receives preferential Yitzak partner rates and dedicated corporate support, an official partner benefit code has been generated for your session.
               </p>
             </div>
 
             {/* Referral code display */}
             <div className="bg-surface border border-dashed border-[#B68A35]/30 p-4 rounded-xl text-center space-y-1.5 relative overflow-hidden">
               <span className="text-[10px] uppercase font-mono tracking-widest text-ash font-bold">
-                Your Unique Affiliate Referral ID
+                Your Yitzak Partner Benefit Code
               </span>
               <div className="font-mono text-lg font-bold text-[#023625] tracking-wider select-all cursor-copy">
                 {referralId || 'GENERATING...'}
               </div>
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#B68A35] font-sans font-bold">
                 <Sparkles size={11} className="animate-pulse" />
-                <span>Automatically attached to outbound redirect link</span>
+                <span>Automatically attached to outbound registration link</span>
               </div>
             </div>
 
@@ -196,9 +194,9 @@ export default function OutboundBridgeModal({
                   className="mt-1 w-4 h-4 text-[#023625] border-[#D1D1D1] rounded focus:ring-[#023625] cursor-pointer"
                 />
                 <label htmlFor="coordinate-enrollment" className="text-xs text-primary font-bold leading-normal cursor-pointer">
-                  Coordinate this registration for me (Highly Recommended)
+                  Coordinate this enrolment with Yitzak Advisory (Recommended)
                   <span className="block text-[11px] text-[#555555] font-normal mt-0.5">
-                    Our compliance team will manually log this referral with FoodChain ID, negotiate your corporate pricing, and coordinate payment processing to prevent direct cutting out.
+                    Our compliance team will assist with logging your request with FoodChain ID, confirming corporate group pricing, and handling streamlined administrative invoicing.
                   </span>
                 </label>
               </div>

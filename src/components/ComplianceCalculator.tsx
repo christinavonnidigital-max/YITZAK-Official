@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { 
   Calculator, 
   TrendingUp, 
   Clock, 
-  Building, 
+  Building2, 
   ShieldCheck, 
   Sparkles, 
   Users, 
-  Layers, 
   ArrowRight,
-  HelpCircle,
-  CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ChevronDown
 } from 'lucide-react';
 
 interface ComplianceCalculatorProps {
@@ -20,19 +18,19 @@ interface ComplianceCalculatorProps {
 }
 
 const STANDARDS = [
-  { id: 'iso-9001', name: 'ISO 9001:2015 (QMS)', baselineMonths: 6, complexity: 'Medium', failureRiskValue: 22000 },
-  { id: 'fssc-22000', name: 'FSSC 22000 Version 7 (Food Safety)', baselineMonths: 8, complexity: 'High', failureRiskValue: 45000 },
-  { id: 'sqf', name: 'SQF Edition 9 (Safe Quality Food)', baselineMonths: 7, complexity: 'High', failureRiskValue: 38000 },
-  { id: 'brcgs-v9', name: 'BRCGS Food Safety Issue 9', baselineMonths: 9, complexity: 'Very High', failureRiskValue: 55000 },
-  { id: 'globalgap-v6', name: 'GLOBALG.A.P. Version 6 Smart', baselineMonths: 5, complexity: 'Medium', failureRiskValue: 28000 },
-  { id: 'as9100', name: 'AS9100 Rev D (Aerospace)', baselineMonths: 10, complexity: 'Very High', failureRiskValue: 65000 },
+  { id: 'fssc-22000', name: 'FSSC 22000 (Food Safety V7)', baselineMonths: 8, complexity: 'High', baseDailyRiskZAR: 45000 },
+  { id: 'iso-9001', name: 'ISO 9001:2015 (Quality QMS)', baselineMonths: 6, complexity: 'Medium', baseDailyRiskZAR: 28000 },
+  { id: 'sqf', name: 'SQF Edition 9 (Safe Quality Food)', baselineMonths: 7, complexity: 'High', baseDailyRiskZAR: 40000 },
+  { id: 'brcgs-v9', name: 'BRCGS Food Safety Issue 9', baselineMonths: 9, complexity: 'Very High', baseDailyRiskZAR: 55000 },
+  { id: 'globalgap-v6', name: 'GLOBALG.A.P. Version 6 Smart', baselineMonths: 5, complexity: 'Medium', baseDailyRiskZAR: 30000 },
+  { id: 'as9100', name: 'AS9100 Rev D (Aerospace QMS)', baselineMonths: 10, complexity: 'Very High', baseDailyRiskZAR: 65000 },
 ];
 
 const READINESS_LEVELS = [
-  { value: 10, label: 'Greenfield / Starting scratch', description: 'No documented systems, starting from ground zero.', timelineMultiplier: 1.5, baselineSuccess: 45 },
-  { value: 40, label: 'Partially documented', description: 'Some written procedures exist but are not audited or fully adhered to.', timelineMultiplier: 1.1, baselineSuccess: 65 },
-  { value: 70, label: 'Robust systems', description: 'Procedures are active and used daily; needs gap analysis & tuning.', timelineMultiplier: 0.7, baselineSuccess: 80 },
-  { value: 90, label: 'Pre-audit verification', description: 'Internal audits done; seeking third-party compliance approval.', timelineMultiplier: 0.4, baselineSuccess: 92 },
+  { value: 10, label: 'Greenfield', description: 'Starting from scratch without documented systems.', timelineMultiplier: 1.5, baselineSuccess: 45, riskFactor: 1.35 },
+  { value: 40, label: 'Partially Documented', description: 'Written procedures exist but need auditing & refinement.', timelineMultiplier: 1.1, baselineSuccess: 65, riskFactor: 1.15 },
+  { value: 70, label: 'Active Systems', description: 'Systems operational daily; requires gap remediation.', timelineMultiplier: 0.7, baselineSuccess: 80, riskFactor: 0.90 },
+  { value: 90, label: 'Pre-Audit Verification', description: 'Internal audits complete; ready for 3rd-party audit.', timelineMultiplier: 0.4, baselineSuccess: 92, riskFactor: 0.70 },
 ];
 
 export default function ComplianceCalculator({ onInquire }: ComplianceCalculatorProps) {
@@ -41,43 +39,36 @@ export default function ComplianceCalculator({ onInquire }: ComplianceCalculator
   const [siteCount, setSiteCount] = useState(2);
   const [readinessVal, setReadinessVal] = useState(40);
   const [includeYitzakSupport, setIncludeYitzakSupport] = useState(true);
-  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  // Calculation Results
+  // Computed Outputs
   const [timeline, setTimeline] = useState(0);
   const [successRate, setSuccessRate] = useState(0);
   const [hoursSaved, setHoursSaved] = useState(0);
-  const [financialRoi, setFinancialRoi] = useState(0);
+  const [dailyRiskZAR, setDailyRiskZAR] = useState(0);
+  const [daysSaved, setDaysSaved] = useState(0);
+  const [totalMitigatedZAR, setTotalMitigatedZAR] = useState(0);
+  const [totalMitigatedUSD, setTotalMitigatedUSD] = useState(0);
 
   const selectedStandard = STANDARDS.find(s => s.id === selectedStandardId) || STANDARDS[0];
   const readinessObj = READINESS_LEVELS.find(r => r.value === readinessVal) || READINESS_LEVELS[1];
 
   useEffect(() => {
-    // 1. Timeline Calculation (Months)
-    // Baseline months adjusted by standard complexity & readiness level multiplier
-    // Staff size and site count add minor scaling delays
+    // 1. Unassisted vs Assisted Timeline Calculation (Months)
     const sizeFactor = Math.log10(staffSize / 10) * 0.15;
     const siteFactor = (siteCount - 1) * 0.12;
-    let computedTimeline = selectedStandard.baselineMonths * readinessObj.timelineMultiplier * (1 + sizeFactor + siteFactor);
+    const rawTimeline = selectedStandard.baselineMonths * readinessObj.timelineMultiplier * (1 + sizeFactor + siteFactor);
     
-    // Yitzak accelerator cuts timeline by 35%
-    if (includeYitzakSupport) {
-      computedTimeline = computedTimeline * 0.65;
-    }
-    
-    // Ensure logical bounds (1.5 to 18 months)
-    setTimeline(Math.max(1.5, Math.min(18, Math.round(computedTimeline * 10) / 10)));
+    const assistedTimeline = rawTimeline * 0.65;
+    const activeTimeline = includeYitzakSupport ? assistedTimeline : rawTimeline;
+    const finalTimelineMonths = Math.max(1.5, Math.min(18, Math.round(activeTimeline * 10) / 10));
+    setTimeline(finalTimelineMonths);
 
     // 2. Success Rate Calculation (%)
     let computedSuccess = readinessObj.baselineSuccess;
-    // Complexity reduces baseline success
     if (selectedStandard.complexity === 'High') computedSuccess -= 5;
     if (selectedStandard.complexity === 'Very High') computedSuccess -= 10;
-    
-    // Multi-site complexity reduces success slightly
     computedSuccess -= (siteCount - 1) * 2;
 
-    // Yitzak boost
     if (includeYitzakSupport) {
       computedSuccess = Math.min(99.4, computedSuccess + 25);
     } else {
@@ -86,110 +77,106 @@ export default function ComplianceCalculator({ onInquire }: ComplianceCalculator
     setSuccessRate(Math.round(computedSuccess * 10) / 10);
 
     // 3. Hours Saved Calculation
-    // Total estimated hours required is based on complexity, staff size and site counts
     const totalComplianceHours = (selectedStandard.baselineMonths * 80) * (1 + (staffSize / 300)) * (1 + (siteCount * 0.2));
-    // Guided implementation templates & streamlined auditor support saves 45% of hours
     const computedHours = includeYitzakSupport ? Math.round(totalComplianceHours * 0.45) : 0;
     setHoursSaved(computedHours);
 
-    // 4. Financial Risk Mitigation ROI
-    // Sum of audit failure delay penalties, employee overhead saved, and standard compliance failure costs
-    const baseFailureValue = selectedStandard.failureRiskValue;
-    const siteScaleFactor = siteCount * 0.9;
-    const employeeRiskFactor = Math.min(3, 1 + (staffSize / 150));
-    
-    let riskMitigation = baseFailureValue * siteScaleFactor * employeeRiskFactor;
-    // If starting greenfield, risk is higher
-    if (readinessVal === 10) riskMitigation *= 1.3;
-    if (readinessVal === 90) riskMitigation *= 0.8;
+    // 4. Facility-Scaled Financial Risk Model
+    // Daily risk scales directly with staff size, site count, readiness and scheme complexity
+    const calculatedDailyRisk = (selectedStandard.baseDailyRiskZAR + (staffSize * 350)) * siteCount * readinessObj.riskFactor;
+    setDailyRiskZAR(Math.round(calculatedDailyRisk));
 
-    // Save proportional to YITZAK training deployment effectiveness
-    const computedRoi = includeYitzakSupport ? Math.round(riskMitigation * 0.85) : 0;
-    setFinancialRoi(computedRoi);
+    // Working days saved (21.5 working days per month)
+    const monthDifference = rawTimeline - assistedTimeline;
+    const workingDaysSaved = Math.max(10, Math.round(monthDifference * 21.5));
+    setDaysSaved(workingDaysSaved);
+
+    // Total Financial Risk Mitigated = Daily Risk x Days Saved
+    const mitigatedZAR = includeYitzakSupport ? Math.round(calculatedDailyRisk * workingDaysSaved) : 0;
+    setTotalMitigatedZAR(mitigatedZAR);
+    setTotalMitigatedUSD(Math.round(mitigatedZAR / 18.5)); // 1 USD ≈ 18.5 ZAR
 
   }, [selectedStandardId, staffSize, siteCount, readinessVal, includeYitzakSupport]);
 
   const handleBookInquiry = () => {
-    const notesString = `[Compliance & ROI Calculator Result]
---------------------------------------------------
-Standard: ${selectedStandard.name}
-Facility Scale: ${staffSize} Staff, ${siteCount} Site(s)
+    const notesString = `[Compliance & Scaled Financial Risk Summary]
+Target Standard: ${selectedStandard.name}
+Facility Scale: ${staffSize} Staff (FTEs), ${siteCount} Site(s)
 Initial Readiness: ${readinessObj.label} (${readinessVal}%)
-Yitzak Professional Training: ${includeYitzakSupport ? 'YES (Active)' : 'NO (Self-Guided)'}
+Yitzak Advisory & Training Support: ${includeYitzakSupport ? 'ACTIVE' : 'INACTIVE'}
 --------------------------------------------------
-Estimated Project Timeline: ${timeline} Months
-Projected Audit Success Rate: ${successRate}%
-Estimated Engineering Hours Saved: ${includeYitzakSupport ? hoursSaved + ' Hours' : 'N/A'}
-Mitigated Financial Exposure Value: ${includeYitzakSupport ? 'R ' + (financialRoi * 18.5).toLocaleString('en-ZA', { maximumFractionDigits: 0 }) + ' ZAR / $' + financialRoi.toLocaleString() + ' USD' : 'N/A'}`;
+Target Timeline: ${timeline} Months
+Projected Audit Pass Rate: ${successRate}%
+Engineering Hours Saved: ${includeYitzakSupport ? hoursSaved + ' Hours' : 'N/A'}
+Estimated Daily Risk Exposure: R ${dailyRiskZAR.toLocaleString('en-ZA')} ZAR/day
+Days of Audit Delay Prevented: ${daysSaved} Working Days
+Total Risk Exposure Value Mitigated: ${includeYitzakSupport ? 'R ' + totalMitigatedZAR.toLocaleString('en-ZA') + ' ZAR (~$' + totalMitigatedUSD.toLocaleString() + ' USD)' : 'N/A'}`;
     
     onInquire(notesString);
   };
 
   return (
-    <div id="compliance-roi-calculator" className="py-16 md:py-24 bg-[#F9F9F9] border-t border-b border-[#E5E5E5] scroll-mt-24">
+    <div id="compliance-roi-calculator" className="py-16 md:py-20 bg-[#F9F9F9] border-t border-b border-[#E5E5E5] scroll-mt-20 font-sans">
       <div className="max-w-[1280px] mx-auto px-4 md:px-16">
         
         {/* Header Block */}
-        <div className="text-center mb-12 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-antique-gold/10 border border-antique-gold/20 rounded-full mb-4">
+        <div className="text-center mb-10 max-w-2xl mx-auto space-y-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#B68A35]/10 border border-[#B68A35]/30 rounded-full">
             <Sparkles size={13} className="text-[#B68A35]" />
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#B68A35]">Corporate Decision Support Tool</span>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#B68A35]">Executive Decision Tool</span>
           </div>
-          <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold mb-4">
-            Compliance & ROI Calculator
+          <h2 className="font-serif text-3xl md:text-[38px] text-primary font-bold tracking-tight">
+            Compliance &amp; ROI Calculator
           </h2>
           <p className="font-sans text-xs md:text-sm text-ash leading-relaxed">
-            Formulate compliance readiness timelines, mitigate operational risks, and visualize the measurable financial benefits of a YITZAK-guided curriculum.
+            Estimate compliance timelines, audit pass likelihood, and facility-scaled financial risk mitigation tailored to your organisation in South Africa.
           </p>
-          <div className="w-16 h-1 bg-[#B68A35] mx-auto mt-6"></div>
         </div>
 
-        {/* Calculator Grid Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        {/* Main Card Container */}
+        <div className="bg-white border border-[#E5E5E5] rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12">
           
-          {/* Left Panel: Inputs */}
-          <div className="lg:col-span-7 bg-white border border-[#E5E5E5] rounded-3xl p-6 md:p-8 flex flex-col justify-between space-y-6 shadow-sm">
+          {/* Left Inputs Column (7 Cols) */}
+          <div className="lg:col-span-7 p-6 md:p-8 space-y-6">
             
-            {/* Standard Selection */}
-            <div className="space-y-3">
-              <label className="text-[11px] font-bold font-mono text-primary uppercase tracking-wider flex items-center justify-between">
-                <span>1. Select Targeted Standard</span>
-                <span className="text-[10px] text-ash font-medium normal-case">Complexity: <strong className="text-[#B68A35] font-mono">{selectedStandard.complexity}</strong></span>
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                {STANDARDS.map(standard => (
-                  <button
-                    key={standard.id}
-                    onClick={() => setSelectedStandardId(standard.id)}
-                    className={`p-3.5 text-left rounded-xl border text-xs font-sans transition-all cursor-pointer flex items-center justify-between ${
-                      selectedStandardId === standard.id
-                        ? 'border-[#B68A35] bg-antique-gold/5 text-primary font-bold shadow-xs'
-                        : 'border-[#E5E5E5] bg-white text-charcoal hover:border-[#B68A35]/40'
-                    }`}
-                  >
-                    <span>{standard.name}</span>
-                    {selectedStandardId === standard.id && (
-                      <CheckCircle2 size={14} className="text-[#B68A35] shrink-0 ml-2" />
-                    )}
-                  </button>
-                ))}
+            {/* Step 1: Standard Selection Dropdown */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs font-semibold uppercase tracking-wider text-primary">
+                <span>1. Target Standard</span>
+                <span className="text-[10px] text-ash normal-case font-normal">
+                  Complexity: <strong className="text-[#B68A35] font-mono">{selectedStandard.complexity}</strong>
+                </span>
+              </div>
+              <div className="relative">
+                <select
+                  value={selectedStandardId}
+                  onChange={(e) => setSelectedStandardId(e.target.value)}
+                  className="w-full bg-[#F9F9F9] border border-[#E5E5E5] focus:border-[#023625] text-xs font-bold text-primary rounded-xl py-3 pl-4 pr-10 appearance-none cursor-pointer outline-none transition-colors"
+                >
+                  {STANDARDS.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ash pointer-events-none" />
               </div>
             </div>
 
-            {/* Scale Parameters */}
-            <div className="space-y-5 pt-2 border-t border-[#E5E5E5]/50">
-              <div className="text-[11px] font-bold font-mono text-primary uppercase tracking-wider">
-                2. Define Facility Scale
+            {/* Step 2: Scale Controls */}
+            <div className="space-y-4 pt-4 border-t border-[#E5E5E5]">
+              <div className="text-xs font-semibold uppercase tracking-wider text-primary">
+                2. Facility Scale
               </div>
 
-              {/* Staff slider */}
-              <div className="space-y-2">
+              {/* Staff Slider */}
+              <div className="space-y-2 bg-[#F9F9F9] p-3.5 rounded-xl border border-[#E5E5E5]/60">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-charcoal font-medium font-sans flex items-center gap-1">
-                    <Users size={13} className="text-ash" />
+                  <span className="text-charcoal font-medium flex items-center gap-1.5">
+                    <Users size={14} className="text-[#B68A35]" />
                     Staff Size (FTEs)
                   </span>
-                  <span className="font-mono font-bold text-primary bg-primary/5 px-2.5 py-0.5 rounded-lg border border-primary/10">
+                  <span className="font-mono font-bold text-xs text-[#023625] bg-white px-2.5 py-1 rounded-md border border-[#E5E5E5]">
                     {staffSize} employees
                   </span>
                 </div>
@@ -200,24 +187,19 @@ Mitigated Financial Exposure Value: ${includeYitzakSupport ? 'R ' + (financialRo
                   step="5"
                   value={staffSize}
                   onChange={(e) => setStaffSize(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#F1F3F4] rounded-lg appearance-none cursor-pointer accent-[#B68A35]"
+                  className="w-full h-1.5 bg-[#E5E5E5] rounded-lg appearance-none cursor-pointer accent-[#B68A35]"
                 />
-                <div className="flex justify-between text-[9px] text-ash font-mono">
-                  <span>5 Staff</span>
-                  <span>500 Staff</span>
-                  <span>1000+ Staff</span>
-                </div>
               </div>
 
-              {/* Sites slider */}
-              <div className="space-y-2">
+              {/* Site Count Slider */}
+              <div className="space-y-2 bg-[#F9F9F9] p-3.5 rounded-xl border border-[#E5E5E5]/60">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-charcoal font-medium font-sans flex items-center gap-1">
-                    <Building size={13} className="text-ash" />
-                    Operational Sites
+                  <span className="text-charcoal font-medium flex items-center gap-1.5">
+                    <Building2 size={14} className="text-[#B68A35]" />
+                    Operating Sites
                   </span>
-                  <span className="font-mono font-bold text-primary bg-primary/5 px-2.5 py-0.5 rounded-lg border border-primary/10">
-                    {siteCount} physical site{siteCount > 1 ? 's' : ''}
+                  <span className="font-mono font-bold text-xs text-[#023625] bg-white px-2.5 py-1 rounded-md border border-[#E5E5E5]">
+                    {siteCount} {siteCount === 1 ? 'Site' : 'Sites'}
                   </span>
                 </div>
                 <input
@@ -227,67 +209,60 @@ Mitigated Financial Exposure Value: ${includeYitzakSupport ? 'R ' + (financialRo
                   step="1"
                   value={siteCount}
                   onChange={(e) => setSiteCount(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#F1F3F4] rounded-lg appearance-none cursor-pointer accent-[#B68A35]"
+                  className="w-full h-1.5 bg-[#E5E5E5] rounded-lg appearance-none cursor-pointer accent-[#B68A35]"
                 />
-                <div className="flex justify-between text-[9px] text-ash font-mono">
-                  <span>1 Site (Local)</span>
-                  <span>8 Sites (Regional)</span>
-                  <span>15 Sites (Multi-National)</span>
-                </div>
               </div>
             </div>
 
-            {/* Current Readiness Selector */}
-            <div className="space-y-3 pt-2 border-t border-[#E5E5E5]/50">
-              <label className="text-[11px] font-bold font-mono text-primary uppercase tracking-wider">
-                3. Current Readiness Assessment
-              </label>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {/* Step 3: Current Readiness */}
+            <div className="space-y-2.5 pt-4 border-t border-[#E5E5E5]">
+              <div className="flex justify-between items-center text-xs font-semibold uppercase tracking-wider text-primary">
+                <span>3. Current Readiness</span>
+                <span className="text-[11px] font-mono text-[#B68A35] font-bold">{readinessObj.label}</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {READINESS_LEVELS.map(level => (
                   <button
                     key={level.value}
+                    type="button"
                     onClick={() => setReadinessVal(level.value)}
-                    className={`p-3 text-center rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center space-y-1 ${
+                    className={`py-2.5 px-2 rounded-xl border text-xs text-center transition-all cursor-pointer ${
                       readinessVal === level.value
-                        ? 'border-[#B68A35] bg-antique-gold/5 text-primary font-bold'
-                        : 'border-[#E5E5E5] bg-white text-ash hover:border-antique-gold/25'
+                        ? 'border-[#B68A35] bg-[#B68A35]/10 font-bold text-primary shadow-xs'
+                        : 'border-[#E5E5E5] bg-white text-ash hover:border-[#B68A35]/40'
                     }`}
                   >
-                    <span className="font-mono text-xs">{level.value}%</span>
-                    <span className="text-[10px] font-sans tracking-tight leading-tight block text-charcoal truncate w-full">
-                      {level.label.split(' / ')[0]}
-                    </span>
+                    <span className="block font-mono text-xs">{level.value}%</span>
+                    <span className="block text-[10px] truncate leading-tight mt-0.5">{level.label}</span>
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-ash leading-relaxed italic bg-neutral-50 p-2.5 rounded-lg border border-neutral-100">
+              <p className="text-[11px] text-ash italic bg-[#F9F9F9] p-2.5 rounded-lg border border-[#E5E5E5]/60">
                 "{readinessObj.description}"
               </p>
             </div>
 
-            {/* Yitzak Booster Toggle Switch */}
-            <div className="pt-4 border-t border-[#E5E5E5]/50 flex items-center justify-between bg-antique-gold/5 p-4 rounded-2xl border border-antique-gold/15">
-              <div className="space-y-1 pr-4">
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="text-[#B68A35]" size={16} />
-                  <span className="text-xs font-bold text-primary font-sans">Apply YITZAK Training Accelerator</span>
+            {/* Accelerator Toggle */}
+            <div className="pt-4 border-t border-[#E5E5E5] flex items-center justify-between bg-[#023625]/5 p-4 rounded-xl border border-[#023625]/10">
+              <div className="space-y-0.5 pr-3">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#023625]">
+                  <ShieldCheck size={16} className="text-[#B68A35]" />
+                  <span>Apply Yitzak Guided Accelerator</span>
                 </div>
-                <p className="text-[10px] text-ash leading-relaxed">
-                  Includes accredited syllabus, gap templates, mock audits, and dedicated instruction to boost readiness by 30% and shorten timeline by 35%.
+                <p className="text-[11px] text-ash">
+                  Leverage structured syllabi, gap analysis templates, and expert mock audits to cut timelines by ~35%.
                 </p>
               </div>
-
-              {/* Toggle switch visual */}
               <button
+                type="button"
                 onClick={() => setIncludeYitzakSupport(!includeYitzakSupport)}
-                className={`w-12 h-6 rounded-full p-0.5 transition-colors duration-200 outline-none cursor-pointer relative shrink-0 ${
-                  includeYitzakSupport ? 'bg-[#B68A35]' : 'bg-neutral-300'
+                className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer relative shrink-0 ${
+                  includeYitzakSupport ? 'bg-[#023625]' : 'bg-[#E5E5E5]'
                 }`}
               >
                 <div 
-                  className={`w-5 h-5 rounded-full bg-white shadow-xs transform duration-200 ${
-                    includeYitzakSupport ? 'translate-x-6' : 'translate-x-0'
+                  className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
+                    includeYitzakSupport ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
@@ -295,126 +270,95 @@ Mitigated Financial Exposure Value: ${includeYitzakSupport ? 'R ' + (financialRo
 
           </div>
 
-          {/* Right Panel: ROI Estimates */}
-          <div className="lg:col-span-5 bg-primary text-white border border-[#E5E5E5]/10 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden">
-            
-            {/* Pattern/Background decoration */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-white/2 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="space-y-6 z-10">
-              
-              {/* Header Title */}
+          {/* Right Outputs Column (5 Cols) */}
+          <div className="lg:col-span-5 bg-[#023625] text-white p-6 md:p-8 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-white/10 relative">
+            <div className="space-y-6">
               <div className="flex items-center gap-2 border-b border-white/10 pb-4">
-                <div className="p-2 bg-[#DFC181]/15 rounded-xl border border-[#DFC181]/30">
-                  <Calculator className="text-[#DFC181]" size={18} />
-                </div>
+                <Calculator size={20} className="text-[#B68A35]" />
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-white leading-tight">Evaluation Output</h3>
-                  <p className="text-[10px] font-mono text-[#DFC181] tracking-wider uppercase">Projected Readiness Model</p>
+                  <h3 className="font-serif text-lg font-bold text-white">Projected Outcomes</h3>
+                  <span className="text-[10px] font-mono text-[#B68A35] uppercase tracking-wider">Dynamic Assessment Summary</span>
                 </div>
               </div>
 
-              {/* Main Outputs */}
-              <div className="grid grid-cols-2 gap-4">
-                
-                {/* Timeline Box */}
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-mono font-bold text-[#DFC181] tracking-wider uppercase">EST. TIMELINE</span>
-                    <Clock size={12} className="text-white/60" />
+              {/* Key Metrics Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/5 border border-white/10 p-4 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between text-[#B68A35]">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Estimated Time</span>
+                    <Clock size={14} />
                   </div>
-                  <div className="font-mono text-xl md:text-2xl font-bold tracking-tight mt-1 text-white">
-                    {timeline} <span className="text-xs font-sans font-normal text-white/70">Months</span>
+                  <div className="text-2xl font-mono font-bold text-white">
+                    {timeline} <span className="text-xs font-sans font-normal text-white/70">mo</span>
                   </div>
-                  <p className="text-[9px] text-white/50 leading-tight">To total audit readiness</p>
+                  <span className="text-[10px] text-white/60 block">To audit readiness</span>
                 </div>
 
-                {/* Success Rate Box */}
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-mono font-bold text-[#DFC181] tracking-wider uppercase">SUCCESS PROJECTION</span>
-                    <TrendingUp size={12} className="text-white/60" />
+                <div className="bg-white/5 border border-white/10 p-4 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between text-[#B68A35]">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Pass Likelihood</span>
+                    <TrendingUp size={14} />
                   </div>
-                  <div className="font-mono text-xl md:text-2xl font-bold tracking-tight mt-1 text-white flex items-baseline gap-0.5">
+                  <div className="text-2xl font-mono font-bold text-white">
                     {successRate}%
                   </div>
-                  <p className="text-[9px] text-white/50 leading-tight">Estimated first-attempt pass</p>
-                </div>
-
-              </div>
-
-              {/* ROI & Impact Metrics Container */}
-              <div className="space-y-4 pt-2">
-                <div className="text-[10px] font-bold font-mono text-[#DFC181] tracking-wider uppercase border-b border-white/5 pb-2">
-                  YITZAK Measurable Operational Impact
-                </div>
-
-                <div className="space-y-3.5">
-                  {/* Hours Saved */}
-                  <div className="flex items-start justify-between text-xs">
-                    <div className="space-y-0.5">
-                      <span className="font-semibold text-white">Engineering Effort Saved</span>
-                      <p className="text-[9px] text-white/60">Hours saved through pre-built templates and expert syllabus guidance.</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono font-bold text-[#DFC181] bg-white/5 px-2 py-0.5 rounded border border-white/10 text-xs shrink-0 whitespace-nowrap">
-                        {includeYitzakSupport ? `${hoursSaved.toLocaleString()} Hrs` : '0 Hrs'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Financial Risk Avoided */}
-                  <div className="flex items-start justify-between text-xs">
-                    <div className="space-y-0.5">
-                      <span className="font-semibold text-white">Audit Failure Risk Avoided</span>
-                      <p className="text-[9px] text-white/60">Estimated avoidance of rework cost, delay penalties & business disruption.</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono font-bold text-green-400 bg-white/5 px-2 py-0.5 rounded border border-white/10 text-xs shrink-0 whitespace-nowrap">
-                        {includeYitzakSupport ? `R ${(financialRoi * 18.5).toLocaleString('en-ZA', { maximumFractionDigits: 0 })} ZAR` : 'R 0 ZAR'}
-                      </span>
-                      {includeYitzakSupport && (
-                        <span className="block text-[9px] text-white/50 font-mono mt-0.5">~${financialRoi.toLocaleString()} USD</span>
-                      )}
-                    </div>
-                  </div>
+                  <span className="text-[10px] text-white/60 block">1st-attempt audit pass</span>
                 </div>
               </div>
 
-              {/* Disclaimer / Warning when Yitzak is off */}
-              <AnimatePresence>
-                {!includeYitzakSupport && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="p-3.5 bg-red-950/20 border border-red-500/20 rounded-xl flex items-start gap-2.5 text-[10.5px] text-red-200 leading-normal"
-                  >
-                    <AlertCircle size={14} className="text-red-400 shrink-0 mt-0.5" />
-                    <span>
-                      <strong>Warning:</strong> Self-guided standards integration increases audit failure probabilities by over 25% and incurs an estimated {Math.round(timeline * 0.4)} months of project delivery slippage.
+              {/* Impact Callouts */}
+              <div className="space-y-3 pt-2 border-t border-white/10 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/80">Engineering Hours Saved:</span>
+                  <span className="font-mono font-bold text-[#B68A35] bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                    {includeYitzakSupport ? `${hoursSaved.toLocaleString()} hrs` : '0 hrs'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-white/80">Est. Daily Risk Exposure:</span>
+                  <span className="font-mono font-bold text-amber-300 bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                    R {dailyRiskZAR.toLocaleString('en-ZA')} / day
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-start pt-1">
+                  <span className="text-white/80">Total Risk Exposure Mitigated:</span>
+                  <div className="text-right">
+                    <span className="font-mono font-bold text-emerald-400 text-sm block">
+                      {includeYitzakSupport ? `R ${totalMitigatedZAR.toLocaleString('en-ZA')}` : 'R 0'}
                     </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    {includeYitzakSupport && (
+                      <span className="text-[10px] text-white/50 font-mono">
+                        ~${totalMitigatedUSD.toLocaleString()} USD ({daysSaved} days saved)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
+              {!includeYitzakSupport && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-200 text-[11px] flex items-start gap-2">
+                  <AlertCircle size={14} className="text-red-400 shrink-0 mt-0.5" />
+                  <span>Unassisted implementation increases failure probabilities and typically adds 3–5 months in delays.</span>
+                </div>
+              )}
             </div>
 
-            {/* Direct CTA */}
-            <div className="space-y-4 pt-6 mt-6 border-t border-white/10 z-10">
-              <div className="text-[10px] text-white/60 font-sans leading-relaxed text-center">
-                Need an official Gap Assessment or certified curriculum proposal? Submit your dynamic calculation metrics to our training managers.
-              </div>
-              
+            {/* Bottom CTA */}
+            <div className="pt-6 border-t border-white/10 space-y-3">
+              <p className="text-[11px] text-white/70 text-center">
+                Want a formal proposal matching these specs?
+              </p>
               <button
+                type="button"
                 onClick={handleBookInquiry}
-                className="w-full bg-[#DFC181] hover:bg-[#DFC181]/90 text-primary font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-2 shadow-md focus:outline-none focus:ring-2 focus:ring-[#DFC181]/40"
+                className="w-full bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-4 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-2 shadow-md"
               >
-                <span>Request Custom Syllabus & Quote</span>
+                <span>Request Custom Quote &amp; Plan</span>
                 <ArrowRight size={14} />
               </button>
             </div>
-
           </div>
 
         </div>
@@ -423,3 +367,5 @@ Mitigated Financial Exposure Value: ${includeYitzakSupport ? 'R ' + (financialRo
     </div>
   );
 }
+
+
