@@ -15,6 +15,7 @@ import { checkEmailWhitelist, preRegisterGuest } from './lib/whitelist';
 import { exportPortfolioToCSV, exportPortfolioToPDF, triggerSmartPrint, exportCapabilitySheetPDF } from './utils/portfolioExport';
 import ScrollReveal from './components/ScrollReveal';
 import BreadcrumbNav from './components/BreadcrumbNav';
+import YitzakLogo, { YitzakShieldIcon } from './components/YitzakLogo';
 import { PILLARS } from './data';
 
 const portfolioCategories = [
@@ -694,7 +695,7 @@ export default function App() {
             onClick={() => navigateTo('home')}
             className="cursor-pointer text-left focus:outline-none flex items-center shrink-0 transition-transform duration-200 hover:opacity-85 active:scale-98"
           >
-            <span className="font-serif font-bold text-xl sm:text-2xl tracking-wider text-primary uppercase whitespace-nowrap">YITZAK</span>
+            <YitzakLogo size={34} />
           </button>
           
           {/* Desktop Right Navigation & CTA Area */}
@@ -873,8 +874,8 @@ export default function App() {
                 <div>
                   <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#002015]">
                     <div className="flex flex-col">
-                      <span className="font-serif text-xl font-bold tracking-wider text-white">YITZAK</span>
-                      <span className="text-[10px] uppercase font-mono tracking-widest text-[#B68A35]">Institutional Advisory</span>
+                      <YitzakLogo lightMode size={28} />
+                      <span className="text-[10px] uppercase font-mono tracking-widest text-[#B68A35] mt-1 pl-1">Institutional Advisory</span>
                     </div>
                     <button
                       onClick={() => setMobileMenuOpen(false)}
@@ -2382,7 +2383,7 @@ export default function App() {
             <div className="hidden print:block p-8 border-b-2 border-[#B68A35]">
               <div className="flex justify-between items-end">
                 <div>
-                  <h1 className="font-serif text-2xl font-bold text-[#023625]">YITZAK INSTITUTIONAL ADVISORY</h1>
+                  <YitzakLogo size={32} className="mb-2" />
                   <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Consulting &amp; Systems Design Capabilities Statement</p>
                   <p className="text-[10px] text-gray-500 mt-1">Official Institutional Document · Ref #YITZ-CONS-2026-CAP</p>
                 </div>
@@ -2758,7 +2759,7 @@ export default function App() {
                 <div className="hidden print:block mb-8 border-b-2 border-[#B68A35] pb-4">
                   <div className="flex justify-between items-end">
                     <div>
-                      <h1 className="font-serif text-2xl font-bold text-[#023625]">YITZAK INSTITUTIONAL ADVISORY</h1>
+                      <YitzakLogo size={30} className="mb-2" />
                       <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Official Training Portfolio &amp; Syllabus Record</p>
                       <p className="text-[10px] text-gray-500 mt-1">Official FoodChain ID Partner</p>
                     </div>
@@ -3048,7 +3049,7 @@ export default function App() {
                 <div className="hidden print:block mb-8 border-b-2 border-[#B68A35] pb-4">
                   <div className="flex justify-between items-end">
                     <div>
-                      <h1 className="font-serif text-2xl font-bold text-[#023625]">YITZAK INSTITUTIONAL ADVISORY</h1>
+                      <YitzakLogo size={30} className="mb-2" />
                       <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Accredited Certification Schemes &amp; Standards Directory</p>
                       <p className="text-[10px] text-gray-500 mt-1">Official FoodChain ID Partner</p>
                     </div>
@@ -3688,8 +3689,8 @@ export default function App() {
 
           {/* Bottom Branding & Legal */}
           <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-white/50">
-            <div className="flex items-center gap-2">
-              <span className="font-serif font-bold text-white text-base uppercase">YITZAK</span>
+            <div className="flex items-center gap-3">
+              <YitzakLogo lightMode size={22} />
               <span>·</span>
               <span>Empowering Organisations Through Compliance &amp; Capability</span>
             </div>

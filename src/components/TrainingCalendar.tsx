@@ -25,6 +25,7 @@ import {
   FileText
 } from 'lucide-react';
 import { exportCourseSyllabusPDF, triggerSmartPrint } from '../utils/portfolioExport';
+import YitzakLogo from './YitzakLogo';
 
 interface SyllabusModule {
   title: string;
@@ -1154,7 +1155,7 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
               <div className="hidden print:block p-6 border-b-2 border-[#B68A35] bg-white">
                 <div className="flex justify-between items-end">
                   <div>
-                    <h1 className="font-serif text-xl font-bold text-[#023625]">YITZAK INSTITUTIONAL ADVISORY</h1>
+                    <YitzakLogo size={28} className="mb-2" />
                     <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Official Course Syllabus Specification</p>
                     <p className="text-[10px] text-gray-600 mt-1">Ref #{selectedCourse.no} | {selectedCourse.name}</p>
                   </div>
