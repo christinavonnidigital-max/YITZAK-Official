@@ -4,7 +4,7 @@ export const PILLARS: Pillar[] = [
   {
     id: 'training',
     title: 'Professional Training',
-    icon: 'psychology',
+    icon: 'school',
     description: 'Practical, instructor-led training that builds knowledge, competence, and confidence across management systems and industry disciplines. This is the heart of our business.',
     details: [
       'Yitzak professional programmes',
@@ -16,7 +16,7 @@ export const PILLARS: Pillar[] = [
   {
     id: 'consulting',
     title: 'Consulting & Advisory',
-    icon: 'account_balance',
+    icon: 'support_agent',
     description: 'Practical guidance to implement learning, improve systems, and strengthen overall organisational performance.',
     details: [
       'Gap assessments & readiness reviews',
@@ -29,18 +29,20 @@ export const PILLARS: Pillar[] = [
     id: 'certification',
     title: 'Certification Support',
     icon: 'verified',
-    description: 'Accredited, internationally recognised schemes guiding organisations from audit readiness through to certification, delivered through our partnership with FoodChain ID.',
+    description: 'End-to-end guidance through internationally accredited standards, navigating every phase from initial scope definition to final certification, delivered through our partnership with FoodChain ID.',
     details: [
-      'Scope review & scheme selection',
+      'Scheme & standard selection',
+      'Initial gap assessment & pre-audit review',
+      'Evidence compilation & documentation preparation',
       'Audit readiness & pre-assessment',
-      'Evidence & documentation preparation',
-      'Certificate maintenance & renewal'
+      'FoodChain ID accredited certification alignment',
+      'Certificate maintenance & renewal support'
     ]
   },
   {
     id: 'process_implementation',
     title: 'Business Process Implementation',
-    icon: 'settings_suggest',
+    icon: 'schema',
     description: 'Helping organisations build operational foundations from zero, spanning process mapping, governance, and extension into HR, Accounting, and operational systems.',
     details: [
       'Phase 1: Process Mapping & Risk Controls',

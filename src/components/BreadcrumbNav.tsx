@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Home, ChevronRight, ChevronDown, GraduationCap, ShieldCheck, Award, Sliders, Workflow, Calendar, Mail, FileText } from 'lucide-react';
+import { Home, ChevronRight, ChevronDown, GraduationCap, ShieldCheck, Award, Sliders, Calendar, Mail, FileText } from 'lucide-react';
+import AppIcon from './AppIcon';
 
 interface PortfolioCategory {
   id: string;
@@ -213,7 +214,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
               </li>
               <li>
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
-                  <Workflow size={13} className="text-[#B68A35]" />
+                  <AppIcon name="schema" size={14} color="#B68A35" />
                   <span>Business Process Implementation</span>
                 </span>
               </li>

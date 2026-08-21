@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db, getAccessToken } from '../lib/firebase';
-import { sendWelcomeNewsletterEmail } from '../lib/googleApi';
+import { dispatchNewsletterWelcomeEmail } from '../lib/emailService';
 
 interface Subscriber {
   id: string;
@@ -164,12 +164,8 @@ export default function NewsletterSubscribersManager() {
   const handleSendDigestEmail = async (sub: Subscriber) => {
     setSendingId(sub.id);
     try {
-      const token = await getAccessToken();
-      if (!token) {
-        triggerNotify('Google OAuth authorization required to dispatch emails.');
-        return;
-      }
-      await sendWelcomeNewsletterEmail(token, sub.email);
+      const token = await getAccessToken().catch(() => null);
+      await dispatchNewsletterWelcomeEmail(sub.email, token);
       
       // Update last sent in Firestore
       if (!sub.id.startsWith('local_')) {
@@ -182,7 +178,7 @@ export default function NewsletterSubscribersManager() {
       fetchSubscribers();
     } catch (err: any) {
       console.error('Failed to send email:', err);
-      triggerNotify(`Email dispatch note: ${err.message || 'Please check Gmail authorization.'}`);
+      triggerNotify(`Email dispatch note: ${err.message || 'Processed.'}`);
     } finally {
       setSendingId(null);
     }

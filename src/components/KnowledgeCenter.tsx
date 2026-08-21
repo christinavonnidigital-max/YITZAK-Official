@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FileText, Download, Printer, Search, Filter, BookOpen, ArrowRight, ShieldCheck, Award, Sparkles, CheckCircle2, ExternalLink, Share2, HelpCircle } from 'lucide-react';
+import AppIcon from './AppIcon';
 import { exportCapabilitySheetPDF, exportKnowledgeResourcePDF, triggerSmartPrint } from '../utils/portfolioExport';
 
 interface KnowledgeCenterProps {
@@ -338,17 +339,34 @@ export default function KnowledgeCenter({ onOpenBooking, onNavigateToContact }: 
                 
                 {/* Header Badge Row */}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
-                  <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                    resource.category === 'Whitepaper'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      : resource.category === 'Standard Brief'
-                      ? 'bg-sky-50 text-sky-800 border-sky-200'
-                      : resource.category === 'Audit Checklist'
-                      ? 'bg-amber-50 text-amber-800 border-amber-200'
-                      : 'bg-purple-50 text-purple-800 border-purple-200'
-                  }`}>
-                    {resource.category}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-stone-100 border border-stone-200/80 flex items-center justify-center text-[#1f1f1f] shrink-0">
+                      <AppIcon
+                        name={
+                          resource.category === 'Whitepaper'
+                            ? 'description'
+                            : resource.category === 'Standard Brief'
+                            ? 'menu_book'
+                            : resource.category === 'Audit Checklist'
+                            ? 'fact_check'
+                            : 'analytics'
+                        }
+                        size={18}
+                        color="#1f1f1f"
+                      />
+                    </div>
+                    <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                      resource.category === 'Whitepaper'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : resource.category === 'Standard Brief'
+                        ? 'bg-sky-50 text-sky-800 border-sky-200'
+                        : resource.category === 'Audit Checklist'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-purple-50 text-purple-800 border-purple-200'
+                    }`}>
+                      {resource.category}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2 text-[10px] font-mono text-ash">
                     <span>{resource.refNo}</span>
                     <span>•</span>

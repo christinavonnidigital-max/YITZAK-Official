@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, Clock, CheckCircle2, X, Loader2, Sparkles, Building2, User as UserIcon, Mail, FileText, ChevronDown, CalendarPlus, Download } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, getAccessToken } from '../lib/firebase';
+import { dispatchBookingConfirmationEmail } from '../lib/emailService';
 import { PILLARS, TIME_SLOTS } from '../data';
 
 interface BookingModalProps {
@@ -138,6 +139,21 @@ export default function BookingModal({
     const existingRequests = JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]');
     existingRequests.push(bookingPayload);
     localStorage.setItem('yitzak_consultation_requests', JSON.stringify(existingRequests));
+
+    // 3. Dispatch Email notification via Vercel / Workspace
+    try {
+      const token = await getAccessToken().catch(() => null);
+      await dispatchBookingConfirmationEmail({
+        to: email.trim(),
+        recipientName: name.trim(),
+        date,
+        timeSlot,
+        pillarName,
+        notes: notes.trim()
+      }, token);
+    } catch (mailErr) {
+      console.warn('Booking confirmation email dispatch warning:', mailErr);
+    }
 
     // Finish submission after brief realistic processing
     setTimeout(() => {

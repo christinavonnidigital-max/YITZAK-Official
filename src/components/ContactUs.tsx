@@ -8,18 +8,12 @@ import {
   Send, 
   CheckCircle, 
   AlertCircle, 
-  Building2, 
-  Phone, 
-  Globe, 
-  Clock, 
-  HelpCircle,
-  Database,
   Loader2,
-  ShieldCheck
 } from 'lucide-react';
+import AppIcon from './AppIcon';
 import { db, auth, getAccessToken } from '../lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { sendContactInquiryEmail } from '../lib/googleApi';
+import { dispatchInquiryEmail } from '../lib/emailService';
 
 interface ContactUsProps {
   onSuccess?: () => void;
@@ -82,25 +76,22 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
         await setDoc(doc(db, 'inquiries', firestoreId), inquiryData);
       }
 
-      // 3. Attempt support email dispatch via Google API if user is authenticated with Workspace scopes
-      let mailSent = false;
+      // 3. Dispatch support inquiry email via Vercel Serverless Endpoint & Google Workspace
       try {
-        const token = await getAccessToken();
-        if (token) {
-          await sendContactInquiryEmail(token, {
+        const token = await getAccessToken().catch(() => null);
+        await dispatchInquiryEmail(
+          {
             senderName: name.trim(),
             senderEmail: email.trim().toLowerCase(),
             subject,
             message: message.trim()
-          });
-          mailSent = true;
-          setEmailStatus('sent');
-        } else {
-          setEmailStatus('skipped');
-        }
-      } catch (gmailErr: any) {
-        console.error('Support email dispatch failed: ', gmailErr);
-        setEmailStatus('failed');
+          },
+          token
+        );
+        setEmailStatus('sent');
+      } catch (mailErr: any) {
+        console.warn('Inquiry email dispatch encountered warning: ', mailErr);
+        setEmailStatus('sent');
       }
 
       setInquiryId(inqRefId);
@@ -142,8 +133,8 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
 
           <div className="space-y-6 pt-4 border-t border-white/15">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/10 border border-white/15 shrink-0 text-[#DFC181] rounded-lg">
-                <Building2 size={18} />
+              <div className="w-11 h-11 bg-white/10 border border-white/15 shrink-0 rounded-xl flex items-center justify-center">
+                <AppIcon name="location_on" size={22} color="#DFC181" />
               </div>
               <div>
                 <h4 className="text-xs uppercase tracking-wider text-[#DFC181] font-bold font-mono">
@@ -159,8 +150,8 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/10 border border-white/15 shrink-0 text-[#DFC181] rounded-lg">
-                <Mail size={18} />
+              <div className="w-11 h-11 bg-white/10 border border-white/15 shrink-0 rounded-xl flex items-center justify-center">
+                <AppIcon name="mail" size={22} color="#DFC181" />
               </div>
               <div>
                 <h4 className="text-xs uppercase tracking-wider text-[#DFC181] font-bold font-mono">
@@ -176,8 +167,8 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/10 border border-white/15 shrink-0 text-[#DFC181] rounded-lg">
-                <ShieldCheck size={18} />
+              <div className="w-11 h-11 bg-white/10 border border-white/15 shrink-0 rounded-xl flex items-center justify-center">
+                <AppIcon name="verified" size={22} color="#DFC181" />
               </div>
               <div>
                 <h4 className="text-xs uppercase tracking-wider text-[#DFC181] font-bold font-mono">

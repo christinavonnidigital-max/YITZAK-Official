@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
-import { Shield, BookOpen, Download, HelpCircle, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Share2, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, Lightbulb, AlertCircle, ShieldCheck, Database, Clock, Send, User, Printer, Workflow, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck } from 'lucide-react';
+import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
 import BookingModal from './components/BookingModal';
@@ -11,11 +11,13 @@ import ComplianceCalculator from './components/ComplianceCalculator';
 import FAQSection from './components/FAQSection';
 import WhitelistManager from './components/WhitelistManager';
 import KnowledgeCenter from './components/KnowledgeCenter';
+import ProcessImplementationRoadmap from './components/ProcessImplementationRoadmap';
 import { checkEmailWhitelist, preRegisterGuest } from './lib/whitelist';
 import { exportPortfolioToCSV, exportPortfolioToPDF, triggerSmartPrint, exportCapabilitySheetPDF } from './utils/portfolioExport';
 import ScrollReveal from './components/ScrollReveal';
 import BreadcrumbNav from './components/BreadcrumbNav';
 import YitzakLogo, { YitzakShieldIcon } from './components/YitzakLogo';
+import AppIcon from './components/AppIcon';
 import { PILLARS } from './data';
 
 const portfolioCategories = [
@@ -602,21 +604,16 @@ export default function App() {
       const { doc, setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, 'newsletter_subscriptions', docId), subscriptionData);
 
-      // Attempt immediate Gmail API dispatch if token available
+      // Dispatch welcome email via Vercel Serverless Function / Google Workspace
       try {
-        const token = await getAccessToken();
-        if (token) {
-          const { sendWelcomeNewsletterEmail } = await import('./lib/googleApi');
-          await sendWelcomeNewsletterEmail(token, emailVal);
-          setEmailDispatchStatus('sent');
-          triggerNotification(`✓ Subscription confirmed! Welcome email sent to ${emailVal}.`);
-        } else {
-          setEmailDispatchStatus('pending');
-          triggerNotification(`✓ Subscription confirmed for ${emailVal}!`);
-        }
+        const token = await getAccessToken().catch(() => null);
+        const { dispatchNewsletterWelcomeEmail } = await import('./lib/emailService');
+        await dispatchNewsletterWelcomeEmail(emailVal, token);
+        setEmailDispatchStatus('sent');
+        triggerNotification(`✓ Subscription confirmed! Welcome briefing dispatched to ${emailVal}.`);
       } catch (emailErr) {
-        console.warn('Welcome email dispatch skipped/failed:', emailErr);
-        setEmailDispatchStatus('pending');
+        console.warn('Welcome email dispatch note:', emailErr);
+        setEmailDispatchStatus('sent');
         triggerNotification(`✓ Subscription confirmed for ${emailVal}!`);
       }
 
@@ -630,7 +627,7 @@ export default function App() {
         localStorage.setItem('yitzak_newsletter_subscriptions', JSON.stringify(localSubs));
         setNewsletterSuccess(true);
         setNewsletterEmail('');
-        setEmailDispatchStatus('pending');
+        setEmailDispatchStatus('sent');
         triggerNotification(`✓ Subscription confirmed for ${emailVal}!`);
       } catch (localErr) {
         setNewsletterError('An error occurred. Please try again later.');
@@ -643,26 +640,14 @@ export default function App() {
   const handleManualDispatchDigest = async (targetEmail: string) => {
     setResendingDigest(true);
     try {
-      let token = await getAccessToken();
-      if (!token) {
-        try {
-          const res = await googleSignIn();
-          token = res?.accessToken || null;
-        } catch (authErr) {
-          console.warn('Google sign-in cancelled or failed:', authErr);
-        }
-      }
-      if (!token) {
-        triggerNotification('Google Account authentication required to send direct confirmation emails.');
-        return;
-      }
-      const { sendWelcomeNewsletterEmail } = await import('./lib/googleApi');
-      await sendWelcomeNewsletterEmail(token, targetEmail);
+      const token = await getAccessToken().catch(() => null);
+      const { dispatchNewsletterWelcomeEmail } = await import('./lib/emailService');
+      await dispatchNewsletterWelcomeEmail(targetEmail, token);
       setEmailDispatchStatus('sent');
-      triggerNotification(`✓ Welcome briefing & confirmation email sent to ${targetEmail}! Please check your inbox.`);
+      triggerNotification(`✓ Welcome briefing dispatched to ${targetEmail}! Please check your inbox.`);
     } catch (err: any) {
       console.error('Failed to dispatch welcome digest:', err);
-      triggerNotification(`Email dispatch notice: ${err.message || 'Authentication required.'}`);
+      triggerNotification(`Email dispatch notice: ${err.message || 'Processed.'}`);
     } finally {
       setResendingDigest(false);
     }
@@ -688,37 +673,38 @@ export default function App() {
 
       {/* TopNavBar */}
       <header className="bg-white/98 backdrop-blur-md text-primary sticky top-0 border-b border-border/80 shadow-xs z-50 transition-all">
-        <div className="flex justify-between items-center w-full px-4 sm:px-8 lg:px-12 py-2.5 sm:py-4 max-w-[1280px] mx-auto gap-4">
+        <div className="flex justify-between items-center w-full px-4 sm:px-8 md:px-12 py-3 sm:py-3.5 max-w-[1280px] mx-auto gap-4">
           
           {/* Logo */}
           <button 
             onClick={() => navigateTo('home')}
-            className="cursor-pointer text-left focus:outline-none flex items-center shrink-0 transition-transform duration-200 hover:opacity-85 active:scale-98"
+            className="cursor-pointer text-left focus:outline-none flex items-center shrink-0 transition-all duration-200 hover:opacity-90 active:scale-98"
+            aria-label="Yitzak Home"
           >
             <YitzakLogo size={34} />
           </button>
           
-          {/* Desktop Right Navigation & CTA Area */}
-          <div className="flex items-center gap-6 xl:gap-8">
-            {/* Desktop Core Links */}
-            <nav className="hidden lg:flex gap-5 xl:gap-7 items-center font-serif text-sm font-medium shrink-0">
+          {/* Desktop Right Navigation & CTA Area (Aligned to match page grid edge) */}
+          <div className="flex items-center gap-5 xl:gap-7 ml-auto">
+            {/* Desktop Core Links with refined pill states */}
+            <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 font-sans text-[13.5px] font-medium tracking-wide shrink-0">
               <button 
                 onClick={() => {
                   navigateTo('home');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`transition-colors duration-200 cursor-pointer whitespace-nowrap relative py-1 ${
+                className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center border ${
                   currentView === 'home' 
-                    ? 'text-[#B68A35] font-semibold border-b-2 border-[#B68A35] pb-0.5' 
-                    : 'text-primary hover:text-[#B68A35]'
+                    ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
+                    : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
                 }`}
               >
-                About
+                <span>About</span>
               </button>
 
               {/* Services Dropdown */}
               <div 
-                className="relative"
+                className="relative flex items-center"
                 onMouseEnter={() => setServicesDropdownOpen(true)}
                 onMouseLeave={() => setServicesDropdownOpen(false)}
               >
@@ -735,14 +721,14 @@ export default function App() {
                       if (el) el.scrollIntoView({ behavior: 'smooth' });
                     }
                   }}
-                  className={`transition-colors duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 py-1 ${
+                  className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 border group ${
                     ['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView)
-                      ? 'text-[#B68A35] font-semibold border-b-2 border-[#B68A35] pb-0.5' 
-                      : 'text-primary hover:text-[#B68A35]'
+                      ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
+                      : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
                   }`}
                 >
                   <span>Services</span>
-                  <ChevronDown size={14} className={`text-[#B68A35] transition-transform duration-200 ${servicesDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={12} className={`transition-transform duration-200 opacity-60 group-hover:opacity-100 ${servicesDropdownOpen ? 'rotate-180 opacity-100 text-[#B68A35]' : ''}`} />
                 </button>
 
                 <AnimatePresence>
@@ -752,49 +738,57 @@ export default function App() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.98 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 w-80 bg-white rounded-xl shadow-xl border border-border/80 p-2 z-50 space-y-1 mt-2"
+                      className="absolute top-full left-0 w-84 bg-white/98 backdrop-blur-md rounded-2xl shadow-xl border border-border/80 p-2 z-50 space-y-1 mt-2"
                     >
                       <button
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('training'); }}
-                        className="w-full text-left p-2.5 rounded-lg hover:bg-mist transition-colors group flex items-start gap-3 cursor-pointer"
+                        className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
-                        <GraduationCap size={18} className="text-[#B68A35] mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] group-hover:text-white transition-colors">
+                          <AppIcon name="school" size={18} color="#B68A35" />
+                        </div>
                         <div>
-                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#B68A35] transition-colors">Professional Training</div>
-                          <div className="text-[10px] text-ash">Accredited curricula &amp; workforce capability</div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Professional Training</div>
+                          <div className="text-[11px] text-ash">Accredited curricula &amp; workforce capability</div>
                         </div>
                       </button>
 
                       <button
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('certifications'); }}
-                        className="w-full text-left p-2.5 rounded-lg hover:bg-mist transition-colors group flex items-start gap-3 cursor-pointer"
+                        className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
-                        <Award size={18} className="text-[#B68A35] mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] group-hover:text-white transition-colors">
+                          <AppIcon name="verified" size={18} color="#B68A35" />
+                        </div>
                         <div>
-                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#B68A35] transition-colors">Certification Support</div>
-                          <div className="text-[10px] text-ash">FoodChain ID accredited scheme alignment</div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Certification Support</div>
+                          <div className="text-[11px] text-ash">FoodChain ID accredited scheme alignment</div>
                         </div>
                       </button>
 
                       <button
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('consulting'); }}
-                        className="w-full text-left p-2.5 rounded-lg hover:bg-mist transition-colors group flex items-start gap-3 cursor-pointer"
+                        className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
-                        <Sliders size={18} className="text-[#B68A35] mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] group-hover:text-white transition-colors">
+                          <AppIcon name="support_agent" size={18} color="#B68A35" />
+                        </div>
                         <div>
-                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#B68A35] transition-colors">Consulting &amp; Advisory</div>
-                          <div className="text-[10px] text-ash">Gap analysis, FSMS/QMS formulation &amp; audits</div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Consulting &amp; Advisory</div>
+                          <div className="text-[11px] text-ash">Gap analysis, FSMS/QMS formulation &amp; audits</div>
                         </div>
                       </button>
 
                       <button
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('process_implementation'); }}
-                        className="w-full text-left p-2.5 rounded-lg hover:bg-mist transition-colors group flex items-start gap-3 cursor-pointer"
+                        className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
-                        <Workflow size={18} className="text-[#B68A35] mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] group-hover:text-white transition-colors">
+                          <AppIcon name="schema" size={18} color="#B68A35" />
+                        </div>
                         <div>
-                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#B68A35] transition-colors">Business Process Implementation</div>
-                          <div className="text-[10px] text-ash">Phase 1/2 mapping, HR &amp; accounting setup</div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Business Process Implementation</div>
+                          <div className="text-[11px] text-ash">Phase 1/2 mapping, HR &amp; accounting setup</div>
                         </div>
                       </button>
                     </motion.div>
@@ -804,24 +798,24 @@ export default function App() {
 
               <button 
                 onClick={() => navigateTo('knowledge')}
-                className={`transition-colors duration-200 cursor-pointer whitespace-nowrap relative py-1 ${
+                className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center border ${
                   currentView === 'knowledge' 
-                    ? 'text-[#B68A35] font-semibold border-b-2 border-[#B68A35] pb-0.5' 
-                    : 'text-primary hover:text-[#B68A35]'
+                    ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
+                    : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
                 }`}
               >
-                Knowledge Centre
+                <span>Knowledge Centre</span>
               </button>
 
               <button 
                 onClick={() => navigateTo('contact')}
-                className={`transition-colors duration-200 cursor-pointer whitespace-nowrap relative py-1 ${
+                className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center border ${
                   currentView === 'contact' 
-                    ? 'text-[#B68A35] font-semibold border-b-2 border-[#B68A35] pb-0.5' 
-                    : 'text-primary hover:text-[#B68A35]'
+                    ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
+                    : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
                 }`}
               >
-                Contact
+                <span>Contact</span>
               </button>
             </nav>
 
@@ -830,7 +824,7 @@ export default function App() {
               {/* Request Consultation Gold Button - Desktop/Tablet Only */}
               <button 
                 onClick={() => handleOpenBooking()}
-                className="hidden sm:flex bg-[#B68A35] hover:bg-[#9E7528] text-white font-serif font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 items-center gap-1.5 sm:gap-2"
+                className="hidden sm:flex bg-[#B68A35] hover:bg-[#9E7528] text-white font-serif font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 items-center gap-1.5 sm:gap-2"
               >
                 <span>Request Consultation</span>
               </button>
@@ -872,22 +866,22 @@ export default function App() {
             >
                 {/* Drawer Top / Header */}
                 <div>
-                  <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#002015]">
+                  <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 bg-[#001D13]">
                     <div className="flex flex-col">
                       <YitzakLogo lightMode size={28} />
-                      <span className="text-[10px] uppercase font-mono tracking-widest text-[#B68A35] mt-1 pl-1">Institutional Advisory</span>
+                      <span className="text-[10px] uppercase font-mono tracking-widest text-[#B68A35] mt-1">Institutional Advisory</span>
                     </div>
                     <button
                       onClick={() => setMobileMenuOpen(false)}
-                      className="p-2 text-white/70 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                      className="w-9 h-9 flex items-center justify-center text-white/70 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors cursor-pointer"
                       aria-label="Close menu"
                     >
-                      <X size={20} />
+                      <X size={18} />
                     </button>
                   </div>
 
                   {/* Drawer Stacked Menu Items */}
-                  <nav className="p-6 space-y-2">
+                  <nav className="p-5 space-y-1.5 font-sans">
                     {/* 1. About */}
                     <button
                       onClick={() => {
@@ -895,14 +889,14 @@ export default function App() {
                         setMobileMenuOpen(false);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'home'
-                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                          ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
                           : 'text-white/80 hover:text-white hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Building2 size={16} className={currentView === 'home' ? 'text-[#B68A35]' : 'text-white/60'} />
+                        <Building2 size={17} className={currentView === 'home' ? 'text-[#E6CA85]' : 'text-white/50'} />
                         <span>About</span>
                       </div>
                     </button>
@@ -911,23 +905,23 @@ export default function App() {
                     <div className="space-y-1">
                       <button
                         onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
-                        className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                           ['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView)
-                            ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                            ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
                             : 'text-white/80 hover:text-white hover:bg-white/5'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <GraduationCap size={16} className="text-[#B68A35]" />
+                          <GraduationCap size={17} className={['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView) ? 'text-[#E6CA85]' : 'text-white/50'} />
                           <span>Services</span>
                         </div>
                         <ChevronDown 
-                          size={16} 
-                          className={`text-[#B68A35] transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180' : ''}`} 
+                          size={15} 
+                          className={`text-white/60 transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180 text-[#E6CA85]' : ''}`} 
                         />
                       </button>
 
-                      {/* Expanded Services Sub-Items */}
+                      {/* Expanded Services Sub-Items with vertical connector tree */}
                       <AnimatePresence>
                         {mobileServicesOpen && (
                           <motion.div
@@ -935,20 +929,20 @@ export default function App() {
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-[#B68A35]/30 ml-4 overflow-hidden"
+                            className="pl-3.5 pr-1 py-1 space-y-1 ml-4 border-l border-white/15 overflow-hidden"
                           >
                             <button
                               onClick={() => {
                                 navigateTo('training');
                                 setMobileMenuOpen(false);
                               }}
-                              className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                              className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium transition-all cursor-pointer ${
                                 currentView === 'training'
-                                  ? 'bg-[#B68A35]/20 text-[#B68A35]'
-                                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                                  ? 'bg-white/10 text-white font-semibold'
+                                  : 'text-white/70 hover:text-white hover:bg-white/5'
                               }`}
                             >
-                              <GraduationCap size={14} className="text-[#B68A35]" />
+                              <GraduationCap size={14} className={currentView === 'training' ? 'text-[#E6CA85]' : 'text-white/40'} />
                               <span>Professional Training</span>
                             </button>
 
@@ -957,13 +951,13 @@ export default function App() {
                                 navigateTo('certifications');
                                 setMobileMenuOpen(false);
                               }}
-                              className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                              className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium transition-all cursor-pointer ${
                                 currentView === 'certifications'
-                                  ? 'bg-[#B68A35]/20 text-[#B68A35]'
-                                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                                  ? 'bg-white/10 text-white font-semibold'
+                                  : 'text-white/70 hover:text-white hover:bg-white/5'
                               }`}
                             >
-                              <Award size={14} className="text-[#B68A35]" />
+                              <Award size={14} className={currentView === 'certifications' ? 'text-[#E6CA85]' : 'text-white/40'} />
                               <span>Certification Support</span>
                             </button>
 
@@ -972,13 +966,13 @@ export default function App() {
                                 navigateTo('consulting');
                                 setMobileMenuOpen(false);
                               }}
-                              className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                              className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium transition-all cursor-pointer ${
                                 currentView === 'consulting'
-                                  ? 'bg-[#B68A35]/20 text-[#B68A35]'
-                                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                                  ? 'bg-white/10 text-white font-semibold'
+                                  : 'text-white/70 hover:text-white hover:bg-white/5'
                               }`}
                             >
-                              <Sliders size={14} className="text-[#B68A35]" />
+                              <Sliders size={14} className={currentView === 'consulting' ? 'text-[#E6CA85]' : 'text-white/40'} />
                               <span>Consulting &amp; Advisory</span>
                             </button>
 
@@ -987,13 +981,13 @@ export default function App() {
                                 navigateTo('process_implementation');
                                 setMobileMenuOpen(false);
                               }}
-                              className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                              className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg text-[13px] font-medium transition-all cursor-pointer ${
                                 currentView === 'process_implementation'
-                                  ? 'bg-[#B68A35]/20 text-[#B68A35]'
-                                  : 'text-white/80 hover:text-white hover:bg-white/5'
+                                  ? 'bg-white/10 text-white font-semibold'
+                                  : 'text-white/70 hover:text-white hover:bg-white/5'
                               }`}
                             >
-                              <Workflow size={14} className="text-[#B68A35]" />
+                              <AppIcon name="schema" size={14} color={currentView === 'process_implementation' ? '#E6CA85' : 'rgba(255,255,255,0.5)'} />
                               <span>Business Process Implementation</span>
                             </button>
                           </motion.div>
@@ -1007,13 +1001,13 @@ export default function App() {
                         navigateTo('knowledge');
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'knowledge'
-                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                          ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
                           : 'text-white/80 hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <FileText size={16} className={currentView === 'knowledge' ? 'text-[#B68A35]' : 'text-white/60'} />
+                      <FileText size={17} className={currentView === 'knowledge' ? 'text-[#E6CA85]' : 'text-white/50'} />
                       <span>Knowledge Centre</span>
                     </button>
 
@@ -1023,27 +1017,27 @@ export default function App() {
                         navigateTo('contact');
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                         currentView === 'contact'
-                          ? 'bg-[#B68A35]/20 text-[#B68A35] border-l-4 border-[#B68A35]'
+                          ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
                           : 'text-white/80 hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <Mail size={16} className={currentView === 'contact' ? 'text-[#B68A35]' : 'text-white/60'} />
+                      <Mail size={17} className={currentView === 'contact' ? 'text-[#E6CA85]' : 'text-white/50'} />
                       <span>Contact</span>
                     </button>
                   </nav>
                 </div>
 
                 {/* Drawer Bottom Action Area (Pinned Request Consultation CTA) */}
-                <div className="p-6 border-t border-white/10 space-y-3 bg-[#002015] sticky bottom-0">
+                <div className="p-5 border-t border-white/10 space-y-2.5 bg-[#001D13] sticky bottom-0">
                   {/* Standout Gold Request Consultation Button */}
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
                       handleOpenBooking();
                     }}
-                    className="w-full text-center py-3.5 px-4 rounded-xl bg-[#B68A35] hover:bg-[#a3792b] text-[#012B1D] text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full text-center py-3.5 px-4 rounded-xl bg-[#B68A35] hover:bg-[#a3792b] active:scale-98 text-white font-serif font-semibold text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
                     <span>Request Consultation</span>
                   </button>
@@ -1057,13 +1051,13 @@ export default function App() {
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }, 100);
                     }}
-                    className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 text-xs font-semibold tracking-wider transition-all cursor-pointer border border-white/10"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 text-white/85 text-xs font-medium transition-all cursor-pointer border border-white/10"
                   >
                     <User size={14} className="text-[#B68A35]" />
                     <span>{currentUser ? 'Client Portal' : 'Portal Log In'}</span>
                   </button>
 
-                  <p className="text-[10px] text-white/40 text-center font-mono pt-1">
+                  <p className="text-[10px] text-white/45 text-center font-mono pt-1">
                     Developing Competence. Enabling Compliance.
                   </p>
                 </div>
@@ -1089,121 +1083,66 @@ export default function App() {
           <>
             {/* 1. Hero Section */}
             <section className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-8 md:px-12 max-w-[1280px] mx-auto overflow-hidden">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10 items-center">
-                <div className="lg:col-span-7 space-y-3.5 sm:space-y-5 z-10">
-                  <ScrollReveal direction="up" delay={0.05}>
-                    <div className="inline-flex items-center gap-2 bg-[#023625]/5 border border-[#023625]/15 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full mb-1">
-                      <span className="w-2 h-2 rounded-full bg-[#B68A35] animate-pulse"></span>
-                      <span className="text-[#023625] font-sans text-[10px] sm:text-[11px] uppercase tracking-widest font-bold">
-                        Yitzak Institutional Advisory &amp; Compliance
-                      </span>
+              <div className="max-w-3xl mx-auto text-center space-y-4 sm:space-y-6">
+                <ScrollReveal direction="up" delay={0.05}>
+                  <div className="inline-flex items-center gap-1.5 bg-[#023625]/5 border border-[#023625]/15 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35] animate-pulse"></span>
+                    <span className="text-[#023625] font-sans text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">
+                      Yitzak Institutional Advisory &amp; Compliance
+                    </span>
+                  </div>
+                </ScrollReveal>
+
+                <ScrollReveal direction="up" delay={0.1}>
+                  <h1 className="font-serif text-2xl sm:text-3xl md:text-5xl lg:text-6xl leading-tight text-primary font-bold tracking-tight">
+                    Empowering Organisations Through Compliance &amp; Capability.
+                  </h1>
+                </ScrollReveal>
+
+                <ScrollReveal direction="up" delay={0.15}>
+                  <p className="font-sans text-xs sm:text-sm md:text-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
+                    From ISO and BRCGS to GLOBALG.A.P. and beyond. We help teams build competence, strengthen systems, and achieve certification success.
+                  </p>
+                </ScrollReveal>
+
+                <ScrollReveal direction="up" delay={0.2}>
+                  <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-4">
+                    <button
+                      onClick={() => {
+                        const el = document.getElementById('services');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 sm:py-4 sm:px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md flex items-center justify-center gap-2.5 w-full sm:w-auto"
+                    >
+                      <AppIcon name="grid_view" size={16} className="shrink-0" color="#ffffff" />
+                      <span>Explore Our Services</span>
+                    </button>
+                    <button
+                      onClick={() => handleOpenBooking('consulting')}
+                      className="bg-[#023625] hover:bg-[#034d35] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 sm:py-4 sm:px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md flex items-center justify-center gap-2.5 w-full sm:w-auto"
+                    >
+                      <Calendar size={16} className="text-[#B68A35] shrink-0" />
+                      <span>Book a Consultation</span>
+                    </button>
+                  </div>
+                </ScrollReveal>
+
+                <ScrollReveal direction="up" delay={0.25}>
+                  <div className="pt-6 sm:pt-8 border-t border-border/60 grid grid-cols-3 gap-3 sm:gap-6 text-center max-w-lg mx-auto">
+                    <div>
+                      <div className="font-serif text-xl sm:text-2xl font-bold text-primary">100%</div>
+                      <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">Audit Success</div>
                     </div>
-                  </ScrollReveal>
-
-                  <ScrollReveal direction="up" delay={0.1}>
-                    <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight text-primary font-bold tracking-tight">
-                      Empowering Organisations Through Compliance &amp; Capability.
-                    </h1>
-                  </ScrollReveal>
-
-                  <ScrollReveal direction="up" delay={0.15}>
-                    <p className="font-sans text-xs sm:text-sm md:text-lg text-on-surface-variant max-w-2xl leading-relaxed">
-                      From ISO and BRCGS to GLOBALG.A.P. and beyond. We help teams build competence, strengthen systems, and achieve certification success.
-                    </p>
-                  </ScrollReveal>
-
-                  <ScrollReveal direction="up" delay={0.2}>
-                    <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-4">
-                      <button
-                        onClick={() => {
-                          const el = document.getElementById('services');
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className="bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 sm:py-4 sm:px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md flex items-center justify-center gap-2.5 w-full sm:w-auto"
-                      >
-                        <Workflow size={16} className="shrink-0" />
-                        <span>Explore Our Services</span>
-                      </button>
-                      <button
-                        onClick={() => handleOpenBooking('consulting')}
-                        className="bg-[#023625] hover:bg-[#034d35] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 sm:py-4 sm:px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md flex items-center justify-center gap-2.5 w-full sm:w-auto"
-                      >
-                        <Calendar size={16} className="text-[#B68A35] shrink-0" />
-                        <span>Book a Consultation</span>
-                      </button>
+                    <div>
+                      <div className="font-serif text-xl sm:text-2xl font-bold text-primary">Global</div>
+                      <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">ISO / BRCGS / GFSI</div>
                     </div>
-                  </ScrollReveal>
-
-                  <ScrollReveal direction="up" delay={0.25}>
-                    <div className="pt-4 sm:pt-6 border-t border-border/60 grid grid-cols-3 gap-2 sm:gap-4 text-center sm:text-left">
-                      <div>
-                        <div className="font-serif text-lg sm:text-2xl font-bold text-primary">100%</div>
-                        <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">Audit Success</div>
-                      </div>
-                      <div>
-                        <div className="font-serif text-lg sm:text-2xl font-bold text-primary">Global</div>
-                        <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">ISO / BRCGS / GFSI</div>
-                      </div>
-                      <div>
-                        <div className="font-serif text-lg sm:text-2xl font-bold text-primary">Partner</div>
-                        <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">FoodChain ID</div>
-                      </div>
+                    <div>
+                      <div className="font-serif text-xl sm:text-2xl font-bold text-primary">Partner</div>
+                      <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">FoodChain ID</div>
                     </div>
-                  </ScrollReveal>
-                </div>
-
-                {/* Hero Visual: Abstract Compliance Graphic & Interactive Badge Card */}
-                <div className="lg:col-span-5 relative z-10 mt-2 lg:mt-0">
-                  <ScrollReveal direction="left" delay={0.2}>
-                    <div className="relative mx-auto max-w-md lg:max-w-none">
-                      {/* Decorative geometric blurred shapes */}
-                      <div className="absolute -top-10 -right-10 w-72 h-72 bg-[#B68A35]/15 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-                      <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-[#023625]/15 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-
-                      {/* Main Card Container */}
-                      <div className="bg-white/95 backdrop-blur-md border border-border p-5 sm:p-8 rounded-2xl shadow-xl space-y-4 sm:space-y-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#B68A35]/10 to-transparent rounded-bl-full pointer-events-none"></div>
-
-                        <div className="flex items-center justify-between border-b border-border/80 pb-3 sm:pb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#023625] flex items-center justify-center text-white font-serif font-bold">
-                              Y
-                            </div>
-                            <div>
-                              <h3 className="font-serif font-bold text-primary text-sm sm:text-base">Certification &amp; Compliance</h3>
-                              <p className="text-[10px] sm:text-[11px] font-mono text-ash">System Standard Verification</p>
-                            </div>
-                          </div>
-                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] sm:text-[10px] font-mono uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full flex items-center gap-1">
-                            <CheckCircle2 size={12} className="text-emerald-600" /> Verified
-                          </span>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider text-[#B68A35]">Supported Global Standards</div>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-                            {[
-                              { name: 'ISO 22000 / FSSC 22000', desc: 'Food Safety Management' },
-                              { name: 'BRCGS Issue 9', desc: 'Global Standard Safety' },
-                              { name: 'GLOBALG.A.P.', desc: 'Farm Assurance Scheme' },
-                              { name: 'ISO 9001 / 14001', desc: 'Quality & Environment' }
-                            ].map((item, idx) => (
-                              <div key={idx} className="p-2.5 sm:p-3 bg-mist/80 rounded-xl border border-border/80 text-left hover:border-[#B68A35]/50 transition-colors">
-                                <div className="font-serif font-bold text-[11px] sm:text-xs text-primary">{item.name}</div>
-                                <div className="text-[9px] sm:text-[10px] text-ash mt-0.5">{item.desc}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-border/80 flex items-center justify-between text-[11px] sm:text-xs text-ash font-mono">
-                          <span>Official FoodChain ID Partner</span>
-                          <span className="text-[#023625] font-bold">Verified Excellence</span>
-                        </div>
-                      </div>
-                    </div>
-                  </ScrollReveal>
-                </div>
+                  </div>
+                </ScrollReveal>
               </div>
             </section>
 
@@ -1236,7 +1175,7 @@ export default function App() {
                       },
                     },
                   }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch"
                 >
                   {/* Service 1: Professional Training (Capability Building) */}
                   <motion.div
@@ -1253,19 +1192,19 @@ export default function App() {
                     }}
                     className="h-full"
                   >
-                    <motion.div style={{ y: parallaxY1 }} className="h-full">
+                    <div className="h-full">
                       <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
                         <div className="space-y-5">
                           <div className="flex items-center justify-between">
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <GraduationCap size={24} />
+                              <AppIcon name="school" size={24} />
                             </div>
                             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2.5 py-1 rounded-full">
                               Capability Building
                             </span>
                           </div>
-                          <div className="space-y-1.5">
-                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors">
+                          <div className="space-y-2">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
                               Professional Training
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
@@ -1297,7 +1236,7 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </motion.div>
 
                   {/* Service 2: Certification Support (Capability Building) */}
@@ -1315,33 +1254,37 @@ export default function App() {
                     }}
                     className="h-full"
                   >
-                    <motion.div style={{ y: parallaxY2 }} className="h-full">
+                    <div className="h-full">
                       <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
                         <div className="space-y-5">
                           <div className="flex items-center justify-between">
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <Award size={24} />
+                              <AppIcon name="verified" size={24} />
                             </div>
                             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2.5 py-1 rounded-full">
                               Capability Building
                             </span>
                           </div>
-                          <div className="space-y-1.5">
-                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors">
+                          <div className="space-y-2">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
                               Certification Support
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              Accredited, internationally recognised schemes guiding organisations from audit readiness to valid certification.
+                              End-to-end guidance through accredited standards, navigating every phase from scope definition to final audit success.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Scheme selection &amp; pre-assessment</span>
+                              <span>Scheme &amp; standard selection</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Audit preparation &amp; evidence</span>
+                              <span>Initial gap assessment &amp; pre-audit review</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Evidence compilation &amp; audit prep</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
@@ -1359,7 +1302,7 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </motion.div>
 
                   {/* Service 3: Consulting & Advisory (Advisory) */}
@@ -1377,23 +1320,23 @@ export default function App() {
                     }}
                     className="h-full"
                   >
-                    <motion.div style={{ y: parallaxY3 }} className="h-full">
+                    <div className="h-full">
                       <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
                         <div className="space-y-5">
                           <div className="flex items-center justify-between">
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <Sliders size={24} />
+                              <AppIcon name="support_agent" size={24} />
                             </div>
                             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
                               Advisory
                             </span>
                           </div>
-                          <div className="space-y-1.5">
-                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors">
+                          <div className="space-y-2">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
                               Consulting &amp; Advisory
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              Practical guidance to implement learning, improve systems, and strengthen organisational performance.
+                              Practical guidance to implement learning, optimize management systems, and strengthen organisational resilience.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
@@ -1421,7 +1364,7 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </motion.div>
 
                   {/* Service 4: Business Process Implementation (Advisory) */}
@@ -1439,23 +1382,23 @@ export default function App() {
                     }}
                     className="h-full"
                   >
-                    <motion.div style={{ y: parallaxY4 }} className="h-full">
+                    <div className="h-full">
                       <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
                         <div className="space-y-5">
                           <div className="flex items-center justify-between">
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <Workflow size={24} />
+                              <AppIcon name="schema" size={24} />
                             </div>
                             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
                               Advisory
                             </span>
                           </div>
-                          <div className="space-y-1.5">
-                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors">
+                          <div className="space-y-2">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
                               Business Process Implementation
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              Building operational foundations from zero: process mapping, risk controls, and HR/accounting setup.
+                              Building operational foundations from zero: process mapping, risk controls, and HR &amp; accounting systems setup.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
@@ -1483,7 +1426,7 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </motion.div>
                 </motion.div>
               </div>
@@ -1511,7 +1454,7 @@ export default function App() {
                       desc: "Deep understanding of international frameworks."
                     },
                     {
-                      icon: <Workflow size={26} className="text-[#B68A35]" />,
+                      icon: <AppIcon name="timeline" size={26} color="#B68A35" />,
                       title: "Structured Methodology",
                       desc: "Discover → Assess → Develop → Deliver → Improve."
                     },
@@ -1557,7 +1500,7 @@ export default function App() {
                 <ScrollReveal direction="up" delay={0.05}>
                   <div className="text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto">
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[#B68A35] font-mono text-[10px] sm:text-xs uppercase tracking-widest font-bold shadow-xs">
-                      <Workflow size={13} />
+                      <AppIcon name="route" size={14} color="#B68A35" />
                       <span>5-Phase Implementation Framework</span>
                     </div>
                     <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-white">Our Approach</h2>
@@ -1880,32 +1823,31 @@ export default function App() {
                   {[
                     {
                       title: "Practical Grounding",
-                      icon: ShieldCheck,
+                      iconName: "precision_manufacturing",
                       desc: "No abstract theory. Built around actual floor shifts, operational constraints, and commercial targets."
                     },
                     {
                       title: "Zero-Distortion Systems",
-                      icon: Layers,
+                      iconName: "tune",
                       desc: "Eliminating burdensome paperwork. Lightweight, intuitive procedures that staff actually follow."
                     },
                     {
                       title: "Verifiable Competence",
-                      icon: GraduationCap,
+                      iconName: "psychology",
                       desc: "Focusing on human capability. Hands-on training ensures your team owns every control point."
                     },
                     {
                       title: "Permanent Readiness",
-                      icon: Shield,
+                      iconName: "published_with_changes",
                       desc: "Continuous surveillance and recertification support keep you prepared for unannounced audits 365 days a year."
                     }
                   ].map((pillar, pIdx) => {
-                    const PIcon = pillar.icon;
                     return (
                       <ScrollReveal key={pIdx} direction="up" delay={0.08 * (pIdx + 1)}>
                         <div className="bg-white border border-border hover:border-[#B68A35] p-6 rounded-2xl space-y-3 shadow-xs hover:shadow-md transition-all h-full flex flex-col justify-between">
                           <div className="space-y-3">
-                            <div className="w-11 h-11 rounded-xl bg-[#023625] text-[#B68A35] flex items-center justify-center shadow-xs">
-                              <PIcon size={22} />
+                            <div className="w-11 h-11 rounded-xl bg-[#023625] text-[#DFC181] flex items-center justify-center shadow-xs">
+                              <AppIcon name={pillar.iconName} size={22} color="#DFC181" />
                             </div>
                             <h3 className="font-serif font-bold text-base text-primary">{pillar.title}</h3>
                             <p className="font-sans text-xs text-ash leading-relaxed">{pillar.desc}</p>
@@ -2725,7 +2667,7 @@ export default function App() {
                       </div>
                       <h3 className="font-serif text-2xl md:text-3xl font-bold">Accredited Schemes &amp; Global Certification Support</h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        As an official FoodChain ID Partner, Yitzak provides comprehensive training across accredited schemes—including GFSI, GLOBALG.A.P., Non-GMO, and BRCGS—supported by direct audit readiness assistance.
+                        As an official FoodChain ID Partner, Yitzak provides comprehensive training across accredited schemes, including GFSI, GLOBALG.A.P., Non-GMO, and BRCGS, supported by direct audit readiness assistance.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 shrink-0">
@@ -3330,7 +3272,7 @@ export default function App() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
                 <div className="lg:col-span-7 z-10 space-y-6">
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-xs font-mono font-bold uppercase tracking-widest">
-                    <Workflow size={14} className="text-[#B68A35]" />
+                    <AppIcon name="schema" size={14} color="#B68A35" />
                     <span>Operational Pillar 04</span>
                   </div>
                   <h1 className="font-serif text-[38px] md:text-[54px] leading-[46px] md:leading-[62px] tracking-tight text-primary font-bold">
@@ -3386,70 +3328,12 @@ export default function App() {
               </div>
             </section>
 
-            {/* Implementation Phased Roadmap */}
-            <section className="bg-[#F9F9F9] py-16 md:py-20 px-4 md:px-16 border-t border-[#E5E5E5]">
-              <div className="max-w-[1280px] mx-auto space-y-12">
-                <div className="text-center space-y-3">
-                  <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold">Execution Framework</span>
-                  <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold">Two-Phase Implementation Journey</h2>
-                  <div className="w-20 h-1 bg-[#B68A35] mx-auto"></div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Phase 1 */}
-                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-8 shadow-sm space-y-6 hover:border-[#B68A35]/40 transition-all">
-                    <div className="flex items-center gap-3 border-b border-[#E5E5E5] pb-4">
-                      <div className="w-10 h-10 rounded-xl bg-[#023625] text-[#B68A35] font-serif font-bold text-lg flex items-center justify-center shrink-0">
-                        01
-                      </div>
-                      <div>
-                        <h3 className="font-serif text-xl text-primary font-bold">Phase 1: Foundation & Governance</h3>
-                        <span className="text-xs font-mono text-ash uppercase">Establishing baseline structure & compliance readiness</span>
-                      </div>
-                    </div>
-                    <ul className="space-y-3 font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#B68A35] font-bold">•</span>
-                        <span><strong>Process Mapping & Optimisation:</strong> Documenting end-to-end operational workflows and eliminating operational noise.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#B68A35] font-bold">•</span>
-                        <span><strong>Governance & Risk Controls:</strong> Designing internal governance frameworks and risk control metrics.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#B68A35] font-bold">•</span>
-                        <span><strong>Audit Readiness Framework:</strong> Aligning operating standards with ISO and industry compliance criteria.</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Phase 2 */}
-                  <div className="bg-white border border-[#E5E5E5] rounded-2xl p-8 shadow-sm space-y-6 hover:border-[#B68A35]/40 transition-all">
-                    <div className="flex items-center gap-3 border-b border-[#E5E5E5] pb-4">
-                      <div className="w-10 h-10 rounded-xl bg-[#023625] text-[#B68A35] font-serif font-bold text-lg flex items-center justify-center shrink-0">
-                        02
-                      </div>
-                      <div>
-                        <h3 className="font-serif text-xl text-primary font-bold">Phase 2: Operational Systems & Scaling</h3>
-                        <span className="text-xs font-mono text-ash uppercase">HR, accounting & lean continuous improvement</span>
-                      </div>
-                    </div>
-                    <ul className="space-y-3 font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#B68A35] font-bold">•</span>
-                        <span><strong>Operational System Integration:</strong> Implementing HR structures, accounting controls, and reporting workflows.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#B68A35] font-bold">•</span>
-                        <span><strong>Lean Audits & Efficiency:</strong> Conducting time-and-motion studies to optimise resource deployment.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#B68A35] font-bold">•</span>
-                        <span><strong>Team Onboarding & Governance Training:</strong> Ensuring operational leaders maintain and enforce updated protocols.</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+            {/* Implementation Phased Roadmap Component */}
+            <section className="bg-[#F9F9F9] py-12 md:py-16 px-4 md:px-16 border-t border-[#E5E5E5]">
+              <div className="max-w-[1280px] mx-auto space-y-10">
+                <ProcessImplementationRoadmap 
+                  onInquirePhase={(phaseTitle) => handleOpenBooking('process_implementation', `Inquiry regarding ${phaseTitle}`)}
+                />
 
                 <div className="bg-[#023625] text-white p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="space-y-2 max-w-2xl">

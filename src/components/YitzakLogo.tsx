@@ -66,21 +66,21 @@ export const YitzakLogo: React.FC<YitzakLogoProps> = ({
   size = 36,
   color,
   lightMode = false,
-  src
+  src = '/YITZAK-logo-green.png'
 }) => {
   const [imgFailed, setImgFailed] = useState(false);
   const brandColor = color || (lightMode ? '#FFFFFF' : '#023625');
   const textColor = lightMode ? 'text-white' : 'text-[#023625]';
   const numSize = typeof size === 'number' ? size : parseInt(String(size), 10) || 36;
 
-  // If a custom image path is passed or /logo.png exists in public
+  // Render official uploaded PNG image logo when available
   if (src && !imgFailed) {
     return (
       <img
         src={src}
         alt="YITZAK Logo"
         style={{ height: numSize, width: 'auto' }}
-        className={`object-contain ${className}`}
+        className={`object-contain ${lightMode ? 'brightness-0 invert' : ''} ${className}`}
         onError={() => setImgFailed(true)}
       />
     );

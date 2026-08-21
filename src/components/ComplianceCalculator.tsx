@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
-  Calculator, 
   TrendingUp, 
   Clock, 
   Building2, 
-  ShieldCheck, 
-  Sparkles, 
   Users, 
   ArrowRight,
-  AlertCircle,
-  ChevronDown
+  ChevronDown,
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
+import AppIcon from './AppIcon';
 
 interface ComplianceCalculatorProps {
   onInquire: (notes: string) => void;
@@ -245,8 +244,8 @@ Total Risk Exposure Value Mitigated: ${includeYitzakSupport ? 'R ' + totalMitiga
             {/* Accelerator Toggle */}
             <div className="pt-4 border-t border-[#E5E5E5] flex items-center justify-between bg-[#023625]/5 p-4 rounded-xl border border-[#023625]/10">
               <div className="space-y-0.5 pr-3">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#023625]">
-                  <ShieldCheck size={16} className="text-[#B68A35]" />
+                <div className="flex items-center gap-2 text-xs font-bold text-[#023625]">
+                  <AppIcon name="verified_user" size={18} color="#B68A35" />
                   <span>Apply Yitzak Guided Accelerator</span>
                 </div>
                 <p className="text-[11px] text-ash">
@@ -273,11 +272,11 @@ Total Risk Exposure Value Mitigated: ${includeYitzakSupport ? 'R ' + totalMitiga
           {/* Right Outputs Column (5 Cols) */}
           <div className="lg:col-span-5 bg-[#023625] text-white p-6 md:p-8 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-white/10 relative">
             <div className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-white/10 pb-4">
-                <Calculator size={20} className="text-[#B68A35]" />
+              <div className="flex items-center gap-2.5 border-b border-white/10 pb-4">
+                <AppIcon name="calculate" size={24} color="#DFC181" />
                 <div>
                   <h3 className="font-serif text-lg font-bold text-white">Projected Outcomes</h3>
-                  <span className="text-[10px] font-mono text-[#B68A35] uppercase tracking-wider">Dynamic Assessment Summary</span>
+                  <span className="text-[10px] font-mono text-[#DFC181] uppercase tracking-wider">Dynamic Assessment Summary</span>
                 </div>
               </div>
 
