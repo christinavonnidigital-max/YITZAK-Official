@@ -3,14 +3,14 @@
  * Handles email delivery across Vercel API routes and optional Google Workspace Gmail API.
  */
 
-import { sendContactInquiryEmail, sendWelcomeNewsletterEmail, sendConfirmationEmail } from './googleApi';
+import { sendContactInquiryEmail, sendConfirmationEmail } from './googleApi';
 
 export interface EmailPayload {
   to: string | string[];
   subject: string;
   html?: string;
   text?: string;
-  type?: 'inquiry' | 'newsletter' | 'booking' | 'general';
+  type?: 'inquiry' | 'booking' | 'general';
   metadata?: Record<string, any>;
 }
 
@@ -116,56 +116,6 @@ export async function dispatchInquiryEmail(
       await sendContactInquiryEmail(googleAccessToken, details);
     } catch (gErr) {
       console.warn('Google Workspace email fallback error:', gErr);
-    }
-  }
-}
-
-/**
- * Dispatches Welcome Newsletter Email (Works seamlessly on Vercel and Google Workspace)
- */
-export async function dispatchNewsletterWelcomeEmail(
-  subscriberEmail: string,
-  googleAccessToken?: string | null
-): Promise<void> {
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: Arial, sans-serif; color: #2B2B2B; background: #F9F9F9; padding: 30px; }
-        .container { max-width: 600px; margin: 0 auto; background: #FFF; padding: 30px; border: 1px solid #E5E5E5; border-top: 4px solid #023625; }
-        .header { margin-bottom: 20px; font-size: 22px; font-weight: bold; color: #023625; }
-        .footer { font-size: 11px; color: #737373; margin-top: 30px; text-align: center; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">Welcome to The YITZAK Digest</div>
-        <p>Thank you for subscribing to YITZAK's executive knowledge briefing.</p>
-        <p>You will receive monthly technical updates on food safety compliance, ISO 22000, FSSC 22000, BRCGS, IFS, and GFSI regulatory frameworks.</p>
-        <div class="footer">&copy; 2026 YITZAK Institutional Consulting · All rights reserved</div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  try {
-    await sendEmailViaVercel({
-      to: subscriberEmail,
-      subject: 'Welcome to The YITZAK Digest: ISO & GFSI Compliance Briefing',
-      html: htmlContent,
-      type: 'newsletter',
-    });
-  } catch (e) {
-    console.warn('Vercel newsletter email dispatch error:', e);
-  }
-
-  if (googleAccessToken) {
-    try {
-      await sendWelcomeNewsletterEmail(googleAccessToken, subscriberEmail);
-    } catch (gErr) {
-      console.warn('Google Workspace newsletter dispatch error:', gErr);
     }
   }
 }

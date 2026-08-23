@@ -1,11 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Calendar, Clock, CheckCircle2, X, Loader2, Sparkles, Building2, User as UserIcon, Mail, FileText, ChevronDown, CalendarPlus, Download } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  CheckCircle2, 
+  X, 
+  Loader2, 
+  ExternalLink, 
+  Sparkles, 
+  ShieldCheck, 
+  RotateCcw, 
+  Settings2,
+  CalendarCheck,
+  Video,
+  Info,
+  Send,
+  User as UserIcon,
+  Mail,
+  Building,
+  Phone,
+  MessageSquare
+} from 'lucide-react';
 import { User } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db, getAccessToken } from '../lib/firebase';
-import { dispatchBookingConfirmationEmail } from '../lib/emailService';
-import { PILLARS, TIME_SLOTS } from '../data';
+import { db } from '../lib/firebase';
+import { sendEmailViaVercel } from '../lib/emailService';
+import { PILLARS } from '../data';
+import CalendarDatePicker from './CalendarDatePicker';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -14,8 +35,11 @@ interface BookingModalProps {
   onAuthSuccess?: (user: User) => void;
   initialPillarId?: string;
   initialNotes?: string;
-  onBookingSuccess: () => void;
+  onBookingSuccess?: () => void;
 }
+
+const PRIMARY_CALENDLY_URL = 'https://calendly.com/cgumpo-yitzak/30min';
+const PROFILE_CALENDLY_URL = 'https://calendly.com/cgumpo-yitzak';
 
 export default function BookingModal({
   isOpen,
@@ -25,501 +49,666 @@ export default function BookingModal({
   initialNotes = '',
   onBookingSuccess
 }: BookingModalProps) {
-  // Form State
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [bookingMode, setBookingMode] = useState<'calendly' | 'direct'>('calendly');
   const [selectedPillar, setSelectedPillar] = useState(initialPillarId);
-  const [date, setDate] = useState('');
-  const [timeSlot, setTimeSlot] = useState(TIME_SLOTS[0] || '09:00 - 10:00');
   const [notes, setNotes] = useState(initialNotes);
+  const [calendlyUrl, setCalendlyUrl] = useState(() => {
+    return PRIMARY_CALENDLY_URL;
+  });
+  const [isEditingUrl, setIsEditingUrl] = useState(false);
+  const [customUrlInput, setCustomUrlInput] = useState('');
+  const [isLoadingIframe, setIsLoadingIframe] = useState(true);
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // Status & Validation State
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [bookingRef, setBookingRef] = useState('');
-  const [validationError, setValidationError] = useState<string | null>(null);
+  // Direct Form State
+  const [directForm, setDirectForm] = useState({
+    fullName: currentUser?.displayName || '',
+    email: currentUser?.email || '',
+    company: '',
+    phone: '',
+    preferredDate: '',
+    preferredTime: '10:00 AM (SAST)',
+    message: initialNotes || ''
+  });
+  const [isSubmittingDirect, setIsSubmittingDirect] = useState(false);
+  const [directSuccess, setDirectSuccess] = useState(false);
+  const [directError, setDirectError] = useState<string | null>(null);
+
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Sync state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setName(currentUser?.displayName || '');
-      setEmail(currentUser?.email || '');
       setSelectedPillar(initialPillarId || 'consulting');
       setNotes(initialNotes || '');
-      setSubmitted(false);
-      setSubmitting(false);
-      setValidationError(null);
-
-      // Default preferred date to tomorrow (or Monday if weekend)
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      if (tomorrow.getDay() === 0) tomorrow.setDate(tomorrow.getDate() + 1); // If Sun -> Mon
-      if (tomorrow.getDay() === 6) tomorrow.setDate(tomorrow.getDate() + 2); // If Sat -> Mon
-      setDate(tomorrow.toISOString().split('T')[0]);
-
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      setDirectForm(prev => ({
+        ...prev,
+        fullName: currentUser?.displayName || prev.fullName || '',
+        email: currentUser?.email || prev.email || '',
+        message: initialNotes || prev.message || ''
+      }));
+      setCalendlyUrl(PRIMARY_CALENDLY_URL);
+      setIsLoadingIframe(true);
+      setBookingConfirmed(false);
+      setDirectSuccess(false);
+      setDirectError(null);
+      setIsEditingUrl(false);
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen, initialPillarId, initialNotes, currentUser]);
 
-  const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+  // Listen to Calendly PostMessage Events
+  useEffect(() => {
+    const handleCalendlyEvent = async (e: MessageEvent) => {
+      if (!e.data || typeof e.data !== 'object') return;
+      
+      if (e.data.event === 'calendly.event_scheduled') {
+        const payload = e.data.payload || {};
+        setBookingConfirmed(true);
+
+        const refCode = `YTZ-CAL-${Math.floor(100000 + Math.random() * 900000)}`;
+        const pillarInfo = PILLARS.find(p => p.id === selectedPillar);
+        const pillarTitle = pillarInfo ? pillarInfo.title : 'Institutional Advisory';
+
+        const bookingRecord = {
+          bookingRef: refCode,
+          userName: directForm.fullName || currentUser?.displayName || 'Client',
+          userEmail: directForm.email || currentUser?.email || 'client@yitzak.co.za',
+          pillar: pillarTitle,
+          pillarId: selectedPillar,
+          notes: notes,
+          status: 'confirmed',
+          scheduledVia: 'Calendly Live Sync',
+          eventUri: payload.event?.uri || '',
+          inviteeUri: payload.invitee?.uri || '',
+          createdAt: new Date().toISOString()
+        };
+
+        try {
+          const docId = `booking_${Date.now()}_${refCode}`;
+          await setDoc(doc(db, 'consultation_requests', docId), {
+            ...bookingRecord,
+            timestamp: serverTimestamp()
+          });
+        } catch (err) {
+          console.warn('Firestore fallback on Calendly booking:', err);
+        }
+
+        const stored = JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]');
+        stored.push(bookingRecord);
+        localStorage.setItem('yitzak_consultation_requests', JSON.stringify(stored));
+
+        if (onBookingSuccess) {
+          onBookingSuccess();
+        }
+      }
+    };
+
+    window.addEventListener('message', handleCalendlyEvent);
+    return () => window.removeEventListener('message', handleCalendlyEvent);
+  }, [selectedPillar, notes, directForm, currentUser, onBookingSuccess]);
+
+  if (!isOpen) return null;
+
+  const currentPillarObj = PILLARS.find(p => p.id === selectedPillar) || PILLARS[0];
+
+  // Cleanly format Calendly URL for iframe embedding
+  const getFullCalendlyUrl = () => {
+    try {
+      const cleanBase = calendlyUrl.trim() || PRIMARY_CALENDLY_URL;
+      const url = new URL(cleanBase);
+      
+      // Standard embed params
+      url.searchParams.set('hide_landing_page_details', '1');
+      url.searchParams.set('hide_gdpr_banner', '1');
+      url.searchParams.set('primary_color', '023625');
+      url.searchParams.set('text_color', '012B1D');
+      
+      if (directForm.fullName) {
+        url.searchParams.set('name', directForm.fullName);
+      }
+      if (directForm.email) {
+        url.searchParams.set('email', directForm.email);
+      }
+
+      return url.toString();
+    } catch {
+      return calendlyUrl;
+    }
   };
 
-  const getPillarTitle = (id: string) => {
-    if (id === 'training') return 'Professional Training';
-    if (id === 'consulting') return 'Consulting & Advisory';
-    if (id === 'certification') return 'Certification Support';
-    if (id === 'process_implementation') return 'Business Process Implementation';
-    if (id === 'compliance') return 'Compliance & Management Systems';
-    const found = PILLARS.find(p => p.id === id);
-    return found ? found.title : 'Consulting & Advisory';
+  const handleSaveCustomUrl = () => {
+    if (customUrlInput.trim()) {
+      let formatted = customUrlInput.trim();
+      if (!formatted.startsWith('http://') && !formatted.startsWith('https://')) {
+        formatted = 'https://' + formatted;
+      }
+      setCalendlyUrl(formatted);
+      setIsEditingUrl(false);
+      setIsLoadingIframe(true);
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleResetUrl = () => {
+    setCalendlyUrl(PRIMARY_CALENDLY_URL);
+    setIsEditingUrl(false);
+    setIsLoadingIframe(true);
+  };
+
+  const handleDirectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setValidationError(null);
-
-    // Subtle inline validation
-    if (!name.trim()) {
-      setValidationError('Please enter your full name.');
-      return;
-    }
-    if (!email.trim() || !email.includes('@')) {
-      setValidationError('Please enter a valid corporate or personal email address.');
-      return;
-    }
-    if (!date) {
-      setValidationError('Please select a preferred consultation date.');
-      return;
-    }
-    if (!timeSlot) {
-      setValidationError('Please select a preferred time slot.');
+    if (!directForm.fullName || !directForm.email || !directForm.company) {
+      setDirectError('Please fill in your name, work email, and company.');
       return;
     }
 
-    setSubmitting(true);
-    const refCode = `YTZ-${Math.floor(100000 + Math.random() * 900000)}`;
-    setBookingRef(refCode);
+    if (directForm.preferredDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selected = new Date(directForm.preferredDate);
+      if (selected < today) {
+        setDirectError('Preferred consultation date must be in the future.');
+        return;
+      }
+    }
 
-    const pillarName = getPillarTitle(selectedPillar);
+    setIsSubmittingDirect(true);
+    setDirectError(null);
 
-    const bookingPayload = {
+    const refCode = `YTZ-DIR-${Math.floor(100000 + Math.random() * 900000)}`;
+    const payload = {
       bookingRef: refCode,
-      userName: name.trim(),
-      userEmail: email.trim(),
-      pillar: pillarName,
+      userName: directForm.fullName,
+      userEmail: directForm.email,
+      company: directForm.company,
+      phone: directForm.phone,
+      pillar: currentPillarObj.title,
       pillarId: selectedPillar,
-      date,
-      timeSlot,
-      notes: notes.trim(),
+      preferredDate: directForm.preferredDate || 'Earliest Available',
+      preferredTime: directForm.preferredTime,
+      notes: directForm.message || notes,
       status: 'pending',
-      createdAt: new Date().toISOString(),
-      source: 'Simplified Website Booking Form'
+      scheduledVia: 'Direct Institutional Request',
+      createdAt: new Date().toISOString()
     };
 
     try {
-      // 1. Write to Firestore
-      const docId = `request_${Date.now()}_${refCode}`;
+      // 1. Save to Firestore
+      const docId = `booking_${Date.now()}_${refCode}`;
       await setDoc(doc(db, 'consultation_requests', docId), {
-        ...bookingPayload,
+        ...payload,
         timestamp: serverTimestamp()
       });
-    } catch (err) {
-      console.warn('Firestore fallback: saving request locally', err);
+    } catch (dbErr) {
+      console.warn('Firestore direct write fallback:', dbErr);
     }
 
-    // 2. Save locally for instant persistence
-    const existingRequests = JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]');
-    existingRequests.push(bookingPayload);
-    localStorage.setItem('yitzak_consultation_requests', JSON.stringify(existingRequests));
-
-    // 3. Dispatch Email notification via Vercel / Workspace
+    // 2. Local Storage Backup
     try {
-      const token = await getAccessToken().catch(() => null);
-      await dispatchBookingConfirmationEmail({
-        to: email.trim(),
-        recipientName: name.trim(),
-        date,
-        timeSlot,
-        pillarName,
-        notes: notes.trim()
-      }, token);
+      const stored = JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]');
+      stored.push(payload);
+      localStorage.setItem('yitzak_consultation_requests', JSON.stringify(stored));
+    } catch {}
+
+    // 3. Email Dispatch via Resend / Vercel Service
+    try {
+      await sendEmailViaVercel({
+        to: ['christinagumpo@gmail.com', 'info@yitzak.co.za'],
+        subject: `Institutional Consultation Request: ${directForm.company} (${directForm.fullName})`,
+        html: `
+          <h2>New Institutional Consultation Scheduled</h2>
+          <p><strong>Client:</strong> ${directForm.fullName} (${directForm.email})</p>
+          <p><strong>Company:</strong> ${directForm.company}</p>
+          <p><strong>Phone:</strong> ${directForm.phone || 'N/A'}</p>
+          <p><strong>Advisory Focus:</strong> ${currentPillarObj.title}</p>
+          <p><strong>Requested Date:</strong> ${directForm.preferredDate || 'Flexible'}</p>
+          <p><strong>Preferred Time Slot:</strong> ${directForm.preferredTime}</p>
+          <p><strong>Inquiry Notes:</strong><br>${(directForm.message || notes || 'None specified').replace(/\n/g, '<br>')}</p>
+        `,
+        type: 'booking'
+      });
     } catch (mailErr) {
-      console.warn('Booking confirmation email dispatch warning:', mailErr);
+      console.warn('Direct consultation notification dispatch note:', mailErr);
     }
 
-    // Finish submission after brief realistic processing
-    setTimeout(() => {
-      setSubmitting(false);
-      setSubmitted(true);
-      onBookingSuccess();
-    }, 600);
-  };
-
-  // Google Calendar Template URL Generator
-  const getGoogleCalendarUrl = () => {
-    const pillarName = getPillarTitle(selectedPillar);
-    const title = encodeURIComponent(`Yitzak Consulting Session: ${pillarName}`);
-    const details = encodeURIComponent(
-      `Consultation Request with Yitzak Consulting Group.\n\nClient Name: ${name}\nClient Email: ${email}\nReference: ${bookingRef}\nService Pillar: ${pillarName}\nNotes: ${notes || 'None'}`
-    );
-    const location = encodeURIComponent('Yitzak Advisory Virtual Meeting Room');
-
-    const times = timeSlot.split(' - ');
-    const startTime = times[0] ? times[0].trim().replace(':', '') : '0900';
-    const endTime = times[1] ? times[1].split(' ')[0].replace(':', '') : '1000';
-
-    const startIso = `${date.replace(/-/g, '')}T${startTime}00Z`;
-    const endIso = `${date.replace(/-/g, '')}T${endTime}00Z`;
-
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${details}&location=${location}`;
-  };
-
-  // ICS File Generator for Outlook / Apple Calendar
-  const handleDownloadIcs = () => {
-    const pillarName = getPillarTitle(selectedPillar);
-    const times = timeSlot.split(' - ');
-    const startTime = times[0] ? times[0].trim().replace(':', '') : '0900';
-    const endTime = times[1] ? times[1].split(' ')[0].replace(':', '') : '1000';
-
-    const startIso = `${date.replace(/-/g, '')}T${startTime}00`;
-    const endIso = `${date.replace(/-/g, '')}T${endTime}00`;
-
-    const icsContent = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Yitzak Consulting//Consultation Booking//EN',
-      'BEGIN:VEVENT',
-      `SUMMARY:Yitzak Consulting: ${pillarName}`,
-      `DESCRIPTION:Consultation Request for ${name} (${email}). Reference: ${bookingRef}. Notes: ${(notes || 'N/A').replace(/\n/g, ' ')}`,
-      'LOCATION:Yitzak Advisory Virtual Meeting Room',
-      `DTSTART:${startIso}`,
-      `DTEND:${endIso}`,
-      'STATUS:CONFIRMED',
-      'END:VEVENT',
-      'END:VCALENDAR'
-    ].join('\r\n');
-
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.setAttribute('download', `Yitzak_Consultation_${date}.ics`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setIsSubmittingDirect(false);
+    setDirectSuccess(true);
+    if (onBookingSuccess) onBookingSuccess();
   };
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#0F3D3E]/50 backdrop-blur-xs overflow-y-auto">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="bg-white border border-[#E5E5E5] w-full max-w-xl rounded-xl shadow-2xl overflow-hidden my-auto relative"
-          >
-            {/* Header */}
-            <div className="bg-[#0F3D3E] text-white p-6 sm:p-8 flex justify-between items-start relative">
-              <div className="space-y-1.5 pr-6">
-                <span className="font-[#Montserrat] text-[11px] font-semibold text-[#C49A3A] uppercase tracking-widest block">
-                  Yitzak Consulting Advisory
-                </span>
-                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                  Schedule Consultation
-                </h3>
-                <p className="font-sans text-xs text-white/80 leading-relaxed pt-1">
-                  Fill in your details below to request a tailored advisory session with our principal consultants.
+      <div 
+        id="calendly-modal-backdrop"
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-[#00140D]/80 backdrop-blur-md overflow-y-auto"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 16 }}
+          transition={{ duration: 0.2 }}
+          className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden flex flex-col max-h-[92vh]"
+        >
+          {/* Modal Header */}
+          <div className="bg-[#012B1D] text-white px-5 sm:px-8 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#B68A35]/20 border border-[#B68A35]/40 flex items-center justify-center text-[#E6CA85]">
+                <CalendarCheck size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-serif font-bold text-base sm:text-lg text-white">
+                    Schedule Institutional Consultation
+                  </h3>
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#B68A35]/20 text-[#E6CA85] text-[10px] font-mono tracking-wider font-semibold border border-[#B68A35]/30">
+                    <Sparkles size={10} />
+                    Live Calendar
+                  </span>
+                </div>
+                <p className="text-xs text-white/70">
+                  Select a live advisory slot with our lead food safety compliance specialists.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-white/70 hover:text-white hover:bg-white/10 rounded-full p-2 transition-colors cursor-pointer shrink-0"
-                aria-label="Close modal"
-              >
-                <X size={20} />
-              </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 sm:p-8 bg-white max-h-[80vh] overflow-y-auto">
-              {!submitted ? (
-                /* STEP 1: Streamlined Single Form */
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  {/* Validation Message */}
-                  {validationError && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-xs font-sans flex items-center gap-2"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0" />
-                      <span>{validationError}</span>
-                    </motion.div>
-                  )}
-
-                  {/* Name & Email Row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="booking_name" className="block text-xs font-semibold uppercase tracking-wider text-[#333333] mb-1.5 font-sans">
-                        Full Name <span className="text-[#C49A3A]">*</span>
-                      </label>
-                      <div className="relative">
-                        <UserIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737373]" />
-                        <input
-                          id="booking_name"
-                          type="text"
-                          required
-                          value={name}
-                          onChange={(e) => {
-                            setName(e.target.value);
-                            if (validationError) setValidationError(null);
-                          }}
-                          placeholder="e.g. John Doe"
-                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E5E5E5] focus:border-[#0F3D3E] text-xs text-[#333333] rounded-md outline-none font-sans transition-colors"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="booking_email" className="block text-xs font-semibold uppercase tracking-wider text-[#333333] mb-1.5 font-sans">
-                        Email Address <span className="text-[#C49A3A]">*</span>
-                      </label>
-                      <div className="relative">
-                        <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737373]" />
-                        <input
-                          id="booking_email"
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => {
-                            setEmail(e.target.value);
-                            if (validationError) setValidationError(null);
-                          }}
-                          placeholder="e.g. john@company.com"
-                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E5E5E5] focus:border-[#0F3D3E] text-xs text-[#333333] rounded-md outline-none font-sans transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Consulting Pillar Dropdown */}
-                  <div>
-                    <label htmlFor="booking_pillar" className="block text-xs font-semibold uppercase tracking-wider text-[#333333] mb-1.5 font-sans">
-                      Select Consulting Pillar <span className="text-[#C49A3A]">*</span>
-                    </label>
-                    <div className="relative">
-                      <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737373] pointer-events-none" />
-                      <select
-                        id="booking_pillar"
-                        value={selectedPillar}
-                        onChange={(e) => setSelectedPillar(e.target.value)}
-                        className="w-full pl-9 pr-8 py-2.5 bg-white border border-[#E5E5E5] focus:border-[#0F3D3E] text-xs text-[#333333] rounded-md outline-none font-sans appearance-none cursor-pointer transition-colors"
-                      >
-                        <option value="training">Professional Training &amp; Capacity Development</option>
-                        <option value="consulting">Consulting &amp; Strategic Advisory</option>
-                        <option value="certification">Certification Support &amp; Audit Readiness</option>
-                        <option value="process_implementation">Business Process Implementation (HR, Accounting &amp; Ops)</option>
-                        <option value="compliance">Compliance &amp; Integrated Management Systems (IMS)</option>
-                      </select>
-                      <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#737373] pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Date & Time Slot Row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="booking_date" className="block text-xs font-semibold uppercase tracking-wider text-[#333333] mb-1.5 font-sans">
-                        Preferred Date <span className="text-[#C49A3A]">*</span>
-                      </label>
-                      <div className="relative">
-                        <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737373]" />
-                        <input
-                          id="booking_date"
-                          type="date"
-                          required
-                          min={getMinDate()}
-                          value={date}
-                          onChange={(e) => {
-                            setDate(e.target.value);
-                            if (validationError) setValidationError(null);
-                          }}
-                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E5E5E5] focus:border-[#0F3D3E] text-xs text-[#333333] rounded-md outline-none font-sans transition-colors"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="booking_timeslot" className="block text-xs font-semibold uppercase tracking-wider text-[#333333] mb-1.5 font-sans">
-                        Preferred Time Slot <span className="text-[#C49A3A]">*</span>
-                      </label>
-                      <div className="relative">
-                        <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737373] pointer-events-none" />
-                        <select
-                          id="booking_timeslot"
-                          value={timeSlot}
-                          onChange={(e) => setTimeSlot(e.target.value)}
-                          className="w-full pl-9 pr-8 py-2.5 bg-white border border-[#E5E5E5] focus:border-[#0F3D3E] text-xs text-[#333333] rounded-md outline-none font-sans appearance-none cursor-pointer transition-colors"
-                        >
-                          {TIME_SLOTS.map((slot) => (
-                            <option key={slot} value={slot}>
-                              {slot} (SAST / UTC+2)
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#737373] pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Additional Notes Textarea */}
-                  <div>
-                    <label htmlFor="booking_notes" className="block text-xs font-semibold uppercase tracking-wider text-[#333333] mb-1.5 font-sans">
-                      Additional Notes <span className="text-[#737373] font-normal lowercase">(optional)</span>
-                    </label>
-                    <div className="relative">
-                      <FileText size={16} className="absolute left-3 top-3 text-[#737373]" />
-                      <textarea
-                        id="booking_notes"
-                        rows={3}
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Specify your ISO standards of interest, team size, or key objectives..."
-                        className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E5E5E5] focus:border-[#0F3D3E] text-xs text-[#333333] rounded-md outline-none font-sans resize-none transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Primary CTA Submit Button */}
-                  <div className="pt-2">
-                    <button
-                      id="submit_consultation_btn"
-                      type="submit"
-                      disabled={submitting}
-                      className="w-full btn-primary font-sans font-bold text-xs uppercase tracking-wider py-3.5 rounded-md cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-98 disabled:opacity-60 transition-all"
-                    >
-                      {submitting ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          <span>Submitting Request...</span>
-                        </>
-                      ) : (
-                        <span>Submit Consultation Request</span>
-                      )}
-                    </button>
-                    <p className="text-[11px] text-[#737373] text-center mt-2.5 font-sans">
-                      No password required. Instant confirmation receipt will be generated.
-                    </p>
-                  </div>
-                </form>
-              ) : (
-                /* STEP 2: Clean Confirmation Screen */
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-center py-4 space-y-6"
+            <div className="flex items-center gap-2">
+              {/* Mode Toggle */}
+              <div className="hidden sm:flex items-center bg-white/10 p-0.5 rounded-lg border border-white/15 text-xs mr-1">
+                <button
+                  onClick={() => setBookingMode('calendly')}
+                  className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                    bookingMode === 'calendly' 
+                      ? 'bg-[#B68A35] text-white shadow-xs' 
+                      : 'text-white/80 hover:text-white'
+                  }`}
                 >
-                  <div className="w-16 h-16 rounded-full bg-[#0F3D3E]/10 text-[#0F3D3E] flex items-center justify-center mx-auto">
-                    <CheckCircle2 size={36} />
-                  </div>
+                  Calendly Live
+                </button>
+                <button
+                  onClick={() => setBookingMode('direct')}
+                  className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                    bookingMode === 'direct' 
+                      ? 'bg-[#B68A35] text-white shadow-xs' 
+                      : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  Direct Form
+                </button>
+              </div>
 
-                  <div className="space-y-2 max-w-md mx-auto">
-                    <h4 className="font-serif text-2xl font-bold text-[#0F3D3E]">
-                      Request Received
-                    </h4>
-                    <p className="font-sans text-xs text-[#333333] leading-relaxed">
-                      Thank you, <strong className="text-[#0F3D3E]">{name}</strong>. Your consultation request for <strong className="text-[#0F3D3E]">{getPillarTitle(selectedPillar)}</strong> has been received. We’ll confirm availability within 24 hours.
-                    </p>
-                  </div>
+              <a
+                href={calendlyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-[#E6CA85] hover:text-white text-xs font-sans font-medium transition-colors border border-white/10"
+                title="Open directly in Calendly tab"
+              >
+                <span>Open in Tab</span>
+                <ExternalLink size={12} />
+              </a>
 
-                  {/* Summary Box */}
-                  <div className="bg-[#F5F5F5] border border-[#E5E5E5] rounded-lg p-4 text-left space-y-2.5 max-w-md mx-auto text-xs font-sans">
-                    <div className="flex justify-between items-center border-b border-[#E5E5E5] pb-2">
-                      <span className="text-[#737373] uppercase text-[10px] tracking-wider font-semibold">Reference ID</span>
-                      <span className="font-mono text-[#0F3D3E] font-bold bg-white px-2 py-0.5 rounded border border-[#E5E5E5]">
-                        {bookingRef}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#737373]">Pillar:</span>
-                      <span className="font-semibold text-[#333333]">{getPillarTitle(selectedPillar)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#737373]">Requested Date:</span>
-                      <span className="font-semibold text-[#333333]">{date}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#737373]">Preferred Slot:</span>
-                      <span className="font-semibold text-[#333333]">{timeSlot} (SAST)</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#737373]">Email Contact:</span>
-                      <span className="font-semibold text-[#333333]">{email}</span>
-                    </div>
-                  </div>
+              <button
+                onClick={onClose}
+                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
 
-                  {/* Calendar Integration CTAs */}
-                  <div className="pt-2 max-w-md mx-auto space-y-2.5">
-                    <span className="block text-[11px] font-semibold text-[#737373] uppercase tracking-wider font-sans">
-                      Add to Calendar
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <a
-                        href={getGoogleCalendarUrl()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-outline py-2.5 px-3 text-xs font-sans rounded-md flex items-center justify-center gap-1.5 cursor-pointer no-underline"
-                      >
-                        <CalendarPlus size={14} />
-                        <span>Google Calendar</span>
-                      </a>
-                      <button
-                        type="button"
-                        onClick={handleDownloadIcs}
-                        className="btn-outline py-2.5 px-3 text-xs font-sans rounded-md flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <Download size={14} />
-                        <span>Download .ics File</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Close / Reset Actions */}
-                  <div className="pt-4 border-t border-[#E5E5E5] flex justify-center gap-3">
+          {/* Service Pillar Selector Bar */}
+          <div className="bg-[#FAF8F5] border-b border-border/70 px-5 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+            <div className="flex items-center gap-2 overflow-x-auto py-1 max-w-full">
+              <span className="font-semibold text-primary/70 shrink-0 font-sans">Advisory Focus:</span>
+              <div className="flex items-center gap-1.5">
+                {PILLARS.map((pillar) => {
+                  const isSelected = selectedPillar === pillar.id;
+                  return (
                     <button
-                      type="button"
+                      key={pillar.id}
+                      onClick={() => {
+                        setSelectedPillar(pillar.id);
+                        setIsLoadingIframe(true);
+                      }}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer border ${
+                        isSelected
+                          ? 'bg-[#023625] text-white border-[#023625] shadow-xs'
+                          : 'bg-white text-primary/80 border-border/80 hover:border-[#B68A35]/50 hover:text-[#B68A35]'
+                      }`}
+                    >
+                      {pillar.title}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Mobile Switcher & Config */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setBookingMode(bookingMode === 'calendly' ? 'direct' : 'calendly')}
+                className="sm:hidden text-[11px] font-bold text-[#B68A35] underline cursor-pointer"
+              >
+                {bookingMode === 'calendly' ? 'Switch to Direct Form' : 'Switch to Calendly'}
+              </button>
+              
+              {bookingMode === 'calendly' && (
+                <button
+                  onClick={() => {
+                    setIsEditingUrl(!isEditingUrl);
+                    setCustomUrlInput(calendlyUrl);
+                  }}
+                  className="text-[11px] text-ash hover:text-primary flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Configure Calendly URL endpoint"
+                >
+                  <Settings2 size={13} />
+                  <span>Configure Link</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Optional Custom Link Configuration Bar */}
+          {isEditingUrl && bookingMode === 'calendly' && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-mist/80 border-b border-border p-3 px-5 sm:px-8 flex flex-col gap-2 text-xs"
+            >
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <span className="font-semibold text-primary shrink-0">Calendly URL:</span>
+                <input
+                  type="url"
+                  value={customUrlInput}
+                  onChange={(e) => setCustomUrlInput(e.target.value)}
+                  placeholder="https://calendly.com/cgumpo-yitzak/30min"
+                  className="w-full bg-white border border-border px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#023625]"
+                />
+                <div className="flex items-center gap-2 shrink-0 justify-end">
+                  <button
+                    onClick={handleSaveCustomUrl}
+                    className="px-3 py-1.5 bg-[#023625] hover:bg-[#034d35] text-white font-medium rounded-lg text-xs cursor-pointer transition-colors"
+                  >
+                    Apply
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCalendlyUrl(PROFILE_CALENDLY_URL);
+                      setIsEditingUrl(false);
+                      setIsLoadingIframe(true);
+                    }}
+                    className="px-2.5 py-1.5 bg-white border border-border text-primary rounded-lg text-xs cursor-pointer hover:bg-mist"
+                    title="Use main profile link"
+                  >
+                    Use Profile Link
+                  </button>
+                  <button
+                    onClick={handleResetUrl}
+                    className="px-2.5 py-1.5 text-ash hover:text-primary text-xs cursor-pointer transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Main Modal Body: Calendly Embed OR Direct Booking Form */}
+          <div className="relative flex-1 bg-white min-h-[520px] sm:min-h-[580px] overflow-y-auto flex flex-col">
+            {bookingMode === 'calendly' ? (
+              <>
+                {/* Calendly Live Sync Banner */}
+                {bookingConfirmed && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-[#023625] text-white p-4 px-6 flex items-center justify-between gap-4 shrink-0 shadow-md"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#E6CA85] text-[#012B1D] flex items-center justify-center">
+                        <CheckCircle2 size={18} />
+                      </div>
+                      <div>
+                        <h4 className="font-serif font-bold text-sm text-[#E6CA85]">
+                          Consultation Successfully Scheduled!
+                        </h4>
+                        <p className="text-xs text-white/80">
+                          Calendar invites and video conference details have been dispatched to your email.
+                        </p>
+                      </div>
+                    </div>
+                    <button
                       onClick={onClose}
-                      className="btn-primary font-sans text-xs uppercase tracking-wider py-2.5 px-8 rounded-md cursor-pointer"
+                      className="px-4 py-1.5 bg-[#B68A35] hover:bg-[#9E7528] text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer shrink-0"
                     >
                       Done
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSubmitted(false);
-                        setValidationError(null);
-                      }}
-                      className="btn-outline font-sans text-xs uppercase tracking-wider py-2.5 px-4 rounded-md cursor-pointer"
+                  </motion.div>
+                )}
+
+                {/* Quick Helper Toolbar above iframe */}
+                <div className="bg-[#FAF8F5] border-b border-border/70 px-5 sm:px-8 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2 text-primary/80">
+                    <span className="font-mono text-[11px] font-semibold text-[#7d5800]">Endpoint:</span>
+                    <code className="text-[11px] bg-white px-2 py-0.5 rounded border border-border">{calendlyUrl}</code>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={calendlyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#023625] hover:text-[#B68A35] font-bold text-xs flex items-center gap-1 underline underline-offset-2"
                     >
-                      Submit Another
+                      <span>Open directly in Calendly</span>
+                      <ExternalLink size={11} />
+                    </a>
+                    <span className="text-border">|</span>
+                    <button
+                      onClick={() => setBookingMode('direct')}
+                      className="text-[#B68A35] hover:text-[#7d5800] font-bold text-xs cursor-pointer"
+                    >
+                      Use Direct Form
                     </button>
                   </div>
-                </motion.div>
-              )}
+                </div>
+
+                {/* Loading Placeholder */}
+                {isLoadingIframe && (
+                  <div className="absolute inset-0 bg-white/95 backdrop-blur-xs flex flex-col items-center justify-center gap-3 z-10">
+                    <Loader2 size={32} className="text-[#023625] animate-spin" />
+                    <div className="text-center">
+                      <p className="font-serif font-bold text-sm text-primary">Loading Live Advisory Calendar...</p>
+                      <p className="text-xs text-ash">Connecting to real-time advisor availability</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Responsive Calendly Embed iframe */}
+                <iframe
+                  ref={iframeRef}
+                  src={getFullCalendlyUrl()}
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  title="Yitzak Institutional Consultation Scheduler"
+                  className="w-full flex-1 min-h-[500px] sm:min-h-[560px]"
+                  onLoad={() => setIsLoadingIframe(false)}
+                />
+              </>
+            ) : (
+              /* Direct Consultation Booking Form */
+              <div className="p-6 sm:p-10 max-w-2xl mx-auto w-full space-y-6">
+                {directSuccess ? (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center space-y-4">
+                    <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                      <CheckCircle2 size={32} />
+                    </div>
+                    <h4 className="font-serif text-2xl font-bold text-emerald-950">
+                      Consultation Request Transmitted
+                    </h4>
+                    <p className="text-emerald-800 text-sm max-w-md mx-auto leading-relaxed">
+                      Thank you, <strong>{directForm.fullName}</strong>. Your consultation request for <strong>{currentPillarObj.title}</strong> has been received. Our lead advisory director will contact you at <strong>{directForm.email}</strong> to confirm the exact session schedule.
+                    </p>
+                    <button
+                      onClick={onClose}
+                      className="mt-4 bg-[#023625] hover:bg-primary text-white px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer"
+                    >
+                      Close Window
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleDirectSubmit} className="space-y-4">
+                    <div className="border-b border-border pb-3">
+                      <h4 className="font-serif text-xl font-bold text-primary">
+                        Direct Advisory Booking Request
+                      </h4>
+                      <p className="text-xs text-ash mt-1">
+                        Submit your details to receive immediate consultation confirmation and video credentials.
+                      </p>
+                    </div>
+
+                    {directError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
+                        {directError}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={directForm.fullName}
+                          onChange={(e) => setDirectForm({ ...directForm, fullName: e.target.value })}
+                          placeholder="e.g. Dr. Arthur Mthembu"
+                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                          Corporate Work Email *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={directForm.email}
+                          onChange={(e) => setDirectForm({ ...directForm, email: e.target.value })}
+                          placeholder="name@enterprise.co.za"
+                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                          Company / Facility *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={directForm.company}
+                          onChange={(e) => setDirectForm({ ...directForm, company: e.target.value })}
+                          placeholder="e.g. Enterprise Agribusiness Ltd"
+                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                          Contact Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={directForm.phone}
+                          onChange={(e) => setDirectForm({ ...directForm, phone: e.target.value })}
+                          placeholder="+27 (0) 11 000 0000"
+                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <CalendarDatePicker
+                        label="Preferred Date"
+                        value={directForm.preferredDate}
+                        onChange={(selectedDate) => setDirectForm({ ...directForm, preferredDate: selectedDate })}
+                        allowToday={false}
+                      />
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                          Preferred Time Window
+                        </label>
+                        <select
+                          value={directForm.preferredTime}
+                          onChange={(e) => setDirectForm({ ...directForm, preferredTime: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
+                        >
+                          <option value="09:00 AM - 11:00 AM (SAST)">Morning (09:00 - 11:00 SAST)</option>
+                          <option value="11:00 AM - 01:00 PM (SAST)">Midday (11:00 - 13:00 SAST)</option>
+                          <option value="02:00 PM - 04:00 PM (SAST)">Afternoon (14:00 - 16:00 SAST)</option>
+                          <option value="04:00 PM - 05:30 PM (SAST)">Late Afternoon (16:00 - 17:30 SAST)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                        Specific Scope / Requirements
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={directForm.message}
+                        onChange={(e) => setDirectForm({ ...directForm, message: e.target.value })}
+                        placeholder="Detail your certification standard (e.g. ISO 22000, FSSC 22000, BRCGS, HACCP) or advisory scope..."
+                        className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmittingDirect}
+                      className="w-full bg-[#023625] hover:bg-primary text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm disabled:opacity-50"
+                    >
+                      {isSubmittingDirect ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                      <span>Submit Consultation Request</span>
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Modal Footer / Value Props */}
+          <div className="bg-[#FAF8F5] border-t border-border px-5 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ash shrink-0">
+            <div className="flex items-center gap-4 text-[11px]">
+              <span className="flex items-center gap-1 text-primary/80 font-medium">
+                <ShieldCheck size={14} className="text-[#023625]" />
+                Confidential &amp; NDA Protected
+              </span>
+              <span className="flex items-center gap-1 text-primary/80 font-medium">
+                <Video size={14} className="text-[#B68A35]" />
+                Direct Video Session
+              </span>
             </div>
-          </motion.div>
-        </div>
-      )}
+
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-ash">
+                Need urgent assistance? <a href="mailto:info@yitzak.co.za" className="text-[#023625] font-semibold hover:underline">info@yitzak.co.za</a>
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </AnimatePresence>
   );
 }

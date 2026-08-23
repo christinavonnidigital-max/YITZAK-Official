@@ -389,16 +389,6 @@ export default function App() {
   const [industrySearchQuery, setIndustrySearchQuery] = useState('');
   const [industrySectorFilter, setIndustrySectorFilter] = useState('all');
 
-  // Newsletter Subscription Form State
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
-  const [newsletterSuccess, setNewsletterSuccess] = useState(false);
-  const [newsletterError, setNewsletterError] = useState<string | null>(null);
-  const [subscribedEmail, setSubscribedEmail] = useState('');
-  const [emailDispatchStatus, setEmailDispatchStatus] = useState<'sent' | 'pending' | 'failed'>('pending');
-  const [showBriefingPreview, setShowBriefingPreview] = useState(false);
-  const [resendingDigest, setResendingDigest] = useState(false);
-
   const navigateTo = (view: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge', elementId?: string) => {
     setCurrentView(view);
     setMobileMenuOpen(false);
@@ -574,85 +564,6 @@ export default function App() {
     }
   };
 
-  const handleNewsletterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newsletterEmail || !newsletterEmail.trim()) {
-      setNewsletterError('Please enter a valid email address.');
-      return;
-    }
-    const emailVal = newsletterEmail.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailVal)) {
-      setNewsletterError('Please enter a valid email address.');
-      return;
-    }
-
-    setNewsletterSubmitting(true);
-    setNewsletterError(null);
-    setSubscribedEmail(emailVal);
-    setEmailDispatchStatus('pending');
-
-    try {
-      const docId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-      const subscriptionData = {
-        email: emailVal,
-        createdAt: new Date().toISOString(),
-        status: 'active'
-      };
-
-      // Dynamically import setDoc/doc
-      const { doc, setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, 'newsletter_subscriptions', docId), subscriptionData);
-
-      // Dispatch welcome email via Vercel Serverless Function / Google Workspace
-      try {
-        const token = await getAccessToken().catch(() => null);
-        const { dispatchNewsletterWelcomeEmail } = await import('./lib/emailService');
-        await dispatchNewsletterWelcomeEmail(emailVal, token);
-        setEmailDispatchStatus('sent');
-        triggerNotification(`✓ Subscription confirmed! Welcome briefing dispatched to ${emailVal}.`);
-      } catch (emailErr) {
-        console.warn('Welcome email dispatch note:', emailErr);
-        setEmailDispatchStatus('sent');
-        triggerNotification(`✓ Subscription confirmed for ${emailVal}!`);
-      }
-
-      setNewsletterSuccess(true);
-      setNewsletterEmail('');
-    } catch (err: any) {
-      console.warn('Newsletter submission error, using local fallback: ', err);
-      try {
-        const localSubs = JSON.parse(localStorage.getItem('yitzak_newsletter_subscriptions') || '[]');
-        localSubs.push({ email: emailVal, createdAt: new Date().toISOString() });
-        localStorage.setItem('yitzak_newsletter_subscriptions', JSON.stringify(localSubs));
-        setNewsletterSuccess(true);
-        setNewsletterEmail('');
-        setEmailDispatchStatus('sent');
-        triggerNotification(`✓ Subscription confirmed for ${emailVal}!`);
-      } catch (localErr) {
-        setNewsletterError('An error occurred. Please try again later.');
-      }
-    } finally {
-      setNewsletterSubmitting(false);
-    }
-  };
-
-  const handleManualDispatchDigest = async (targetEmail: string) => {
-    setResendingDigest(true);
-    try {
-      const token = await getAccessToken().catch(() => null);
-      const { dispatchNewsletterWelcomeEmail } = await import('./lib/emailService');
-      await dispatchNewsletterWelcomeEmail(targetEmail, token);
-      setEmailDispatchStatus('sent');
-      triggerNotification(`✓ Welcome briefing dispatched to ${targetEmail}! Please check your inbox.`);
-    } catch (err: any) {
-      console.error('Failed to dispatch welcome digest:', err);
-      triggerNotification(`Email dispatch notice: ${err.message || 'Processed.'}`);
-    } finally {
-      setResendingDigest(false);
-    }
-  };
-
   return (
     <div className="bg-surface-container-lowest text-on-surface font-sans selection:bg-antique-gold selection:text-white overflow-x-clip min-h-screen flex flex-col">
       
@@ -678,10 +589,10 @@ export default function App() {
           {/* Logo */}
           <button 
             onClick={() => navigateTo('home')}
-            className="cursor-pointer text-left focus:outline-none flex items-center shrink-0 transition-all duration-200 hover:opacity-90 active:scale-98"
+            className="cursor-pointer text-left focus:outline-none flex items-center shrink-0 transition-all duration-200 hover:opacity-90 active:scale-98 py-0.5"
             aria-label="Yitzak Home"
           >
-            <YitzakLogo size={34} />
+            <YitzakLogo size={46} />
           </button>
           
           {/* Desktop Right Navigation & CTA Area (Aligned to match page grid edge) */}
@@ -868,8 +779,8 @@ export default function App() {
                 <div>
                   <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 bg-[#001D13]">
                     <div className="flex flex-col">
-                      <YitzakLogo lightMode size={28} />
-                      <span className="text-[10px] uppercase font-mono tracking-widest text-[#B68A35] mt-1">Institutional Advisory</span>
+                      <YitzakLogo lightMode size={36} />
+                      <span className="text-[10px] uppercase font-mono tracking-widest text-[#B68A35] mt-1.5">Institutional Advisory</span>
                     </div>
                     <button
                       onClick={() => setMobileMenuOpen(false)}
@@ -1860,116 +1771,8 @@ export default function App() {
               </div>
             </section>
 
-            {/* 5. Knowledge & Insights */}
-            <section className="py-20 bg-mist/60 border-b border-border px-4 md:px-16">
-              <div className="max-w-[1280px] mx-auto">
-                <div className="bg-white border border-border p-8 md:p-12 rounded-3xl shadow-xs grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                  <div className="lg:col-span-7 space-y-4">
-                    <div className="inline-flex items-center gap-2 bg-[#B68A35]/10 border border-[#B68A35]/30 px-3 py-1 rounded-full">
-                      <Sparkles size={14} className="text-[#B68A35]" />
-                      <span className="text-[#7d5800] text-[11px] font-mono uppercase font-bold tracking-wider">The YITZAK Digest</span>
-                    </div>
-                    <h2 className="font-serif text-3xl md:text-4xl text-primary font-bold">
-                      Stay Ahead of Compliance Trends.
-                    </h2>
-                    <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed max-w-xl">
-                      Subscribe to The YITZAK Digest for monthly updates and strategic insights.
-                    </p>
-                  </div>
-
-                  <div className="lg:col-span-5">
-                    <form onSubmit={handleNewsletterSubmit} className="space-y-3">
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <input
-                          type="email"
-                          value={newsletterEmail}
-                          onChange={(e) => setNewsletterEmail(e.target.value)}
-                          placeholder="Enter your email address"
-                          required
-                          className="flex-grow px-4 py-3.5 bg-mist border border-border rounded-lg text-xs md:text-sm text-primary placeholder:text-ash focus:outline-none focus:border-[#B68A35]"
-                        />
-                        <button
-                          type="submit"
-                          disabled={newsletterSubmitting}
-                          className="bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-widest px-6 py-3.5 rounded-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50 shrink-0 inline-flex items-center justify-center gap-2 shadow-xs"
-                        >
-                          {newsletterSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Subscribe'}
-                        </button>
-                      </div>
-
-                      {newsletterSuccess && (
-                        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center justify-between">
-                          <span>Subscription confirmed! Thank you for joining.</span>
-                          <button
-                            type="button"
-                            onClick={() => setShowBriefingPreview(true)}
-                            className="font-bold underline text-emerald-900 ml-2 cursor-pointer"
-                          >
-                            View Digest
-                          </button>
-                        </div>
-                      )}
-
-                      {newsletterError && (
-                        <p className="text-xs text-red-600 pl-1">{newsletterError}</p>
-                      )}
-
-                      <p className="text-[11px] text-ash font-mono">
-                        Zero spam. Unsubscribe anytime with one click.
-                      </p>
-                    </form>
-                  </div>
-                </div>
-
-                {/* Newsletter Briefing Modal Preview */}
-                {showBriefingPreview && (
-                  <div className="mt-8 bg-white border border-[#B68A35] rounded-2xl p-6 md:p-8 shadow-xl max-w-4xl mx-auto space-y-6">
-                    <div className="flex justify-between items-center border-b border-border pb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-serif font-extrabold text-lg text-[#023625]">THE YITZAK DIGEST</span>
-                        <span className="bg-[#B68A35]/10 text-[#7d5800] text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase">Monthly Executive Briefing</span>
-                      </div>
-                      <button
-                        onClick={() => setShowBriefingPreview(false)}
-                        className="text-xs text-ash hover:text-primary font-bold cursor-pointer"
-                      >
-                        Close Preview ✕
-                      </button>
-                    </div>
-
-                    <div className="space-y-4 text-xs md:text-sm text-on-surface-variant">
-                      <h3 className="font-serif font-bold text-base text-primary">Strategic Compliance &amp; Standards Radar</h3>
-                      <p className="leading-relaxed">
-                        The Global Food Safety Initiative (GFSI) has mandated tightened benchmarking criteria for auditor competence, allergen management protocols, and environmental monitoring programs (EMP). Operations preparing for unannounced audits under FSSC 22000 v6 and BRCGS Issue 9 must re-verify risk assessments.
-                      </p>
-                      <div className="p-4 bg-mist rounded-xl border border-border space-y-2">
-                        <h4 className="font-serif font-bold text-xs text-primary">Regulatory Sanitation &amp; Allergen Control Cross-Contamination</h4>
-                        <p className="text-ash leading-relaxed">
-                          Recent industry enforcement actions highlight strict validated cleaning verification for shared production lines. YITZAK recommends implementing rapid ATP testing alongside swab validation protocols for top 9 priority allergens.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-border pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                      <span className="text-[11px] text-ash">
-                        Subscriber: <strong className="text-primary">{subscribedEmail || 'admin@yitzak.co.za'}</strong>
-                      </span>
-                      <button
-                        onClick={() => handleManualDispatchDigest(subscribedEmail)}
-                        disabled={resendingDigest}
-                        className="bg-[#023625] hover:bg-primary text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        {resendingDigest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                        Email Briefing To Inbox
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Interactive Compliance & ROI Calculator Section */}
-            <ComplianceCalculator onInquire={(notes) => handleOpenBooking('compliance', notes)} />
+            {/* Interactive Compliance & ROI Calculator Section (Temporarily Hidden) */}
+            {/* <ComplianceCalculator onInquire={(notes) => handleOpenBooking('compliance', notes)} /> */}
 
             {/* Client Portal & Access Verification Section */}
             <section id="portal" className="py-16 bg-[#F9F9F9] border-t border-border px-4 md:px-16 scroll-mt-24">
@@ -3574,7 +3377,7 @@ export default function App() {
           {/* Bottom Branding & Legal */}
           <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-white/50">
             <div className="flex items-center gap-3">
-              <YitzakLogo lightMode size={22} />
+              <YitzakLogo lightMode size={28} />
               <span>·</span>
               <span>Empowering Organisations Through Compliance &amp; Capability</span>
             </div>

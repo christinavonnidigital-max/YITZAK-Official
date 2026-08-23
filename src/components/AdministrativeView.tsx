@@ -24,7 +24,6 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, getAccessToken, OperationType, handleFirestoreError } from '../lib/firebase';
 import { Booking } from '../types';
 import WhitelistManager from './WhitelistManager';
-import NewsletterSubscribersManager from './NewsletterSubscribersManager';
 
 interface AdministrativeViewProps {
   bookings: Booking[];
@@ -41,7 +40,7 @@ export default function AdministrativeView({
   onRefresh, 
   onOpenBooking 
 }: AdministrativeViewProps) {
-  const [activeTab, setActiveTab] = useState<'consultations' | 'referrals' | 'whitelist' | 'newsletter'>('consultations');
+  const [activeTab, setActiveTab] = useState<'consultations' | 'referrals' | 'whitelist'>('consultations');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
   const [referralStatusFilter, setReferralStatusFilter] = useState<'all' | 'needs_coordination' | 'click_logged' | 'coordination_complete' | 'cancelled'>('all');
@@ -230,26 +229,10 @@ export default function AdministrativeView({
           <ShieldCheck size={14} className="text-emerald-600" />
           <span>Guest Whitelist</span>
         </button>
-        <button
-          onClick={() => {
-            setActiveTab('newsletter');
-            setSearch('');
-          }}
-          className={`shrink-0 px-4 sm:px-6 py-3 sm:py-4 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
-            activeTab === 'newsletter' 
-              ? 'border-primary text-primary bg-primary/[0.02]' 
-              : 'border-transparent text-ash hover:text-primary hover:bg-mist'
-          }`}
-        >
-          <Mail size={14} className="text-[#B68A35]" />
-          <span>Newsletter Subscribers</span>
-        </button>
       </div>
 
       {activeTab === 'whitelist' ? (
         <WhitelistManager />
-      ) : activeTab === 'newsletter' ? (
-        <NewsletterSubscribersManager />
       ) : activeTab === 'consultations' ? (
         <>
           {/* Corporate Dashboard Statistics panel for Bookings */}
