@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
@@ -14,6 +14,7 @@ import KnowledgeCenter from './components/KnowledgeCenter';
 import ProcessImplementationRoadmap from './components/ProcessImplementationRoadmap';
 import { checkEmailWhitelist, preRegisterGuest } from './lib/whitelist';
 import { exportPortfolioToCSV, exportPortfolioToPDF, triggerSmartPrint, exportCapabilitySheetPDF } from './utils/portfolioExport';
+import { getViewFromLocation, updateBrowserUrl, AppView } from './lib/routes';
 import ScrollReveal from './components/ScrollReveal';
 import BreadcrumbNav from './components/BreadcrumbNav';
 import YitzakLogo, { YitzakShieldIcon } from './components/YitzakLogo';
@@ -25,18 +26,6 @@ const portfolioCategories = PORTFOLIO_CATEGORIES;
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
-
-  // Parallax Scroll Effect for Core Service Cards
-  const servicesSectionRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress: servicesScrollProgress } = useScroll({
-    target: servicesSectionRef,
-    offset: ["start end", "end start"]
-  });
-
-  const parallaxY1 = useTransform(servicesScrollProgress, [0, 1], [15, -15]);
-  const parallaxY2 = useTransform(servicesScrollProgress, [0, 1], [35, -35]);
-  const parallaxY3 = useTransform(servicesScrollProgress, [0, 1], [15, -15]);
-  const parallaxY4 = useTransform(servicesScrollProgress, [0, 1], [35, -35]);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedPillarId, setSelectedPillarId] = useState('compliance');
@@ -45,7 +34,12 @@ export default function App() {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMsg, setNotificationMsg] = useState('');
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge' | 'portal'>('home');
+  const [currentView, setCurrentView] = useState<AppView>(() => {
+    if (typeof window !== 'undefined') {
+      return getViewFromLocation().view;
+    }
+    return 'home';
+  });
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(true);
   const [activeSidebarSection, setActiveSidebarSection] = useState('food-safety');
@@ -244,10 +238,11 @@ export default function App() {
   const [industrySearchQuery, setIndustrySearchQuery] = useState('');
   const [industrySectorFilter, setIndustrySectorFilter] = useState('all');
 
-  const navigateTo = (view: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge' | 'portal', elementId?: string) => {
+  const navigateTo = (view: AppView, elementId?: string) => {
     setCurrentView(view);
     setMobileMenuOpen(false);
     setServicesDropdownOpen(false);
+    updateBrowserUrl(view, elementId, false);
     if (elementId) {
       setTimeout(() => {
         const element = document.getElementById(elementId);
@@ -259,6 +254,39 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  // Synchronize initial URL, title and listen for browser Back/Forward (popstate)
+  useEffect(() => {
+    const loc = getViewFromLocation();
+    setCurrentView(loc.view);
+    updateBrowserUrl(loc.view, loc.elementId, true);
+
+    if (loc.elementId) {
+      setTimeout(() => {
+        const element = document.getElementById(loc.elementId!);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 300);
+    }
+
+    const handlePopState = () => {
+      const updated = getViewFromLocation();
+      setCurrentView(updated.view);
+      updateBrowserUrl(updated.view, updated.elementId, true);
+      if (updated.elementId) {
+        setTimeout(() => {
+          const el = document.getElementById(updated.elementId!);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Initialize Auth state on load
   useEffect(() => {
@@ -632,8 +660,8 @@ export default function App() {
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('training'); }}
                         className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] group-hover:text-white transition-colors">
-                          <AppIcon name="school" size={18} color="#B68A35" />
+                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] transition-colors">
+                          <GraduationCap size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
                         </div>
                         <div>
                           <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Professional Training</div>
@@ -645,8 +673,8 @@ export default function App() {
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('certifications'); }}
                         className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] group-hover:text-white transition-colors">
-                          <AppIcon name="verified" size={18} color="#B68A35" />
+                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] transition-colors">
+                          <Award size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
                         </div>
                         <div>
                           <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Certification</div>
@@ -658,8 +686,8 @@ export default function App() {
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('consulting'); }}
                         className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] group-hover:text-white transition-colors">
-                          <AppIcon name="support_agent" size={18} color="#B68A35" />
+                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] transition-colors">
+                          <Headphones size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
                         </div>
                         <div>
                           <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Consulting &amp; Advisory</div>
@@ -671,8 +699,8 @@ export default function App() {
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('process_implementation'); }}
                         className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] group-hover:text-white transition-colors">
-                          <AppIcon name="schema" size={18} color="#B68A35" />
+                        <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] transition-colors">
+                          <Workflow size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
                         </div>
                         <div>
                           <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Business Process Implementation</div>
@@ -704,18 +732,6 @@ export default function App() {
                 }`}
               >
                 <span>Contact</span>
-              </button>
-
-              <button 
-                onClick={() => navigateTo('portal')}
-                className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 border ${
-                  currentView === 'portal' 
-                    ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
-                    : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
-                }`}
-              >
-                <Lock size={12} className={currentView === 'portal' ? 'text-[#B68A35]' : 'text-primary/45'} />
-                <span>Client Portal</span>
               </button>
             </nav>
 
@@ -812,7 +828,7 @@ export default function App() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <GraduationCap size={17} className={['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView) ? 'text-[#E6CA85]' : 'text-white/50'} />
+                          <LayoutGrid size={17} className={['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView) ? 'text-[#E6CA85]' : 'text-white/50'} />
                           <span>Services</span>
                         </div>
                         <ChevronDown 
@@ -842,7 +858,7 @@ export default function App() {
                                   : 'text-white/70 hover:text-white hover:bg-white/5'
                               }`}
                             >
-                              <GraduationCap size={14} className={currentView === 'training' ? 'text-[#E6CA85]' : 'text-white/40'} />
+                              <GraduationCap size={15} className={currentView === 'training' ? 'text-[#E6CA85]' : 'text-white/40'} />
                               <span>Professional Training</span>
                             </button>
 
@@ -857,7 +873,7 @@ export default function App() {
                                   : 'text-white/70 hover:text-white hover:bg-white/5'
                               }`}
                             >
-                              <Award size={14} className={currentView === 'certifications' ? 'text-[#E6CA85]' : 'text-white/40'} />
+                              <Award size={15} className={currentView === 'certifications' ? 'text-[#E6CA85]' : 'text-white/40'} />
                               <span>Certification</span>
                             </button>
 
@@ -872,7 +888,7 @@ export default function App() {
                                   : 'text-white/70 hover:text-white hover:bg-white/5'
                               }`}
                             >
-                              <Sliders size={14} className={currentView === 'consulting' ? 'text-[#E6CA85]' : 'text-white/40'} />
+                              <Headphones size={15} className={currentView === 'consulting' ? 'text-[#E6CA85]' : 'text-white/40'} />
                               <span>Consulting &amp; Advisory</span>
                             </button>
 
@@ -887,7 +903,7 @@ export default function App() {
                                   : 'text-white/70 hover:text-white hover:bg-white/5'
                               }`}
                             >
-                              <AppIcon name="schema" size={14} color={currentView === 'process_implementation' ? '#E6CA85' : 'rgba(255,255,255,0.5)'} />
+                              <Workflow size={15} className={currentView === 'process_implementation' ? 'text-[#E6CA85]' : 'text-white/40'} />
                               <span>Business Process Implementation</span>
                             </button>
                           </motion.div>
@@ -926,22 +942,6 @@ export default function App() {
                       <Mail size={17} className={currentView === 'contact' ? 'text-[#E6CA85]' : 'text-white/50'} />
                       <span>Contact</span>
                     </button>
-
-                    {/* 5. Client Portal */}
-                    <button
-                      onClick={() => {
-                        navigateTo('portal');
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                        currentView === 'portal'
-                          ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
-                          : 'text-white/80 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <Lock size={17} className={currentView === 'portal' ? 'text-[#E6CA85]' : 'text-white/50'} />
-                      <span>Secure Client Portal</span>
-                    </button>
                   </nav>
                 </div>
 
@@ -956,17 +956,6 @@ export default function App() {
                     className="w-full text-center py-3.5 px-4 rounded-xl bg-[#B68A35] hover:bg-[#a3792b] active:scale-98 text-white font-serif font-semibold text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
                     <span>Request Consultation</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      navigateTo('portal');
-                      setMobileMenuOpen(false);
-                    }}
-                    className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 text-white/85 text-xs font-medium transition-all cursor-pointer border border-white/10"
-                  >
-                    <Lock size={14} className="text-[#B68A35]" />
-                    <span>{currentUser ? 'Client Portal' : 'Portal Log In'}</span>
                   </button>
 
                   <p className="text-[10px] text-white/45 text-center font-mono pt-1">
@@ -1061,7 +1050,7 @@ export default function App() {
             </section>
 
             {/* 2. Our Core Services */}
-            <section ref={servicesSectionRef} id="services" className="py-10 sm:py-16 md:py-20 bg-mist/60 border-y border-border px-4 sm:px-8 md:px-16 scroll-mt-20 overflow-hidden">
+            <section id="services" className="py-10 sm:py-16 md:py-20 bg-mist/60 border-y border-border px-4 sm:px-8 md:px-16 scroll-mt-20 overflow-hidden">
               <div className="max-w-[1280px] mx-auto space-y-8 sm:space-y-12">
                 <ScrollReveal direction="up" delay={0.05}>
                   <div className="text-center space-y-3 max-w-3xl mx-auto">
@@ -2884,11 +2873,14 @@ export default function App() {
             className="bg-[#F9F9F9] min-h-screen text-[#2D3142] py-12 md:py-16 px-4 sm:px-6 md:px-12 lg:px-16"
           >
             <div className="max-w-[1280px] mx-auto space-y-8">
-              <div className="text-center space-y-2">
-                <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Client Portal &amp; Management</span>
+              <div className="text-center space-y-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/15 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-xs font-mono font-bold uppercase tracking-wider">
+                  <Lock size={13} className="text-[#B68A35]" />
+                  <span>Institutional Portal • Coming Soon</span>
+                </div>
                 <h1 className="font-serif text-3xl md:text-4xl text-primary font-bold">Secure Client Portal</h1>
-                <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-xl mx-auto">
-                  Access restricted to verified institutional accounts. Manage bookings, review compliance records, and download accredited audit frameworks.
+                <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-xl mx-auto leading-relaxed">
+                  Our comprehensive institutional client portal is currently in active development. Authorized corporate partners and whitelisted accounts can preview features and test single sign-on access below.
                 </p>
               </div>
 
@@ -3350,10 +3342,15 @@ export default function App() {
                 <li>
                   <button
                     onClick={() => navigateTo('portal')}
-                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                    className="flex items-center justify-between hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
                   >
-                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
-                    <span>Secure Client Portal</span>
+                    <div className="flex items-center gap-3">
+                      <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                      <span>Secure Client Portal</span>
+                    </div>
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-white/10 text-[#DFC181] px-2 py-0.5 rounded border border-white/20">
+                      Coming Soon
+                    </span>
                   </button>
                 </li>
               </ul>

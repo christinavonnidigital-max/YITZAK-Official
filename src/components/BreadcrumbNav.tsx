@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Home, ChevronRight, ChevronDown, GraduationCap, ShieldCheck, Award, Sliders, Calendar, Mail, FileText, Lock } from 'lucide-react';
+import React from 'react';
+import { Home, ChevronRight, GraduationCap, ShieldCheck, Award, Sliders, Calendar, Mail, FileText, Lock } from 'lucide-react';
 import AppIcon from './AppIcon';
 
 interface PortfolioCategory {
@@ -19,14 +19,7 @@ interface BreadcrumbNavProps {
 export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
   currentView,
   navigateTo,
-  activeSidebarSection = 'food-safety',
-  setActiveSidebarSection,
-  portfolioCategories = []
 }) => {
-  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
-
-  const activeCategory = portfolioCategories.find(c => c.id === activeSidebarSection);
-  const activeCategoryLabel = activeCategory ? activeCategory.label : 'Food Safety';
 
   return (
     <nav 
@@ -115,66 +108,17 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
             </>
           )}
 
-          {/* Specific View Leaf Nodes */}
+          {/* Training */}
           {currentView === 'training' && (
             <>
               <li className="flex items-center">
                 <ChevronRight size={13} className="text-ash/50 shrink-0" />
               </li>
               <li>
-                <button
-                  onClick={() => navigateTo('training')}
-                  className="font-medium hover:text-[#B68A35] text-charcoal transition-colors cursor-pointer"
-                >
-                  Professional Training
-                </button>
-              </li>
-
-              {/* Active Category Selector inside Breadcrumbs */}
-              <li className="flex items-center">
-                <ChevronRight size={13} className="text-ash/50 shrink-0" />
-              </li>
-              <li className="relative">
-                <button
-                  type="button"
-                  onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                  className="inline-flex items-center gap-1.5 font-serif font-bold text-xs text-[#023625] bg-white border border-[#B68A35]/40 hover:border-[#B68A35] px-2.5 py-1 rounded-lg shadow-2xs transition-all cursor-pointer"
-                >
-                  <span>{activeCategoryLabel}</span>
-                  <ChevronDown size={12} className={`text-[#B68A35] transition-transform duration-200 ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Dropdown for categories */}
-                {categoryDropdownOpen && portfolioCategories.length > 0 && (
-                  <div 
-                    className="absolute top-full left-0 mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-border/80 p-1.5 z-50 space-y-0.5 animate-fadeIn"
-                    onMouseLeave={() => setCategoryDropdownOpen(false)}
-                  >
-                    <div className="text-[9px] font-mono font-bold uppercase tracking-widest text-ash px-2 py-1 border-b border-border/40 mb-1">
-                      Switch Training Discipline
-                    </div>
-                    {portfolioCategories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => {
-                          if (setActiveSidebarSection) setActiveSidebarSection(cat.id);
-                          setCategoryDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-sans transition-colors flex items-center justify-between cursor-pointer ${
-                          cat.id === activeSidebarSection
-                            ? 'bg-[#023625] text-white font-bold'
-                            : 'text-charcoal hover:bg-mist'
-                        }`}
-                      >
-                        <span>{cat.label}</span>
-                        {cat.id === activeSidebarSection && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35]"></span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
+                  <GraduationCap size={13} className="text-[#B68A35]" />
+                  <span>Professional Training</span>
+                </span>
               </li>
             </>
           )}
@@ -272,6 +216,9 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
                   <Lock size={13} className="text-[#B68A35]" />
                   <span>Secure Client Portal</span>
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-[#B68A35]/15 text-[#7a5a1f] px-1.5 py-0.5 rounded border border-[#B68A35]/30">
+                    Coming Soon
+                  </span>
                 </span>
               </li>
             </>
