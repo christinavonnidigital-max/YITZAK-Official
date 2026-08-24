@@ -205,8 +205,8 @@ export const PORTFOLIO_CATEGORIES: TrainingCategory[] = [
     id: 'ims',
     label: 'Integrated Systems (IMS)',
     title: 'Integrated Management Systems (IMS)',
-    badge: 'ISO 9001 + ISO 14001 + ISO 45001 + ISO 22000',
-    description: 'Unified management frameworks consolidating Quality, Environmental, OHS, and Food Safety into a single streamlined system.',
+    badge: 'ISO 9001 + ISO 14001 + ISO 45001 + ISO 50001 + ISO 22000/22001',
+    description: 'Unified management frameworks consolidating Quality, Environmental, OHS, Energy Management, and Food Safety into a single streamlined system.',
     courses: [
       {
         title: 'Integrated Management Systems (IMS) Implementation',

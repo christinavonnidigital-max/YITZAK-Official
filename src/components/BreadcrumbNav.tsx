@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, ChevronRight, ChevronDown, GraduationCap, ShieldCheck, Award, Sliders, Calendar, Mail, FileText } from 'lucide-react';
+import { Home, ChevronRight, ChevronDown, GraduationCap, ShieldCheck, Award, Sliders, Calendar, Mail, FileText, Lock } from 'lucide-react';
 import AppIcon from './AppIcon';
 
 interface PortfolioCategory {
@@ -9,8 +9,8 @@ interface PortfolioCategory {
 }
 
 interface BreadcrumbNavProps {
-  currentView: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation';
-  navigateTo: (view: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation') => void;
+  currentView: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge' | 'portal';
+  navigateTo: (view: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge' | 'portal') => void;
   activeSidebarSection?: string;
   setActiveSidebarSection?: (section: string) => void;
   portfolioCategories?: PortfolioCategory[];
@@ -235,6 +235,20 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
             </>
           )}
 
+          {currentView === 'knowledge' && (
+            <>
+              <li className="flex items-center">
+                <ChevronRight size={13} className="text-ash/50 shrink-0" />
+              </li>
+              <li>
+                <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
+                  <FileText size={13} className="text-[#B68A35]" />
+                  <span>Knowledge Centre</span>
+                </span>
+              </li>
+            </>
+          )}
+
           {currentView === 'contact' && (
             <>
               <li className="flex items-center">
@@ -244,6 +258,20 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
                   <Mail size={13} className="text-[#B68A35]" />
                   <span>Contact &amp; Advisory Desk</span>
+                </span>
+              </li>
+            </>
+          )}
+
+          {currentView === 'portal' && (
+            <>
+              <li className="flex items-center">
+                <ChevronRight size={13} className="text-ash/50 shrink-0" />
+              </li>
+              <li>
+                <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
+                  <Lock size={13} className="text-[#B68A35]" />
+                  <span>Secure Client Portal</span>
                 </span>
               </li>
             </>

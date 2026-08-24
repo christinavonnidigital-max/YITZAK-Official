@@ -1,8 +1,48 @@
 import React from 'react';
-import * as LucideIcons from 'lucide-react';
+import {
+  LayoutGrid,
+  Headphones,
+  Workflow,
+  GraduationCap,
+  CheckCircle2,
+  ShieldCheck,
+  Calculator,
+  Calendar,
+  Users,
+  ShieldAlert,
+  Factory,
+  Sliders,
+  Brain,
+  RefreshCw,
+  TrendingUp,
+  GitFork,
+  MapPin,
+  Mail,
+  HelpCircle,
+  FileText,
+  Scale,
+  Leaf,
+  HeartPulse,
+  Sprout,
+  Settings2,
+  ArrowRight,
+  Search,
+  Check,
+  X,
+  Menu,
+  Sparkles,
+  Shield,
+  Award,
+  BookOpen,
+  ClipboardCheck,
+  Layers,
+  LucideIcon,
+  Split,
+  Milestone
+} from 'lucide-react';
 
 export interface AppIconProps {
-  /** Google Material Symbol name (e.g. 'verified', 'school', 'psychology', 'settings_suggest') OR Lucide icon name */
+  /** Icon name (e.g. 'grid_view', 'support_agent', 'schema', 'school', 'verified', etc.) */
   name?: string;
   /** Lucide Icon component if passing a component directly */
   icon?: React.ElementType;
@@ -14,15 +54,81 @@ export interface AppIconProps {
   className?: string;
   /** Container style variant */
   variant?: 'none' | 'badge' | 'tile' | 'filled' | 'gold' | 'forest';
-  /** Fill toggle for Material Symbols (0 = outline, 1 = filled) */
+  /** Fill toggle for icon styling */
   fill?: boolean;
-  /** Weight for Material Symbols (100 to 700, default 400) */
+  /** Weight */
   weight?: number;
 }
 
+// Complete lookup table mapping Material & custom names directly to crisp Lucide SVG icons
+const ICON_MAP: Record<string, LucideIcon> = {
+  // Navigation & Actions
+  grid_view: LayoutGrid,
+  grid: LayoutGrid,
+  menu: Menu,
+  close: X,
+  search: Search,
+  arrow_forward: ArrowRight,
+  check: Check,
+  download: FileText,
+
+  // Services & Architecture
+  support_agent: Headphones,
+  schema: Workflow,
+  school: GraduationCap,
+  verified: CheckCircle2,
+  verified_user: ShieldCheck,
+  shield_with_heart: ShieldCheck,
+  calculate: Calculator,
+  calendar_month: Calendar,
+  calendar_today: Calendar,
+  calendar: Calendar,
+  groups: Users,
+  users: Users,
+
+  // Operations & Roadmap
+  precision_manufacturing: Factory,
+  factory: Factory,
+  tune: Sliders,
+  psychology: Brain,
+  published_with_changes: RefreshCw,
+  timeline: TrendingUp,
+  trending_up: TrendingUp,
+  route: Milestone,
+  alt_route: Split,
+  split: Split,
+  workflow: Workflow,
+  layers: Layers,
+
+  // Contact & Meta
+  location_on: MapPin,
+  map_pin: MapPin,
+  mail: Mail,
+  email: Mail,
+  help: HelpCircle,
+  info: HelpCircle,
+  description: FileText,
+  document: FileText,
+
+  // Compliance & Standards
+  gavel: Scale,
+  eco: Leaf,
+  leaf: Leaf,
+  health_and_safety: HeartPulse,
+  agriculture: Sprout,
+  sprout: Sprout,
+  settings_suggest: Settings2,
+  settings: Settings2,
+  award: Award,
+  book: BookOpen,
+  clipboard: ClipboardCheck,
+  shield: Shield,
+  sparkles: Sparkles,
+};
+
 /**
- * High-craft icon component supporting Google Material Symbols (size 24, #1f1f1f default)
- * and Lucide vector icons with crisp rendering and optional polished badge wrappers.
+ * High-craft SVG icon component using Lucide icons.
+ * Never outputs text ligatures, eliminating FOUC (flash of unstyled content) or raw text strings.
  */
 export const AppIcon: React.FC<AppIconProps> = ({
   name,
@@ -31,56 +137,29 @@ export const AppIcon: React.FC<AppIconProps> = ({
   color,
   className = '',
   variant = 'none',
-  fill = false,
-  weight = 400,
 }) => {
-  // If an explicit Lucide component is passed
-  let renderedIcon: React.ReactNode = null;
+  let ResolvedIcon: React.ElementType = Sparkles;
 
   if (IconComponent) {
-    renderedIcon = (
-      <IconComponent
-        size={size}
-        strokeWidth={1.8}
-        className={`shrink-0 transition-transform duration-200 ${className}`}
-        style={color && !color.startsWith('text-') ? { color } : undefined}
-      />
-    );
+    ResolvedIcon = IconComponent;
   } else if (name) {
-    // Check if name is a Material Symbol name or a Lucide icon name
-    const lucideName = name.charAt(0).toUpperCase() + name.slice(1);
-    const PotentialLucide = (LucideIcons as any)[lucideName] || (LucideIcons as any)[name];
-
-    if (PotentialLucide && !name.includes('_')) {
-      renderedIcon = (
-        <PotentialLucide
-          size={size}
-          strokeWidth={1.8}
-          className={`shrink-0 transition-transform duration-200 ${className}`}
-          style={color && !color.startsWith('text-') ? { color } : undefined}
-        />
-      );
+    const normalized = name.toLowerCase().trim();
+    if (ICON_MAP[normalized]) {
+      ResolvedIcon = ICON_MAP[normalized];
     } else {
-      // Render as Google Material Symbol
-      const style: React.CSSProperties = {
-        fontSize: `${size}px`,
-        width: `${size}px`,
-        height: `${size}px`,
-        fontVariationSettings: `'FILL' ${fill ? 1 : 0}, 'wght' ${weight}, 'GRAD' 0, 'opsz' ${size}`,
-        ...(color && !color.startsWith('text-') ? { color } : {}),
-      };
-
-      renderedIcon = (
-        <span
-          className={`material-symbols-outlined select-none inline-flex items-center justify-center shrink-0 transition-all duration-200 ${className}`}
-          style={style}
-          aria-hidden="true"
-        >
-          {name}
-        </span>
-      );
+      // Fallback to shield icon
+      ResolvedIcon = Shield;
     }
   }
+
+  const renderedIcon = (
+    <ResolvedIcon
+      size={size}
+      strokeWidth={1.8}
+      className={`shrink-0 transition-transform duration-200 ${className}`}
+      style={color && !color.startsWith('text-') ? { color } : undefined}
+    />
+  );
 
   if (variant === 'none') {
     return <>{renderedIcon}</>;

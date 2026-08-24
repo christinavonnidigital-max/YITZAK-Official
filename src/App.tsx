@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
-import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck } from 'lucide-react';
+import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
 import BookingModal from './components/BookingModal';
@@ -45,7 +45,7 @@ export default function App() {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMsg, setNotificationMsg] = useState('');
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [currentView, setCurrentView] = useState<'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge' | 'portal'>('home');
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(true);
   const [activeSidebarSection, setActiveSidebarSection] = useState('food-safety');
@@ -244,7 +244,7 @@ export default function App() {
   const [industrySearchQuery, setIndustrySearchQuery] = useState('');
   const [industrySectorFilter, setIndustrySectorFilter] = useState('all');
 
-  const navigateTo = (view: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge', elementId?: string) => {
+  const navigateTo = (view: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge' | 'portal', elementId?: string) => {
     setCurrentView(view);
     setMobileMenuOpen(false);
     setServicesDropdownOpen(false);
@@ -705,6 +705,18 @@ export default function App() {
               >
                 <span>Contact</span>
               </button>
+
+              <button 
+                onClick={() => navigateTo('portal')}
+                className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 border ${
+                  currentView === 'portal' 
+                    ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
+                    : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
+                }`}
+              >
+                <Lock size={12} className={currentView === 'portal' ? 'text-[#B68A35]' : 'text-primary/45'} />
+                <span>Client Portal</span>
+              </button>
             </nav>
 
             {/* Right Action Area (Desktop CTA + Mobile Hamburger) */}
@@ -914,6 +926,22 @@ export default function App() {
                       <Mail size={17} className={currentView === 'contact' ? 'text-[#E6CA85]' : 'text-white/50'} />
                       <span>Contact</span>
                     </button>
+
+                    {/* 5. Client Portal */}
+                    <button
+                      onClick={() => {
+                        navigateTo('portal');
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                        currentView === 'portal'
+                          ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Lock size={17} className={currentView === 'portal' ? 'text-[#E6CA85]' : 'text-white/50'} />
+                      <span>Secure Client Portal</span>
+                    </button>
                   </nav>
                 </div>
 
@@ -932,16 +960,12 @@ export default function App() {
 
                   <button
                     onClick={() => {
-                      navigateTo('home');
+                      navigateTo('portal');
                       setMobileMenuOpen(false);
-                      setTimeout(() => {
-                        const el = document.getElementById('portal');
-                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }, 100);
                     }}
                     className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 text-white/85 text-xs font-medium transition-all cursor-pointer border border-white/10"
                   >
-                    <User size={14} className="text-[#B68A35]" />
+                    <Lock size={14} className="text-[#B68A35]" />
                     <span>{currentUser ? 'Client Portal' : 'Portal Log In'}</span>
                   </button>
 
@@ -1002,7 +1026,7 @@ export default function App() {
                       }}
                       className="bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 sm:py-4 sm:px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md flex items-center justify-center gap-2.5 w-full sm:w-auto"
                     >
-                      <AppIcon name="grid_view" size={16} className="shrink-0" color="#ffffff" />
+                      <LayoutGrid size={16} className="shrink-0 text-white" />
                       <span>Explore Our Services</span>
                     </button>
                     <button
@@ -1016,18 +1040,20 @@ export default function App() {
                 </ScrollReveal>
 
                 <ScrollReveal direction="up" delay={0.25}>
-                  <div className="pt-6 sm:pt-8 border-t border-border/60 grid grid-cols-3 gap-3 sm:gap-6 text-center max-w-lg mx-auto">
-                    <div>
-                      <div className="font-serif text-xl sm:text-2xl font-bold text-primary">100%</div>
-                      <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">Audit Success</div>
-                    </div>
-                    <div>
-                      <div className="font-serif text-xl sm:text-2xl font-bold text-primary">Global</div>
-                      <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">ISO / BRCGS / GFSI</div>
-                    </div>
-                    <div>
-                      <div className="font-serif text-xl sm:text-2xl font-bold text-primary">Partner</div>
-                      <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-ash">FoodChain ID</div>
+                  <div className="pt-2 max-w-xs sm:max-w-sm mx-auto">
+                    <div className="grid grid-cols-3 divide-x divide-stone-200/70 bg-stone-50/70 border border-stone-200/70 rounded-lg px-1.5 py-1.5 shadow-2xs text-center">
+                      <div className="px-1">
+                        <div className="font-serif font-bold text-[11px] sm:text-xs text-[#023625] leading-tight">100%</div>
+                        <div className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-ash mt-0.5">Audit Success</div>
+                      </div>
+                      <div className="px-1">
+                        <div className="font-serif font-bold text-[11px] sm:text-xs text-[#023625] leading-tight">Global</div>
+                        <div className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-ash mt-0.5">ISO / GFSI</div>
+                      </div>
+                      <div className="px-1">
+                        <div className="font-serif font-bold text-[11px] sm:text-xs text-[#023625] leading-tight">Partner</div>
+                        <div className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-ash mt-0.5">FoodChain ID</div>
+                      </div>
                     </div>
                   </div>
                 </ScrollReveal>
@@ -1085,7 +1111,7 @@ export default function App() {
                         <div className="space-y-5">
                           <div className="flex items-center justify-between">
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <AppIcon name="school" size={24} />
+                              <GraduationCap size={24} />
                             </div>
                             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2.5 py-1 rounded-full">
                               Capability Building
@@ -1147,7 +1173,7 @@ export default function App() {
                         <div className="space-y-5">
                           <div className="flex items-center justify-between">
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <AppIcon name="verified" size={24} />
+                              <ShieldCheck size={24} />
                             </div>
                             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2.5 py-1 rounded-full">
                               Capability Building
@@ -1213,7 +1239,7 @@ export default function App() {
                         <div className="space-y-5">
                           <div className="flex items-center justify-between">
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <AppIcon name="support_agent" size={24} />
+                              <Headphones size={24} />
                             </div>
                             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
                               Advisory
@@ -1275,7 +1301,7 @@ export default function App() {
                         <div className="space-y-5">
                           <div className="flex items-center justify-between">
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <AppIcon name="schema" size={24} />
+                              <Workflow size={24} />
                             </div>
                             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
                               Advisory
@@ -1317,46 +1343,6 @@ export default function App() {
                     </div>
                   </motion.div>
                 </motion.div>
-
-                {/* Regional & Cross-Border Delivery Banner */}
-                <div className="mt-8 sm:mt-12 bg-white border border-[#B68A35]/30 rounded-2xl p-5 sm:p-7 md:p-8 shadow-xs">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 sm:gap-6">
-                    <div className="flex items-start gap-3.5 sm:gap-4">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#023625] text-[#DFC181] flex items-center justify-center shrink-0 shadow-xs">
-                        <Globe size={22} className="text-[#DFC181]" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="inline-flex items-center gap-1.5 bg-[#B68A35]/10 px-2.5 py-0.5 rounded-full">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35]"></span>
-                          <span className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider text-[#7a5a1f]">
-                            Regional Delivery &amp; Global Reach
-                          </span>
-                        </div>
-                        <h4 className="font-serif font-bold text-primary text-base sm:text-lg md:text-xl leading-snug">
-                          Delivering Across Southern Africa and Global Markets
-                        </h4>
-                        <p className="font-sans text-xs sm:text-sm text-on-surface-variant max-w-2xl leading-relaxed">
-                          Headquartered in Randburg, South Africa, Yitzak provides accredited FoodChain ID certification audits, compliance advisory, and capability training across Southern Africa and international supply chains.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 pt-3 lg:pt-0 border-t border-border/70 lg:border-t-0 lg:border-l lg:border-border/70 lg:pl-6">
-                      <div className="flex items-center gap-2 text-xs text-primary font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#023625] shrink-0"></span>
-                        <span><strong>Head Office:</strong> Randburg, South Africa</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-primary font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35] shrink-0"></span>
-                        <span><strong>Regional Presence:</strong> Zimbabwe &amp; SADC</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-primary font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#023625] shrink-0"></span>
-                        <span><strong>Audits &amp; Schemes:</strong> FoodChain ID Partner</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </section>
 
@@ -1378,8 +1364,8 @@ export default function App() {
                   {[
                     {
                       icon: <Globe size={26} className="text-[#B68A35]" />,
-                      title: "Global Standards Expertise",
-                      desc: "Deep understanding of international frameworks."
+                      title: "Regional & Global Reach",
+                      desc: "Delivering across Southern Africa and international markets."
                     },
                     {
                       icon: <AppIcon name="timeline" size={26} color="#B68A35" />,
@@ -1465,7 +1451,7 @@ export default function App() {
                       fullSubtitle: "Gap Analysis & Technical Audit",
                       icon: FileText,
                       summary: "Line-by-line evaluation against GFSI & management standards.",
-                      description: "Our certified lead auditors conduct rigorous gap analyses against targeted GFSI-recognized food safety schemes (BRCGS, FSSC 22000, GLOBALG.A.P.) and quality standards (ISO 9001, ISO 22000). We systematically identify non-conformances before certification bodies arrive.",
+                      description: "Our certified lead auditors conduct rigorous gap analyses against targeted quality, environmental, safety, energy, and food safety standards (ISO 9001, ISO 14001, ISO 45001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP). We systematically identify non-conformances before certification bodies arrive.",
                       deliverables: [
                         "Line-by-Line Gap Analysis Scorecard & Findings Matrix",
                         "Hazard Analysis & Critical Control Point (HACCP) Re-validation",
@@ -1787,349 +1773,6 @@ export default function App() {
                 </div>
               </div>
             </section>
-
-            {/* Interactive Compliance & ROI Calculator Section (Temporarily Hidden) */}
-            {/* <ComplianceCalculator onInquire={(notes) => handleOpenBooking('compliance', notes)} /> */}
-
-            {/* Client Portal & Access Verification Section */}
-            <section id="portal" className="py-16 bg-[#F9F9F9] border-t border-border px-4 md:px-16 scroll-mt-24">
-              <div className="max-w-[1280px] mx-auto space-y-8">
-                <div className="text-center space-y-2">
-                  <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Client Portal &amp; Management</span>
-                  <h2 className="font-serif text-2xl md:text-3xl text-primary font-bold">Secure Client Portal</h2>
-                  <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-xl mx-auto">
-                    Access restricted to verified institutional accounts. Manage bookings, review compliance records, and download accredited audit frameworks.
-                  </p>
-                </div>
-
-                {isAuthLoading ? (
-                  <div className="bg-mist border border-border p-12 text-center flex flex-col items-center justify-center space-y-4 rounded-xl">
-                    <Loader2 className="animate-spin text-primary" size={24} />
-                    <p className="font-sans text-xs text-ash">Securing network authorization...</p>
-                  </div>
-                ) : currentUser ? (
-                  <Dashboard
-                    currentUser={currentUser}
-                    onLogout={() => {
-                      setCurrentUser(null);
-                      triggerNotification('Logged out successfully.');
-                    }}
-                    onOpenBooking={() => setIsBookingOpen(true)}
-                    refreshTrigger={refreshTrigger}
-                  />
-                ) : (
-                  <div className="bg-mist/40 border border-border/80 rounded-2xl p-4 sm:p-8 shadow-sm max-w-5xl mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
-                      
-                      {/* Left Column: Work Email Authentication Card */}
-                      <div className="lg:col-span-7 bg-white border border-border p-6 sm:p-8 rounded-xl shadow-xs flex flex-col justify-between space-y-6">
-                        
-                        {/* Tab Switcher: Work Email Login vs Guest Access */}
-                        <div className="flex bg-mist/80 p-1 rounded-xl border border-border/60">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPortalMode('work_email');
-                              setPortalLoginError(null);
-                            }}
-                            className={`flex-1 py-2 px-3 text-xs font-serif font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                              portalMode === 'work_email'
-                                ? 'bg-white text-primary shadow-xs border border-border/40'
-                                : 'text-ash hover:text-primary'
-                            }`}
-                          >
-                            <Mail size={14} className={portalMode === 'work_email' ? 'text-[#B68A35]' : ''} />
-                            <span>Work Email Login</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPortalMode('guest');
-                              setPortalLoginError(null);
-                            }}
-                            className={`flex-1 py-2 px-3 text-xs font-serif font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                              portalMode === 'guest'
-                                ? 'bg-white text-primary shadow-xs border border-border/40'
-                                : 'text-ash hover:text-primary'
-                            }`}
-                          >
-                            <UserCheck size={14} className={portalMode === 'guest' ? 'text-[#B68A35]' : ''} />
-                            <span>Guest Access</span>
-                          </button>
-                        </div>
-
-                        {/* Error Banner */}
-                        {portalLoginError && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-red-50 border border-red-200 text-red-800 p-3.5 rounded-xl text-xs font-sans flex items-start gap-2.5"
-                          >
-                            <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
-                            <div className="leading-snug font-medium">{portalLoginError}</div>
-                          </motion.div>
-                        )}
-
-                        {/* Mode 1: Work Email Login */}
-                        {portalMode === 'work_email' ? (
-                          <form onSubmit={handlePortalWorkEmailLogin} className="space-y-4">
-                            <div>
-                              <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1.5 flex items-center justify-between">
-                                <span>Work Email Address</span>
-                                <span className="text-[9px] text-[#B68A35] font-sans font-semibold">Business domains only</span>
-                              </label>
-                              <div className="relative">
-                                <Mail className="absolute left-3 top-3 text-ash/60" size={16} />
-                                <input
-                                  type="email"
-                                  required
-                                  value={portalWorkEmail}
-                                  onChange={(e) => {
-                                    setPortalWorkEmail(e.target.value);
-                                    if (portalLoginError) setPortalLoginError(null);
-                                  }}
-                                  placeholder="name@company.com"
-                                  className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Auth Method Selector: Password vs One-Time Code */}
-                            <div className="space-y-2 pt-1">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-mono uppercase tracking-wider text-ash font-bold">Authentication Method</span>
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setPortalAuthMethod('code');
-                                      setPortalLoginError(null);
-                                    }}
-                                    className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                                      portalAuthMethod === 'code' ? 'bg-[#023625] text-white' : 'text-ash hover:text-primary'
-                                    }`}
-                                  >
-                                    Send me a code
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setPortalAuthMethod('password');
-                                      setPortalLoginError(null);
-                                    }}
-                                    className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                                      portalAuthMethod === 'password' ? 'bg-[#023625] text-white' : 'text-ash hover:text-primary'
-                                    }`}
-                                  >
-                                    Password
-                                  </button>
-                                </div>
-                              </div>
-
-                              {portalAuthMethod === 'password' ? (
-                                <div className="relative">
-                                  <Lock className="absolute left-3 top-3 text-ash/60" size={16} />
-                                  <input
-                                    type="password"
-                                    value={portalPassword}
-                                    onChange={(e) => {
-                                      setPortalPassword(e.target.value);
-                                      if (portalLoginError) setPortalLoginError(null);
-                                    }}
-                                    placeholder="Enter your account password"
-                                    className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="space-y-2">
-                                  {!portalCodeSent ? (
-                                    <div className="text-[11px] text-ash bg-mist/60 p-2.5 rounded-lg border border-border/60 leading-relaxed">
-                                      A secure 6-digit access code will be dispatched to your corporate email inbox upon verification.
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-1">
-                                      <div className="relative">
-                                        <KeyRound className="absolute left-3 top-3 text-[#B68A35]" size={16} />
-                                        <input
-                                          type="text"
-                                          maxLength={6}
-                                          value={portalOneTimeCode}
-                                          onChange={(e) => {
-                                            setPortalOneTimeCode(e.target.value);
-                                            if (portalLoginError) setPortalLoginError(null);
-                                          }}
-                                          placeholder="Enter 6-digit code"
-                                          className="w-full pl-9 pr-3 py-2.5 border border-[#B68A35] rounded-xl text-xs text-charcoal font-mono tracking-widest outline-none bg-white"
-                                        />
-                                      </div>
-                                      <p className="text-[10px] text-emerald-700 font-medium flex items-center gap-1">
-                                        <CheckCircle size={12} /> Verification code dispatched to {portalWorkEmail}. Check your inbox.
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="pt-2">
-                              <button
-                                type="submit"
-                                disabled={verifyingWhitelist || portalSendingCode}
-                                className="w-full bg-[#B68A35] hover:bg-[#9E7528] text-white py-3 rounded-xl font-serif font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
-                              >
-                                {verifyingWhitelist || portalSendingCode ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                    <span>Verifying Work Domain...</span>
-                                  </>
-                                ) : portalAuthMethod === 'code' && !portalCodeSent ? (
-                                  <>
-                                    <Send size={14} />
-                                    <span>Send me a one-time code</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Lock size={14} />
-                                    <span>Login Securely</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </form>
-                        ) : (
-                          /* Mode 2: Guest Access */
-                          <form onSubmit={handlePortalGuestAccess} className="space-y-4">
-                            <div className="bg-mist/60 border border-border/60 p-3 rounded-xl text-xs text-ash leading-relaxed">
-                              Guest Access enables one-off bookings and audit record queries. Entry requires a valid business work email.
-                            </div>
-
-                            <div>
-                              <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1">
-                                Full Name
-                              </label>
-                              <input
-                                type="text"
-                                required
-                                value={portalGuestName}
-                                onChange={(e) => setPortalGuestName(e.target.value)}
-                                placeholder="e.g. Alex Morgan"
-                                className="w-full p-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] bg-white font-sans"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1 flex items-center justify-between">
-                                <span>Work Email Address</span>
-                                <span className="text-[9px] text-[#B68A35] font-sans font-semibold">Business email required</span>
-                              </label>
-                              <input
-                                type="email"
-                                required
-                                value={portalGuestWorkEmail}
-                                onChange={(e) => {
-                                  setPortalGuestWorkEmail(e.target.value);
-                                  if (portalLoginError) setPortalLoginError(null);
-                                }}
-                                placeholder="e.g. alex.morgan@company.com"
-                                className="w-full p-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] bg-white font-sans"
-                              />
-                            </div>
-
-                            <div className="pt-2">
-                              <button
-                                type="submit"
-                                disabled={verifyingWhitelist}
-                                className="w-full bg-[#B68A35] hover:bg-[#9E7528] text-white py-3 rounded-xl font-serif font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
-                              >
-                                {verifyingWhitelist ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                    <span>Verifying Email...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <UserCheck size={14} />
-                                    <span>Verify &amp; Enter Portal</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </form>
-                        )}
-
-                        <div className="border-t border-border/60 pt-3 flex items-center justify-between text-[10px] text-ash">
-                          <span>Need domain pre-registration?</span>
-                          <a
-                            href="mailto:info@yitzak.co.za?subject=Institutional%20Domain%20Pre-Registration%20Request"
-                            className="text-[#B68A35] hover:underline font-bold"
-                          >
-                            Contact Corporate Support →
-                          </a>
-                        </div>
-                      </div>
-
-                      {/* Right Column: Institutional Benefits & Trust Signals */}
-                      <div className="lg:col-span-5 bg-[#023625] text-white p-6 sm:p-8 rounded-xl shadow-xs flex flex-col justify-between space-y-6">
-                        <div className="space-y-5">
-                          {/* Verified Partner Badge */}
-                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[#B68A35] font-serif font-bold text-xs">
-                            <ShieldCheck size={16} />
-                            <span>Verified Partner | FoodChain ID</span>
-                          </div>
-
-                          <div>
-                            <h3 className="font-serif font-bold text-lg text-white">Institutional Benefits</h3>
-                            <p className="text-xs text-white/70 mt-1 font-sans leading-relaxed">
-                              Empowering corporate partners with seamless scheduling and verified compliance.
-                            </p>
-                          </div>
-
-                          <ul className="space-y-3.5 text-xs text-white/85 font-sans">
-                            <li className="flex items-start gap-3">
-                              <Shield className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
-                              <div>
-                                <span className="font-bold text-white block">Secure Audit Records</span>
-                                <span className="text-[11px] text-white/60">Encrypted repository for institutional gap analyses and FSMS reports.</span>
-                              </div>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <CheckCircle2 className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
-                              <div>
-                                <span className="font-bold text-white block">Verified Certifications</span>
-                                <span className="text-[11px] text-white/60">Real-time status tracking for accredited FoodChain ID schemes.</span>
-                              </div>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <Download className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
-                              <div>
-                                <span className="font-bold text-white block">Compliance Downloads</span>
-                                <span className="text-[11px] text-white/60">On-demand access to whitepapers, course syllabi, and advisory briefs.</span>
-                              </div>
-                            </li>
-                          </ul>
-                        </div>
-
-                        {/* Trust Signal Reassurance */}
-                        <div className="border-t border-white/15 pt-4 text-[11px] text-white/70 leading-relaxed font-sans flex items-start gap-2.5">
-                          <Lock className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
-                          <span>Access restricted to verified business accounts. Your data is encrypted and protected under GDPR &amp; POPIA standards.</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Modal overlay for Whitelist Manager */}
-                    {showWhitelistModal && (
-                      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-                        <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                          <WhitelistManager onClose={() => setShowWhitelistModal(false)} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </section>
           </>
         )}
 
@@ -2268,30 +1911,30 @@ export default function App() {
                     <span className="text-[10px] font-mono text-ash uppercase">Complementary Advisory Modules</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
                     {[
-                      { title: 'Gap assessments & readiness reviews', pillar: 'compliance', desc: 'Pre-audit diagnostic reviews against FSSC 22000, BRCGS, ISO 9001, and HACCP.' },
-                      { title: 'Management system development', pillar: 'advisory', desc: 'Custom policy, SOP, and quality manual formulation built around your team.' },
+                      { title: 'Gap assessments & readiness reviews', pillar: 'compliance', desc: 'Pre-audit diagnostic reviews against ISO 9001, ISO 14001, ISO 45001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP.' },
+                      { title: 'Management system development', pillar: 'advisory', desc: 'Custom policy, SOP, and Management Systems Manual formulation built around your team (covering ISO 9001, ISO 14001, ISO 45001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP).' },
                       { title: 'Documentation & records support', pillar: 'training', desc: 'Streamlined verification logs, traceability registers, and cloud compliance archives.' },
                       { title: 'Internal audits & process reviews', pillar: 'compliance', desc: 'Independent expert auditing to satisfy annual accredited scheme mandates.' }
                     ].map((item, idx) => (
-                      <div key={idx} className="bg-white p-6 rounded-xl border border-border/80 shadow-2xs hover:shadow-sm hover:border-primary/40 transition-all space-y-3 flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full bg-[#B68A35] shrink-0"></div>
-                            <h4 className="font-sans text-sm font-bold text-primary leading-snug">{item.title}</h4>
+                      <div key={idx} className="bg-white p-5 sm:p-6 rounded-xl border border-stone-200 shadow-2xs hover:shadow-sm hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full space-y-4">
+                        <div className="space-y-2.5">
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#B68A35] shrink-0 mt-1.5"></div>
+                            <h4 className="font-serif text-sm sm:text-base font-bold text-primary leading-snug">{item.title}</h4>
                           </div>
-                          <p className="font-sans text-xs text-on-surface-variant leading-relaxed pl-4">
+                          <p className="font-sans text-xs text-on-surface-variant leading-relaxed pl-5">
                             {item.desc}
                           </p>
                         </div>
-                        <div className="pt-3 border-t border-border/40 pl-4 no-print">
+                        <div className="pt-3 border-t border-stone-100 pl-5 no-print">
                           <button
                             onClick={() => handleOpenBooking(item.pillar, `Inquiry: ${item.title}`)}
-                            className="text-[11px] font-bold uppercase tracking-wider text-[#7d5800] hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1"
+                            className="text-xs font-bold uppercase tracking-wider text-[#7d5800] hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1.5"
                           >
                             <span>Book Review</span>
-                            <ArrowRight size={11} />
+                            <ArrowRight size={12} />
                           </button>
                         </div>
                       </div>
@@ -2303,16 +1946,16 @@ export default function App() {
             </section>
 
             {/* Bottom Callout Banner */}
-            <section className="py-16 bg-[#132B22] text-white px-4 md:px-16 border-t border-b border-[#1E4235]">
-              <div className="max-w-[1280px] mx-auto text-center space-y-6">
-                <h2 className="font-serif text-2xl md:text-4xl font-bold">Ready to turn learning into working systems?</h2>
-                <p className="font-sans text-sm md:text-base text-white/80 max-w-2xl mx-auto leading-relaxed">
+            <section className="py-12 sm:py-16 bg-[#132B22] text-white px-4 sm:px-8 md:px-16 border-t border-b border-[#1E4235]">
+              <div className="max-w-[1280px] mx-auto text-center space-y-5 sm:space-y-6">
+                <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">Ready to turn learning into working systems?</h2>
+                <p className="font-sans text-xs sm:text-sm md:text-base text-white/80 max-w-2xl mx-auto leading-relaxed">
                   Connect directly with Yitzak's principal advisors to schedule a gap assessment, system analysis, or custom corporate workshop.
                 </p>
-                <div className="pt-4 flex flex-wrap justify-center gap-4 no-print">
+                <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 no-print w-full sm:w-auto">
                   <button
                     onClick={() => handleOpenBooking('compliance', 'Inquiry: Gap Assessment & Systems Design')}
-                    className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-8 rounded cursor-pointer transition-all active:scale-95 shadow-md"
+                    className="w-full sm:w-auto bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md text-center"
                   >
                     Schedule Direct Consultation
                   </button>
@@ -2325,7 +1968,7 @@ export default function App() {
                         navigateTo('contact');
                       }
                     }}
-                    className="border border-white/30 hover:border-white text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-8 rounded cursor-pointer transition-all active:scale-95"
+                    className="w-full sm:w-auto border border-white/30 hover:border-white hover:bg-white/5 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-8 rounded-xl cursor-pointer transition-all active:scale-95 text-center"
                   >
                     Contact Advisory Team
                   </button>
@@ -2477,23 +2120,25 @@ export default function App() {
             <section className="py-12 bg-mist border-y border-border">
               <div className="max-w-[1280px] mx-auto px-4 md:px-16">
                 <ScrollReveal direction="up" delay={0.05}>
-                  <div className="bg-[#023625] text-white p-8 md:p-10 rounded-2xl relative overflow-hidden shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="bg-[#023625] text-white p-6 sm:p-8 md:p-10 rounded-2xl relative overflow-hidden shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-3 max-w-2xl">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-[#B68A35]/20 text-[#DFC181] border border-[#B68A35]/40 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="bg-[#B68A35]/20 text-[#DFC181] border border-[#B68A35]/40 px-3 py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap">
                           Exclusive Technical Partnership
                         </span>
-                        <span className="text-white/60 text-xs font-mono">FoodChain ID Academy</span>
+                        <span className="text-white/70 text-xs font-mono">FoodChain ID Academy</span>
                       </div>
-                      <h3 className="font-serif text-2xl md:text-3xl font-bold">Accredited Schemes &amp; Global Certification</h3>
+                      <h3 className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-white">
+                        Accredited Schemes &amp; Global Certification
+                      </h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
                         As an official FoodChain ID Partner, Yitzak delivers accredited certification audits and professional training across GFSI, GLOBALG.A.P., Non-GMO, and BRCGS standards.
                       </p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+                    <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
                       <button
                         onClick={() => navigateTo('certifications')}
-                        className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded transition-all cursor-pointer shadow-sm inline-flex items-center justify-center gap-2"
+                        className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-xl transition-all cursor-pointer shadow-sm inline-flex items-center justify-center gap-2 active:scale-95 w-full sm:w-auto"
                       >
                         <span>Certification</span>
                         <ArrowRight size={14} />
@@ -2502,7 +2147,7 @@ export default function App() {
                         href="https://www.foodchainid.com/academy/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="border border-white/30 hover:border-white text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded transition-all cursor-pointer inline-flex items-center justify-center gap-2"
+                        className="border border-white/30 hover:border-white hover:bg-white/5 text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto text-center"
                       >
                         <span>Global Academy</span>
                         <span>↗</span>
@@ -3040,10 +2685,10 @@ export default function App() {
                       </div>
                       <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">FSSC 22000 &amp; Integrated ISO Management Systems</h3>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Official FoodChain ID certification audits for FSSC 22000 (Version 6), ISO 22000 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), and ISO 45001 (Occupational Health &amp; Safety). Full third-party auditing that meets international buyer and retail requirements.
+                        Official FoodChain ID certification audits for FSSC 22000 (Version 6), ISO 22000 / 22001 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), ISO 45001 (Occupational Health &amp; Safety), and ISO 50001 (Energy Management). Full third-party auditing that meets international buyer and retail requirements.
                       </p>
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        {['FSSC 22000 v6', 'ISO 22000', 'ISO 9001', 'ISO 14001', 'ISO 45001'].map((iso, idx) => (
+                        {['FSSC 22000 v6', 'ISO 22000 / 22001', 'ISO 9001', 'ISO 14001', 'ISO 45001', 'ISO 50001'].map((iso, idx) => (
                           <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-3 py-1 rounded-md font-mono font-bold">
                             {iso}
                           </span>
@@ -3095,33 +2740,33 @@ export default function App() {
             className="bg-white min-h-screen text-on-surface"
           >
             {/* Hero Section */}
-            <section className="relative pt-10 md:pt-16 pb-14 px-4 md:px-16 max-w-[1280px] mx-auto overflow-hidden">
+            <section className="relative pt-8 sm:pt-12 md:pt-16 pb-12 sm:pb-14 px-4 sm:px-8 md:px-16 max-w-[1280px] mx-auto overflow-hidden">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-                <div className="lg:col-span-7 z-10 space-y-6">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-xs font-mono font-bold uppercase tracking-widest">
+                <div className="lg:col-span-7 z-10 space-y-5 sm:space-y-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-xs font-mono font-bold uppercase tracking-wider">
                     <AppIcon name="schema" size={14} color="#B68A35" />
                     <span>Operational Pillar 04</span>
                   </div>
-                  <h1 className="font-serif text-[38px] md:text-[54px] leading-[46px] md:leading-[62px] tracking-tight text-primary font-bold">
+                  <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[54px] leading-tight md:leading-[60px] tracking-tight text-primary font-bold">
                     Business Process Implementation
                   </h1>
-                  <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed">
+                  <p className="font-sans text-xs sm:text-sm md:text-base text-on-surface-variant leading-relaxed">
                     Helping organisations build solid operational foundations from zero. From process mapping and risk controls to setting up HR, accounting, and core workflow systems, Yitzak transforms strategic objectives into measurable, scalable execution.
                   </p>
-                  <p className="font-sans text-xs md:text-sm text-outline border-l-2 border-[#B68A35] pl-4">
+                  <p className="font-sans text-xs sm:text-sm text-outline border-l-2 border-[#B68A35] pl-4">
                     Bridge the gap between strategy and operational reality with tailored process governance and automated control frameworks.
                   </p>
-                  <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 pt-2">
                     <button
                       onClick={() => handleOpenBooking('process_implementation', 'Inquiry: Business Process Implementation Services')}
-                      className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-2 shadow-sm"
+                      className="bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto"
                     >
                       <span>Request Implementation Plan</span>
                       <ArrowRight size={14} />
                     </button>
                     <button
                       onClick={() => exportCapabilitySheetPDF('capability_sheet')}
-                      className="border border-forest-green text-forest-green hover:bg-forest-green hover:text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-2"
+                      className="border border-[#023625] text-[#023625] hover:bg-[#023625] hover:text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-2 w-full sm:w-auto"
                       title="Print or Download Capability Sheet"
                     >
                       <Printer size={14} />
@@ -3129,25 +2774,25 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <div className="lg:col-span-5 relative">
-                  <div className="bg-[#023625] text-white p-8 rounded-2xl border border-white/10 shadow-xl space-y-6">
-                    <h3 className="font-serif text-2xl font-bold text-[#B68A35]">Core Capabilities</h3>
-                    <ul className="space-y-4 font-sans text-xs md:text-sm text-white/90">
+                <div className="lg:col-span-5 relative w-full">
+                  <div className="bg-[#023625] text-white p-6 sm:p-8 rounded-2xl border border-white/10 shadow-xl space-y-5">
+                    <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#DFC181]">Core Capabilities</h3>
+                    <ul className="space-y-3.5 font-sans text-xs sm:text-sm text-white/90">
                       <li className="flex items-start gap-3">
-                        <CheckCircle2 size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
-                        <span><strong>Process Mapping & SOP Formulation:</strong> Standardising workflows for error reduction and clarity.</span>
+                        <CheckCircle2 size={17} className="text-[#B68A35] shrink-0 mt-0.5" />
+                        <span><strong>Process Mapping &amp; SOP Formulation:</strong> Standardising workflows for error reduction and clarity.</span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <CheckCircle2 size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
-                        <span><strong>Governance & Risk Controls:</strong> Establishing internal control checkpoints and risk mitigation protocols.</span>
+                        <CheckCircle2 size={17} className="text-[#B68A35] shrink-0 mt-0.5" />
+                        <span><strong>Governance &amp; Risk Controls:</strong> Establishing internal control checkpoints and risk mitigation protocols.</span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <CheckCircle2 size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
-                        <span><strong>HR & Accounting Setup:</strong> Operationalizing foundational HR policies, payroll rules, and financial reporting workflows.</span>
+                        <CheckCircle2 size={17} className="text-[#B68A35] shrink-0 mt-0.5" />
+                        <span><strong>HR &amp; Accounting Setup:</strong> Operationalizing foundational HR policies, payroll rules, and financial reporting workflows.</span>
                       </li>
                       <li className="flex items-start gap-3">
-                        <CheckCircle2 size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
-                        <span><strong>Lean Audits & Efficiency:</strong> Streamlining repetitive tasks and removing operational bottlenecks.</span>
+                        <CheckCircle2 size={17} className="text-[#B68A35] shrink-0 mt-0.5" />
+                        <span><strong>Lean Audits &amp; Efficiency:</strong> Streamlining repetitive tasks and removing operational bottlenecks.</span>
                       </li>
                     </ul>
                   </div>
@@ -3156,22 +2801,22 @@ export default function App() {
             </section>
 
             {/* Implementation Phased Roadmap Component */}
-            <section className="bg-[#F9F9F9] py-12 md:py-16 px-4 md:px-16 border-t border-[#E5E5E5]">
-              <div className="max-w-[1280px] mx-auto space-y-10">
+            <section className="bg-[#F9F9F9] py-10 sm:py-14 md:py-16 px-4 sm:px-8 md:px-16 border-t border-[#E5E5E5]">
+              <div className="max-w-[1280px] mx-auto space-y-8 sm:space-y-10">
                 <ProcessImplementationRoadmap 
                   onInquirePhase={(phaseTitle) => handleOpenBooking('process_implementation', `Inquiry regarding ${phaseTitle}`)}
                 />
 
-                <div className="bg-[#023625] text-white p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="space-y-2 max-w-2xl">
-                    <h3 className="font-serif text-xl md:text-2xl font-bold">Ready to standardise and scale your operations?</h3>
-                    <p className="font-sans text-xs md:text-sm text-white/80">
+                <div className="bg-[#023625] text-white p-6 sm:p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-md border border-white/10">
+                  <div className="space-y-2 max-w-2xl text-center md:text-left">
+                    <h3 className="font-serif text-xl sm:text-2xl font-bold">Ready to standardise and scale your operations?</h3>
+                    <p className="font-sans text-xs sm:text-sm text-white/80">
                       Speak with a principal consultant to structure an implementation roadmap tailored to your company's sector and size.
                     </p>
                   </div>
                   <button
                     onClick={() => handleOpenBooking('process_implementation', 'Inquiry: Business Process Implementation Roadmap')}
-                    className="bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded cursor-pointer transition-all shrink-0 shadow-md"
+                    className="bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-xl cursor-pointer transition-all shrink-0 shadow-md w-full md:w-auto text-center active:scale-95"
                   >
                     Schedule Consultation
                   </button>
@@ -3227,6 +2872,353 @@ export default function App() {
               </p>
             </div>
             <ContactUs />
+          </motion.div>
+        )}
+
+        {currentView === 'portal' && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="bg-[#F9F9F9] min-h-screen text-[#2D3142] py-12 md:py-16 px-4 sm:px-6 md:px-12 lg:px-16"
+          >
+            <div className="max-w-[1280px] mx-auto space-y-8">
+              <div className="text-center space-y-2">
+                <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Client Portal &amp; Management</span>
+                <h1 className="font-serif text-3xl md:text-4xl text-primary font-bold">Secure Client Portal</h1>
+                <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-xl mx-auto">
+                  Access restricted to verified institutional accounts. Manage bookings, review compliance records, and download accredited audit frameworks.
+                </p>
+              </div>
+
+              {isAuthLoading ? (
+                <div className="bg-mist border border-border p-12 text-center flex flex-col items-center justify-center space-y-4 rounded-xl">
+                  <Loader2 className="animate-spin text-primary" size={24} />
+                  <p className="font-sans text-xs text-ash">Securing network authorization...</p>
+                </div>
+              ) : currentUser ? (
+                <Dashboard
+                  currentUser={currentUser}
+                  onLogout={() => {
+                    setCurrentUser(null);
+                    triggerNotification('Logged out successfully.');
+                  }}
+                  onOpenBooking={() => setIsBookingOpen(true)}
+                  refreshTrigger={refreshTrigger}
+                />
+              ) : (
+                <div className="bg-mist/40 border border-border/80 rounded-2xl p-4 sm:p-8 shadow-sm max-w-5xl mx-auto">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+                    
+                    {/* Left Column: Work Email Authentication Card */}
+                    <div className="lg:col-span-7 bg-white border border-border p-6 sm:p-8 rounded-xl shadow-xs flex flex-col justify-between space-y-6">
+                      
+                      {/* Tab Switcher: Work Email Login vs Guest Access */}
+                      <div className="flex bg-mist/80 p-1 rounded-xl border border-border/60">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPortalMode('work_email');
+                            setPortalLoginError(null);
+                          }}
+                          className={`flex-1 py-2 px-3 text-xs font-serif font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                            portalMode === 'work_email'
+                              ? 'bg-white text-primary shadow-xs border border-border/40'
+                              : 'text-ash hover:text-primary'
+                          }`}
+                        >
+                          <Mail size={14} className={portalMode === 'work_email' ? 'text-[#B68A35]' : ''} />
+                          <span>Work Email Login</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPortalMode('guest');
+                            setPortalLoginError(null);
+                          }}
+                          className={`flex-1 py-2 px-3 text-xs font-serif font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                            portalMode === 'guest'
+                              ? 'bg-white text-primary shadow-xs border border-border/40'
+                              : 'text-ash hover:text-primary'
+                          }`}
+                        >
+                          <UserCheck size={14} className={portalMode === 'guest' ? 'text-[#B68A35]' : ''} />
+                          <span>Guest Access</span>
+                        </button>
+                      </div>
+
+                      {/* Error Banner */}
+                      {portalLoginError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-red-50 border border-red-200 text-red-800 p-3.5 rounded-xl text-xs font-sans flex items-start gap-2.5"
+                        >
+                          <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
+                          <div className="leading-snug font-medium">{portalLoginError}</div>
+                        </motion.div>
+                      )}
+
+                      {/* Mode 1: Work Email Login */}
+                      {portalMode === 'work_email' ? (
+                        <form onSubmit={handlePortalWorkEmailLogin} className="space-y-4">
+                          <div>
+                            <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1.5 flex items-center justify-between">
+                              <span>Work Email Address</span>
+                              <span className="text-[9px] text-[#B68A35] font-sans font-semibold">Business domains only</span>
+                            </label>
+                            <div className="relative">
+                              <Mail className="absolute left-3 top-3 text-ash/60" size={16} />
+                              <input
+                                type="email"
+                                required
+                                value={portalWorkEmail}
+                                onChange={(e) => {
+                                  setPortalWorkEmail(e.target.value);
+                                  if (portalLoginError) setPortalLoginError(null);
+                                }}
+                                placeholder="name@company.com"
+                                className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Auth Method Selector: Password vs One-Time Code */}
+                          <div className="space-y-2 pt-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono uppercase tracking-wider text-ash font-bold">Authentication Method</span>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPortalAuthMethod('code');
+                                    setPortalLoginError(null);
+                                  }}
+                                  className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                                    portalAuthMethod === 'code' ? 'bg-[#023625] text-white' : 'text-ash hover:text-primary'
+                                  }`}
+                                >
+                                  Send me a code
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPortalAuthMethod('password');
+                                    setPortalLoginError(null);
+                                  }}
+                                  className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                                    portalAuthMethod === 'password' ? 'bg-[#023625] text-white' : 'text-ash hover:text-primary'
+                                  }`}
+                                >
+                                  Password
+                                </button>
+                              </div>
+                            </div>
+
+                            {portalAuthMethod === 'password' ? (
+                              <div className="relative">
+                                <Lock className="absolute left-3 top-3 text-ash/60" size={16} />
+                                <input
+                                  type="password"
+                                  value={portalPassword}
+                                  onChange={(e) => {
+                                    setPortalPassword(e.target.value);
+                                    if (portalLoginError) setPortalLoginError(null);
+                                  }}
+                                  placeholder="Enter your account password"
+                                  className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
+                                />
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {!portalCodeSent ? (
+                                  <div className="text-[11px] text-ash bg-mist/60 p-2.5 rounded-lg border border-border/60 leading-relaxed">
+                                    A secure 6-digit access code will be dispatched to your corporate email inbox upon verification.
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    <div className="relative">
+                                      <KeyRound className="absolute left-3 top-3 text-[#B68A35]" size={16} />
+                                      <input
+                                        type="text"
+                                        maxLength={6}
+                                        value={portalOneTimeCode}
+                                        onChange={(e) => {
+                                          setPortalOneTimeCode(e.target.value);
+                                          if (portalLoginError) setPortalLoginError(null);
+                                        }}
+                                        placeholder="Enter 6-digit code"
+                                        className="w-full pl-9 pr-3 py-2.5 border border-[#B68A35] rounded-xl text-xs text-charcoal font-mono tracking-widest outline-none bg-white"
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-emerald-700 font-medium flex items-center gap-1">
+                                      <CheckCircle size={12} /> Verification code dispatched to {portalWorkEmail}. Check your inbox.
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-2">
+                            <button
+                              type="submit"
+                              disabled={verifyingWhitelist || portalSendingCode}
+                              className="w-full bg-[#B68A35] hover:bg-[#9E7528] text-white py-3 rounded-xl font-serif font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                            >
+                              {verifyingWhitelist || portalSendingCode ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                  <span>Verifying Work Domain...</span>
+                                </>
+                              ) : portalAuthMethod === 'code' && !portalCodeSent ? (
+                                <>
+                                  <Send size={14} />
+                                  <span>Send me a one-time code</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Lock size={14} />
+                                  <span>Login Securely</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        /* Mode 2: Guest Access */
+                        <form onSubmit={handlePortalGuestAccess} className="space-y-4">
+                          <div className="bg-mist/60 border border-border/60 p-3 rounded-xl text-xs text-ash leading-relaxed">
+                            Guest Access enables one-off bookings and audit record queries. Entry requires a valid business work email.
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1">
+                              Full Name
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={portalGuestName}
+                              onChange={(e) => setPortalGuestName(e.target.value)}
+                              placeholder="e.g. Alex Morgan"
+                              className="w-full p-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] bg-white font-sans"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1 flex items-center justify-between">
+                              <span>Work Email Address</span>
+                              <span className="text-[9px] text-[#B68A35] font-sans font-semibold">Business email required</span>
+                            </label>
+                            <input
+                              type="email"
+                              required
+                              value={portalGuestWorkEmail}
+                              onChange={(e) => {
+                                setPortalGuestWorkEmail(e.target.value);
+                                if (portalLoginError) setPortalLoginError(null);
+                              }}
+                              placeholder="e.g. alex.morgan@company.com"
+                              className="w-full p-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] bg-white font-sans"
+                            />
+                          </div>
+
+                          <div className="pt-2">
+                            <button
+                              type="submit"
+                              disabled={verifyingWhitelist}
+                              className="w-full bg-[#B68A35] hover:bg-[#9E7528] text-white py-3 rounded-xl font-serif font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                            >
+                              {verifyingWhitelist ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                  <span>Verifying Email...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck size={14} />
+                                  <span>Verify &amp; Enter Portal</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+
+                      <div className="border-t border-border/60 pt-3 flex items-center justify-between text-[10px] text-ash">
+                        <span>Need domain pre-registration?</span>
+                        <a
+                          href="mailto:info@yitzak.co.za?subject=Institutional%20Domain%20Pre-Registration%20Request"
+                          className="text-[#B68A35] hover:underline font-bold"
+                        >
+                          Contact Corporate Support →
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Institutional Benefits & Trust Signals */}
+                    <div className="lg:col-span-5 bg-[#023625] text-white p-6 sm:p-8 rounded-xl shadow-xs flex flex-col justify-between space-y-6">
+                      <div className="space-y-5">
+                        {/* Verified Partner Badge */}
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[#B68A35] font-serif font-bold text-xs">
+                          <ShieldCheck size={16} />
+                          <span>Verified Partner | FoodChain ID</span>
+                        </div>
+
+                        <div>
+                          <h3 className="font-serif font-bold text-lg text-white">Institutional Benefits</h3>
+                          <p className="text-xs text-white/70 mt-1 font-sans leading-relaxed">
+                            Empowering corporate partners with seamless scheduling and verified compliance.
+                          </p>
+                        </div>
+
+                        <ul className="space-y-3.5 text-xs text-white/85 font-sans">
+                          <li className="flex items-start gap-3">
+                            <Shield className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold text-white block">Secure Audit Records</span>
+                              <span className="text-[11px] text-white/60">Encrypted repository for institutional gap analyses and FSMS reports.</span>
+                            </div>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <CheckCircle2 className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold text-white block">Verified Certifications</span>
+                              <span className="text-[11px] text-white/60">Real-time status tracking for accredited FoodChain ID schemes.</span>
+                            </div>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <Download className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold text-white block">Compliance Downloads</span>
+                              <span className="text-[11px] text-white/60">On-demand access to whitepapers, course syllabi, and advisory briefs.</span>
+                            </div>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Trust Signal Reassurance */}
+                      <div className="border-t border-white/15 pt-4 text-[11px] text-white/70 leading-relaxed font-sans flex items-start gap-2.5">
+                        <Lock className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
+                        <span>Access restricted to verified business accounts. Your data is encrypted and protected under GDPR &amp; POPIA standards.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Modal overlay for Whitelist Manager */}
+                  {showWhitelistModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+                      <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <WhitelistManager onClose={() => setShowWhitelistModal(false)} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
       </main>
@@ -3353,6 +3345,15 @@ export default function App() {
                   >
                     <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
                     <span>Contact Us</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo('portal')}
+                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Secure Client Portal</span>
                   </button>
                 </li>
               </ul>
