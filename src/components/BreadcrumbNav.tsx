@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, ChevronRight, GraduationCap, ShieldCheck, Award, Sliders, Calendar, Mail, FileText, Lock } from 'lucide-react';
+import { Home, ChevronRight, GraduationCap, ShieldCheck, Award, Headphones, Workflow, Calendar, Mail, FileText, Lock } from 'lucide-react';
 import AppIcon from './AppIcon';
 
 interface PortfolioCategory {
@@ -144,7 +144,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
               </li>
               <li>
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
-                  <Sliders size={13} className="text-[#B68A35]" />
+                  <Headphones size={13} className="text-[#B68A35]" />
                   <span>Consulting &amp; Advisory</span>
                 </span>
               </li>
@@ -158,7 +158,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
               </li>
               <li>
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
-                  <AppIcon name="schema" size={14} color="#B68A35" />
+                  <Workflow size={13} className="text-[#B68A35]" />
                   <span>Business Process Implementation</span>
                 </span>
               </li>
@@ -202,23 +202,6 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
                   <Mail size={13} className="text-[#B68A35]" />
                   <span>Contact &amp; Advisory Desk</span>
-                </span>
-              </li>
-            </>
-          )}
-
-          {currentView === 'portal' && (
-            <>
-              <li className="flex items-center">
-                <ChevronRight size={13} className="text-ash/50 shrink-0" />
-              </li>
-              <li>
-                <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
-                  <Lock size={13} className="text-[#B68A35]" />
-                  <span>Secure Client Portal</span>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-[#B68A35]/15 text-[#7a5a1f] px-1.5 py-0.5 rounded border border-[#B68A35]/30">
-                    Coming Soon
-                  </span>
                 </span>
               </li>
             </>

@@ -93,7 +93,7 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   if (hash === 'process' || hash === 'implementation') return { view: 'process_implementation' };
   if (hash === 'knowledge' || hash === 'whitepapers') return { view: 'knowledge' };
   if (hash === 'calendar' || hash === 'schedule') return { view: 'calendar' };
-  if (hash === 'portal' || hash === 'login') return { view: 'portal' };
+  if (hash === 'portal' || hash === 'login') return { view: 'contact' };
 
   // Path-based matches
   if (rawPath === '/about') return { view: 'home', elementId: 'about-section' };
@@ -119,7 +119,7 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
     return { view: 'calendar' };
   }
   if (rawPath === '/client-portal' || rawPath === '/portal' || rawPath === '/login' || rawPath === '/client-area') {
-    return { view: 'portal' };
+    return { view: 'contact' };
   }
 
   return { view: 'home' };

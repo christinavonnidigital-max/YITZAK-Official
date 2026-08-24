@@ -133,10 +133,7 @@ interface ProcessImplementationRoadmapProps {
 
 export default function ProcessImplementationRoadmap({ onInquirePhase }: ProcessImplementationRoadmapProps) {
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
-  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({
-    'p1-t1': true,
-    'p1-t2': true,
-  });
+  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
 
   const activePhase = IMPLEMENTATION_PHASES[activePhaseIndex];
 
@@ -155,58 +152,60 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
   const activePhaseCompletedCount = activePhase.tasks.filter(t => completedTasks[t.id]).length;
 
   return (
-    <div className="bg-white border border-stone-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-8 md:p-10 shadow-sm space-y-6 sm:space-y-8">
-      {/* Header & Interactive Progress Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 border-b border-stone-200/80 pb-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#023625]/5 text-[#023625] rounded-full text-[11px] font-mono font-bold uppercase tracking-wider border border-[#023625]/10">
-            <AppIcon name="alt_route" size={13} color="#B68A35" />
-            <span>Interactive Implementation Roadmap</span>
+    <div className="bg-white border border-stone-200 rounded-2xl sm:rounded-3xl shadow-xs overflow-hidden">
+      {/* Header Section */}
+      <div className="p-6 sm:p-8 md:p-10 border-b border-stone-200 bg-linear-to-b from-stone-50/60 to-white">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#023625]/5 text-[#023625] rounded-full text-[11px] font-mono font-bold uppercase tracking-wider border border-[#023625]/10">
+              <AppIcon name="alt_route" size={13} color="#B68A35" />
+              <span>Implementation Roadmap</span>
+            </div>
+            <h3 className="font-serif text-2xl sm:text-3xl font-bold text-primary tracking-tight">
+              5-Phase Implementation Methodology
+            </h3>
+            <p className="font-sans text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+              From baseline gap diagnostics to executive governance handover. Select any phase below to examine deliverables and simulate task readiness.
+            </p>
           </div>
-          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-primary tracking-tight">
-            5-Phase Implementation Methodology
-          </h3>
-          <p className="font-sans text-xs sm:text-sm text-on-surface-variant max-w-2xl leading-relaxed">
-            From baseline gap diagnostics to executive governance handover. Select any phase below to examine deliverables and simulate task readiness.
-          </p>
-        </div>
 
-        {/* Compact Progress Card */}
-        <div className="bg-[#023625] text-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shrink-0 lg:w-80 border border-white/10 shadow-md">
-          <div className="flex items-center justify-between text-xs font-mono mb-2.5">
-            <span className="text-[#DFC181] font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-              <CalendarCheck size={13} className="text-[#B68A35]" />
-              Readiness Progress
-            </span>
-            <span className="font-bold text-white text-xs">{totalCompleted} / {totalTasks} Tasks ({progressPercentage}%)</span>
-          </div>
-          <div className="w-full h-2.5 bg-white/15 rounded-full overflow-hidden p-0.5">
-            <motion.div 
-              className="h-full bg-linear-to-r from-[#B68A35] to-[#DFC181] rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercentage}%` }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-            />
-          </div>
-          <div className="flex justify-between items-center text-[10px] font-mono text-white/60 mt-2">
-            <span>Phase {activePhaseIndex + 1} Selected</span>
-            <span className="text-[#DFC181]">{activePhaseCompletedCount}/{activePhase.tasks.length} Phase Tasks Done</span>
+          {/* Integrated Horizontal Progress Bar */}
+          <div className="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-2xs w-full lg:w-80 shrink-0 space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-[#7a5a1f] font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <CalendarCheck size={13} className="text-[#B68A35]" />
+                Readiness Progress
+              </span>
+              <span className="font-bold text-primary text-xs">{totalCompleted} / {totalTasks} Tasks ({progressPercentage}%)</span>
+            </div>
+            <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+              <motion.div 
+                className="h-full bg-linear-to-r from-[#B68A35] to-[#DFC181] rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercentage}%` }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+              />
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-mono text-ash pt-0.5">
+              <span>Phase {activePhaseIndex + 1} of 5</span>
+              <span className="text-[#7a5a1f] font-medium">{activePhaseCompletedCount}/{activePhase.tasks.length} Phase Tasks Done</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Modern Stepper Tabs */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-mono text-ash px-1">
+      {/* 5-Phase Stepper Row */}
+      <div className="p-6 sm:p-8 md:p-10 space-y-6">
+        <div className="flex items-center justify-between text-xs font-mono text-ash">
           <span className="uppercase tracking-wider font-bold text-[11px] text-[#023625] flex items-center gap-1.5">
             <ListTodo size={13} className="text-[#B68A35]" />
             Select Implementation Phase
           </span>
-          <span className="text-[11px]">Click a phase to inspect</span>
+          <span className="text-[11px] hidden sm:inline">Click any phase to inspect</span>
         </div>
 
-        {/* Scrollable / Responsive Phase Stepper */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+        {/* 5 Phase Grid Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
           {IMPLEMENTATION_PHASES.map((phase, idx) => {
             const isActive = idx === activePhaseIndex;
             const isDone = phase.tasks.every(t => completedTasks[t.id]);
@@ -216,21 +215,20 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
             return (
               <button
                 key={phase.id}
+                type="button"
                 onClick={() => setActivePhaseIndex(idx)}
-                className={`p-3 sm:p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer relative flex flex-col justify-between min-h-[105px] sm:min-h-[120px] ${
-                  idx === 4 ? 'col-span-2 sm:col-span-1' : 'col-span-1'
-                } ${
+                className={`p-3.5 sm:p-4 rounded-xl border text-left transition-all duration-150 cursor-pointer flex flex-col justify-between h-full min-h-[135px] ${
                   isActive
-                    ? 'bg-[#023625] border-[#023625] text-white shadow-md ring-2 ring-[#B68A35]/60 -translate-y-0.5'
-                    : 'bg-white border-stone-200 text-on-surface-variant hover:border-[#B68A35]/40 hover:bg-stone-50/70'
+                    ? 'bg-[#023625] border-[#023625] text-white shadow-sm'
+                    : 'bg-white border-stone-200 text-stone-700 hover:border-[#B68A35]/50 hover:bg-stone-50/60'
                 }`}
               >
-                {/* Phase Number & Status Icon */}
-                <div className="flex items-center justify-between gap-1 mb-2">
-                  <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                {/* Header: Phase Pill + Icon */}
+                <div className="flex items-center justify-between gap-2 mb-2.5 h-6">
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
                     isActive
                       ? 'bg-[#B68A35] text-white'
-                      : 'bg-stone-100 text-stone-700'
+                      : 'bg-stone-100 text-stone-700 border border-stone-200/60'
                   }`}>
                     PHASE {phase.phaseNumber}
                   </span>
@@ -244,21 +242,22 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
                   )}
                 </div>
 
-                {/* Title & Timeline */}
-                <div>
-                  <h4 className={`font-serif text-xs sm:text-sm font-bold line-clamp-2 leading-snug ${
+                {/* Body: Title with fixed 2-line height for aligned baseline */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <h4 className={`font-serif text-xs sm:text-sm font-bold line-clamp-2 leading-snug h-9 sm:h-10 flex items-start ${
                     isActive ? 'text-white' : 'text-primary'
                   }`}>
                     {idx + 1}. {phase.shortTitle}
                   </h4>
-                  <div className={`flex items-center justify-between text-[10px] sm:text-[11px] font-sans mt-2 pt-1.5 border-t ${
+
+                  <div className={`flex items-center justify-between text-[11px] font-sans mt-3 pt-2.5 border-t ${
                     isActive ? 'border-white/15 text-white/75' : 'border-stone-100 text-ash'
                   }`}>
-                    <span className="flex items-center gap-1 font-mono text-[9px] sm:text-[10px]">
+                    <span className="flex items-center gap-1 font-mono text-[10px]">
                       <Clock size={10} className="shrink-0 text-[#B68A35]" />
                       {phase.timeline}
                     </span>
-                    <span className="font-mono text-[9px] sm:text-[10px] font-bold">
+                    <span className="font-mono text-[10px] font-bold">
                       {phaseDoneCount}/{phase.tasks.length}
                     </span>
                   </div>
@@ -267,177 +266,180 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
             );
           })}
         </div>
-      </div>
 
-      {/* Active Phase Details Display */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activePhase.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className="bg-stone-50/70 border border-stone-200/90 rounded-2xl p-4 sm:p-7 space-y-6"
-        >
-          {/* Active Phase Top Banner */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 pb-5">
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#7a5a1f] bg-[#B68A35]/15 border border-[#B68A35]/30 px-2.5 py-0.5 rounded-full">
-                  {activePhase.subtitle}
-                </span>
-                <span className="text-stone-300 hidden sm:inline">•</span>
-                <span className="text-xs font-mono text-ash font-medium flex items-center gap-1">
-                  <Clock size={12} className="text-[#B68A35]" />
-                  Duration: <strong className="text-stone-700">{activePhase.timeline}</strong>
-                </span>
-              </div>
-              <h4 className="font-serif text-xl sm:text-2xl font-bold text-primary">
-                {activePhase.title}
-              </h4>
-              <p className="font-sans text-xs sm:text-sm text-on-surface-variant max-w-3xl leading-relaxed">
-                {activePhase.summary}
-              </p>
-            </div>
-
-            {/* Step Navigation Controls */}
-            <div className="flex items-center gap-2 shrink-0 self-start md:self-auto bg-white border border-stone-200 rounded-xl p-1.5 shadow-2xs">
-              <button
-                onClick={() => setActivePhaseIndex(prev => Math.max(0, prev - 1))}
-                disabled={activePhaseIndex === 0}
-                className="p-2 rounded-lg hover:bg-stone-100 text-stone-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1 text-xs font-mono"
-                title="Previous Phase"
-              >
-                <ArrowLeft size={14} />
-                <span className="hidden sm:inline">Prev</span>
-              </button>
-
-              <span className="text-xs font-mono text-stone-600 font-bold px-2">
-                {activePhaseIndex + 1} / {IMPLEMENTATION_PHASES.length}
-              </span>
-
-              <button
-                onClick={() => setActivePhaseIndex(prev => Math.min(IMPLEMENTATION_PHASES.length - 1, prev + 1))}
-                disabled={activePhaseIndex === IMPLEMENTATION_PHASES.length - 1}
-                className="p-2 rounded-lg hover:bg-stone-100 text-stone-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1 text-xs font-mono"
-                title="Next Phase"
-              >
-                <span className="hidden sm:inline">Next</span>
-                <ArrowRight size={14} />
-              </button>
-            </div>
-          </div>
-
-          {/* Grid Layout: Tasks Checklist & Key Deliverables */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-            {/* Left Column: Sub-Tasks Checklist */}
-            <div className="lg:col-span-7 space-y-3.5">
-              <div className="flex items-center justify-between">
-                <h5 className="font-serif text-sm sm:text-base font-bold text-primary flex items-center gap-2">
-                  <CheckSquare size={16} className="text-[#B68A35]" />
-                  <span>Action Items & Readiness Checklist</span>
-                </h5>
-                <span className="text-[11px] font-mono text-ash bg-white border border-stone-200 px-2 py-0.5 rounded-md">
-                  {activePhaseCompletedCount} of {activePhase.tasks.length} Verified
-                </span>
-              </div>
-
-              <div className="space-y-2.5">
-                {activePhase.tasks.map((task, tIdx) => {
-                  const isChecked = !!completedTasks[task.id];
-
-                  return (
-                    <div
-                      key={task.id}
-                      onClick={() => toggleTask(task.id)}
-                      className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
-                        isChecked
-                          ? 'bg-emerald-50/70 border-emerald-300/80 shadow-2xs'
-                          : 'bg-white border-stone-200/90 hover:border-[#B68A35]/50 hover:shadow-2xs'
-                      }`}
-                    >
-                      <button 
-                        type="button" 
-                        className="mt-0.5 shrink-0 cursor-pointer focus:outline-none"
-                        aria-label={`Toggle task ${task.title}`}
-                      >
-                        {isChecked ? (
-                          <CheckCircle2 size={18} className="text-emerald-600 fill-emerald-100" />
-                        ) : (
-                          <Circle size={18} className="text-stone-300 hover:text-[#B68A35]" />
-                        )}
-                      </button>
-
-                      <div className="space-y-0.5 flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <h6 className={`font-serif text-xs sm:text-sm font-bold leading-snug ${
-                            isChecked ? 'text-emerald-950 line-through opacity-85' : 'text-primary'
-                          }`}>
-                            {activePhase.phaseNumber}.{tIdx + 1} {task.title}
-                          </h6>
-                          {isChecked && (
-                            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
-                              Done
-                            </span>
-                          )}
-                        </div>
-                        <p className={`font-sans text-xs leading-relaxed ${
-                          isChecked ? 'text-emerald-800/85' : 'text-on-surface-variant'
-                        }`}>
-                          {task.description}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Right Column: Key Deliverables & Action Callout */}
-            <div className="lg:col-span-5 space-y-4">
-              {/* Deliverables Card */}
-              <div className="bg-white border border-stone-200 rounded-xl p-4 sm:p-5 shadow-2xs space-y-3.5">
-                <h5 className="font-serif text-sm font-bold text-primary flex items-center gap-2 border-b border-stone-100 pb-2.5">
-                  <Award size={16} className="text-[#B68A35]" />
-                  <span>Phase Deliverables</span>
-                </h5>
-
-                <ul className="space-y-2 font-sans text-xs text-on-surface-variant">
-                  {activePhase.deliverables.map((deliv, dIdx) => (
-                    <li key={dIdx} className="flex items-start gap-2.5 bg-stone-50/80 p-2.5 rounded-lg border border-stone-200/60">
-                      <Sparkles size={13} className="text-[#B68A35] shrink-0 mt-0.5" />
-                      <span className="font-medium text-stone-800">{deliv}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Inquiry & Next Steps CTA */}
-              <div className="bg-[#023625] text-white rounded-xl p-4 sm:p-5 space-y-3.5 border border-white/10 shadow-md">
-                <div className="space-y-1">
-                  <div className="text-[10px] font-mono text-[#DFC181] font-bold uppercase tracking-wider">
-                    Bespoke Advisory
-                  </div>
-                  <h5 className="font-serif text-sm sm:text-base font-bold text-white leading-snug">
-                    Schedule Phase {activePhase.phaseNumber} Implementation
-                  </h5>
-                  <p className="font-sans text-xs text-white/80 leading-relaxed">
-                    Our principal consultants adapt each sub-task to your organization's specific sector, HR structure, and regulatory environment.
-                  </p>
+        {/* Active Phase Details Display */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activePhase.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
+            className="border border-stone-200 rounded-2xl bg-stone-50/50 p-5 sm:p-7 space-y-6"
+          >
+            {/* Active Phase Top Banner */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 pb-5">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#7a5a1f] bg-[#B68A35]/15 border border-[#B68A35]/30 px-2.5 py-0.5 rounded-full">
+                    {activePhase.subtitle}
+                  </span>
+                  <span className="text-stone-300 hidden sm:inline">•</span>
+                  <span className="text-xs font-mono text-ash font-medium flex items-center gap-1">
+                    <Clock size={12} className="text-[#B68A35]" />
+                    Duration: <strong className="text-stone-800">{activePhase.timeline}</strong>
+                  </span>
                 </div>
+                <h4 className="font-serif text-xl sm:text-2xl font-bold text-primary">
+                  {activePhase.title}
+                </h4>
+                <p className="font-sans text-xs sm:text-sm text-on-surface-variant max-w-3xl leading-relaxed">
+                  {activePhase.summary}
+                </p>
+              </div>
+
+              {/* Step Navigation Controls */}
+              <div className="flex items-center gap-2 shrink-0 self-start md:self-auto bg-white border border-stone-200 rounded-xl p-1.5 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setActivePhaseIndex(prev => Math.max(0, prev - 1))}
+                  disabled={activePhaseIndex === 0}
+                  className="p-2 rounded-lg hover:bg-stone-100 text-stone-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1 text-xs font-mono"
+                  title="Previous Phase"
+                >
+                  <ArrowLeft size={14} />
+                  <span className="hidden sm:inline">Prev</span>
+                </button>
+
+                <span className="text-xs font-mono text-stone-600 font-bold px-2">
+                  {activePhaseIndex + 1} / {IMPLEMENTATION_PHASES.length}
+                </span>
 
                 <button
-                  onClick={() => onInquirePhase && onInquirePhase(activePhase.title)}
-                  className="w-full bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans font-bold text-xs uppercase tracking-widest py-3 px-4 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                  type="button"
+                  onClick={() => setActivePhaseIndex(prev => Math.min(IMPLEMENTATION_PHASES.length - 1, prev + 1))}
+                  disabled={activePhaseIndex === IMPLEMENTATION_PHASES.length - 1}
+                  className="p-2 rounded-lg hover:bg-stone-100 text-stone-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1 text-xs font-mono"
+                  title="Next Phase"
                 >
-                  <span>Inquire About {activePhase.shortTitle}</span>
-                  <ArrowRight size={13} />
+                  <span className="hidden sm:inline">Next</span>
+                  <ArrowRight size={14} />
                 </button>
               </div>
             </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+
+            {/* Grid Layout: Tasks Checklist & Key Deliverables */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+              {/* Left Column: Sub-Tasks Checklist */}
+              <div className="lg:col-span-7 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-serif text-sm sm:text-base font-bold text-primary flex items-center gap-2">
+                    <CheckSquare size={16} className="text-[#B68A35]" />
+                    <span>Action Items &amp; Readiness Checklist</span>
+                  </h5>
+                  <span className="text-[11px] font-mono text-ash bg-white border border-stone-200 px-2 py-0.5 rounded-md">
+                    {activePhaseCompletedCount} of {activePhase.tasks.length} Verified
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  {activePhase.tasks.map((task, tIdx) => {
+                    const isChecked = !!completedTasks[task.id];
+
+                    return (
+                      <div
+                        key={task.id}
+                        onClick={() => toggleTask(task.id)}
+                        className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                          isChecked
+                            ? 'bg-emerald-50/70 border-emerald-300/80 shadow-2xs'
+                            : 'bg-white border-stone-200 hover:border-[#B68A35]/50 hover:shadow-2xs'
+                        }`}
+                      >
+                        <button 
+                          type="button" 
+                          className="mt-0.5 shrink-0 cursor-pointer focus:outline-none"
+                          aria-label={`Toggle task ${task.title}`}
+                        >
+                          {isChecked ? (
+                            <CheckCircle2 size={18} className="text-emerald-600 fill-emerald-100" />
+                          ) : (
+                            <Circle size={18} className="text-stone-300 hover:text-[#B68A35]" />
+                          )}
+                        </button>
+
+                        <div className="space-y-0.5 flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h6 className={`font-serif text-xs sm:text-sm font-bold leading-snug ${
+                              isChecked ? 'text-emerald-950 font-semibold' : 'text-primary'
+                            }`}>
+                              {activePhase.phaseNumber}.{tIdx + 1} {task.title}
+                            </h6>
+                            {isChecked && (
+                              <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
+                                Done
+                              </span>
+                            )}
+                          </div>
+                          <p className={`font-sans text-xs leading-relaxed ${
+                            isChecked ? 'text-emerald-900/90' : 'text-on-surface-variant'
+                          }`}>
+                            {task.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right Column: Key Deliverables & Action Callout */}
+              <div className="lg:col-span-5 space-y-4">
+                {/* Deliverables Card */}
+                <div className="bg-white border border-stone-200 rounded-xl p-4 sm:p-5 shadow-2xs space-y-3.5">
+                  <h5 className="font-serif text-sm font-bold text-primary flex items-center gap-2 border-b border-stone-100 pb-2.5">
+                    <Award size={16} className="text-[#B68A35]" />
+                    <span>Phase Deliverables</span>
+                  </h5>
+
+                  <ul className="space-y-2 font-sans text-xs text-on-surface-variant">
+                    {activePhase.deliverables.map((deliv, dIdx) => (
+                      <li key={dIdx} className="flex items-start gap-2.5 bg-stone-50/80 p-2.5 rounded-lg border border-stone-200/60">
+                        <Sparkles size={13} className="text-[#B68A35] shrink-0 mt-0.5" />
+                        <span className="font-medium text-stone-800">{deliv}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Inquiry & Next Steps CTA */}
+                <div className="bg-[#023625] text-white rounded-xl p-4 sm:p-5 space-y-3.5 border border-white/10 shadow-md">
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-mono text-[#DFC181] font-bold uppercase tracking-wider">
+                      Bespoke Advisory
+                    </div>
+                    <h5 className="font-serif text-sm sm:text-base font-bold text-white leading-snug">
+                      Schedule Phase {activePhase.phaseNumber} Implementation
+                    </h5>
+                    <p className="font-sans text-xs text-white/80 leading-relaxed">
+                      Our principal consultants adapt each sub-task to your organization's specific sector, HR structure, and regulatory environment.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onInquirePhase && onInquirePhase(activePhase.title)}
+                    className="w-full bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans font-bold text-xs uppercase tracking-widest py-3 px-4 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                  >
+                    <span>Inquire About {activePhase.shortTitle}</span>
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

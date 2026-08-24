@@ -1349,44 +1349,44 @@ export default function App() {
                   </div>
                 </ScrollReveal>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 items-stretch">
                   {[
                     {
-                      icon: <Globe size={26} className="text-[#B68A35]" />,
+                      icon: <Globe size={24} className="text-[#B68A35]" />,
                       title: "Regional & Global Reach",
                       desc: "Delivering across Southern Africa and international markets."
                     },
                     {
-                      icon: <AppIcon name="timeline" size={26} color="#B68A35" />,
+                      icon: <Workflow size={24} className="text-[#B68A35]" />,
                       title: "Structured Methodology",
                       desc: "Discover → Assess → Develop → Deliver → Improve."
                     },
                     {
-                      icon: <ShieldCheck size={26} className="text-[#B68A35]" />,
+                      icon: <ShieldCheck size={24} className="text-[#B68A35]" />,
                       title: "FoodChain ID Partnership",
                       desc: "Access to accredited certification programmes."
                     },
                     {
-                      icon: <Target size={26} className="text-[#B68A35]" />,
+                      icon: <Target size={24} className="text-[#B68A35]" />,
                       title: "Tailored Solutions",
                       desc: "Designed around your organisation’s objectives."
                     },
                     {
-                      icon: <TrendingUp size={26} className="text-[#B68A35]" />,
+                      icon: <TrendingUp size={24} className="text-[#B68A35]" />,
                       title: "Long-Term Value",
                       desc: "Building competence for lasting success."
                     }
                   ].map((item, idx) => (
-                    <ScrollReveal key={idx} direction="up" delay={0.08 * (idx + 1)}>
-                      <div className="bg-white p-6 rounded-2xl border border-border shadow-xs hover:border-[#B68A35] hover:shadow-md transition-all flex flex-col justify-between h-full text-center sm:text-left space-y-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#B68A35]/10 flex items-center justify-center mx-auto sm:mx-0 shrink-0">
-                          {item.icon}
-                        </div>
-                        <div className="space-y-2">
-                          <h3 className="font-serif font-bold text-primary text-base leading-snug">
+                    <ScrollReveal key={idx} direction="up" delay={0.08 * (idx + 1)} className="h-full flex flex-col">
+                      <div className="bg-white p-6 rounded-2xl border border-border shadow-xs hover:border-[#B68A35] hover:shadow-md transition-all flex flex-col justify-between h-full text-center sm:text-left">
+                        <div>
+                          <div className="w-12 h-12 rounded-xl bg-[#B68A35]/10 flex items-center justify-center mx-auto sm:mx-0 shrink-0 mb-5">
+                            {item.icon}
+                          </div>
+                          <h3 className="font-serif font-bold text-primary text-base leading-snug min-h-[42px] flex items-start">
                             {item.title}
                           </h3>
-                          <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                          <p className="font-sans text-xs text-on-surface-variant leading-relaxed mt-2.5">
                             {item.desc}
                           </p>
                         </div>
@@ -3337,20 +3337,6 @@ export default function App() {
                   >
                     <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
                     <span>Contact Us</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => navigateTo('portal')}
-                    className="flex items-center justify-between hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
-                  >
-                    <div className="flex items-center gap-3">
-                      <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
-                      <span>Secure Client Portal</span>
-                    </div>
-                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-white/10 text-[#DFC181] px-2 py-0.5 rounded border border-white/20">
-                      Coming Soon
-                    </span>
                   </button>
                 </li>
               </ul>
