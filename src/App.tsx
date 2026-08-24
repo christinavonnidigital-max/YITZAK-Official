@@ -19,154 +19,9 @@ import BreadcrumbNav from './components/BreadcrumbNav';
 import YitzakLogo, { YitzakShieldIcon } from './components/YitzakLogo';
 import AppIcon from './components/AppIcon';
 import { PILLARS } from './data';
+import { PORTFOLIO_CATEGORIES, TrainingCategory } from './data/trainingStandards';
 
-const portfolioCategories = [
-  {
-    id: 'food-safety',
-    label: 'Food Safety',
-    title: 'Food Safety Portfolio',
-    badge: 'FSSC 22000 & BRCGS',
-    courses: [
-      {
-        title: 'HACCP Advanced Practitioner',
-        description: 'Design, implement, and manage advanced hazard analysis and critical control point systems according to international guidelines.',
-        tags: ['HACCP', 'Food Safety']
-      },
-      {
-        title: 'FSSC 22000 Implementation & Auditing',
-        description: 'Complete guidance on FSSC 22000 requirements, prerequisite programmes (PRPs), and internal/external audit protocols.',
-        tags: ['FSSC 22000', 'GFSI']
-      },
-      {
-        title: 'BRCGS Global Standard for Food Safety Issue 9',
-        description: 'In-depth training for auditing and implementing the benchmarked BRCGS Food Safety standard.',
-        tags: ['BRCGS', 'Food Safety']
-      },
-      {
-        title: 'Food Defence & Food Fraud (TACCP/VACCP)',
-        description: 'Proactive threat and vulnerability assessments to secure supply chains from intentional contamination and fraud.',
-        tags: ['TACCP', 'VACCP']
-      },
-      {
-        title: 'Good Manufacturing Practices (GMP) & PCQI Requirements',
-        description: 'Core prerequisite programmes and Preventive Controls Qualified Individual regulatory alignment for global trade.',
-        tags: ['GMP', 'PCQI']
-      },
-      {
-        title: 'Developing a Food Safety Culture',
-        description: 'Structured methodologies to assess, drive, and measure food safety culture maturity in food and packaging organisations.',
-        tags: ['Culture', 'Leadership']
-      }
-    ]
-  },
-  {
-    id: 'quality',
-    label: 'Quality Management',
-    title: 'Quality Management Portfolio',
-    badge: 'ISO 9001',
-    courses: [
-      {
-        title: 'ISO 9001:2015 System Implementation',
-        description: 'Step-by-step roadmap for building and deploying a highly effective and compliant Quality Management System (QMS).',
-        tags: ['ISO 9001', 'Systems']
-      },
-      {
-        title: 'Internal Auditing & Lead Auditor Training',
-        description: 'Equipping audit teams with professional techniques to perform rigorous internal and supplier quality audits using ISO 19011 standards.',
-        tags: ['Auditing', 'ISO 19011']
-      },
-      {
-        title: 'Corrective & Preventive Action (CAPA) Workshop',
-        description: 'Root cause analysis techniques (5 Whys, Fishbone), corrective action formulation, and compliance efficacy validation.',
-        tags: ['CAPA', 'Problem Solving']
-      },
-      {
-        title: 'Supplier Auditing & Quality Assurance',
-        description: 'Establishing robust vendor assessment programmes, service level agreements, and external supply quality compliance.',
-        tags: ['Suppliers', 'Risk']
-      },
-      {
-        title: 'Documentation Control & Quality Records',
-        description: 'Systematic approach to managing standard operating procedures (SOPs), documentation version control, and operational data integrity.',
-        tags: ['Documentation', 'QMS']
-      }
-    ]
-  },
-  {
-    id: 'environmental',
-    label: 'Environmental',
-    title: 'Environmental Management',
-    badge: 'ISO 14001',
-    courses: [
-      {
-        title: 'ISO 14001:2015 System Implementation',
-        description: 'Designing, running, and maintaining an Environmental Management System (EMS) that minimizes footprint and ensures legal compliance.',
-        tags: ['ISO 14001', 'EMS']
-      },
-      {
-        title: 'Climate Change Integration & Sustainability',
-        description: 'Translating greenhouse gas protocols, carbon footprints, climate adaptation, and climate risks into actionable corporate strategy.',
-        tags: ['Carbon', 'Sustainability']
-      },
-      {
-        title: 'Environmental Compliance & Impact Assessments',
-        description: 'Identifying environmental aspects, evaluating impacts, and establishing robust regulatory compliance matrices.',
-        tags: ['Compliance', 'Rigor']
-      }
-    ]
-  },
-  {
-    id: 'ohs',
-    label: 'Occupational Health',
-    title: 'Occupational Health & Safety',
-    badge: 'ISO 45001',
-    courses: [
-      {
-        title: 'ISO 45001:2018 System Implementation',
-        description: 'Deploying an Occupational Health and Safety Management System (OHSMS) to reduce workplace incidents and secure compliance.',
-        tags: ['ISO 45001', 'OHS']
-      },
-      {
-        title: 'Hazard Identification & Risk Assessment (HIRA)',
-        description: 'Proactive methodologies to identify workplace hazards, assess occupational risks, and implement control hierarchies.',
-        tags: ['HIRA', 'Safety']
-      },
-      {
-        title: 'Emergency Preparedness & Response Planning',
-        description: 'Designing resilient emergency response systems, disaster management protocols, evacuation plans, and business continuity plans.',
-        tags: ['Preparedness', 'Crisis']
-      },
-      {
-        title: 'Establishing High-Performance Safety Committees',
-        description: 'Empowering employee-representative safety forums with legal knowledge, hazard identification, and practical oversight skills.',
-        tags: ['Committees', 'Culture']
-      }
-    ]
-  },
-  {
-    id: 'ims',
-    label: 'Integrated Management',
-    title: 'Integrated Management Systems',
-    badge: 'IMS Integration',
-    courses: [
-      {
-        title: 'IMS Implementation Frameworks',
-        description: 'Unifying ISO 9001, ISO 14001, and ISO 45001 into a singular, streamlined, and highly efficient management framework.',
-        tags: ['IMS', 'Efficiency']
-      },
-      {
-        title: 'IMS Internal Auditor',
-        description: 'Conducting multi-standard integrated audits covering quality, environment, and occupational health and safety simultaneously.',
-        tags: ['Integrated Audit', 'ISO 19011']
-      },
-      {
-        title: 'Business Process Integration & Harmonisation',
-        description: 'Aligning operational procedures with corporate standards to eliminate duplication and reduce document drag.',
-        tags: ['Process', 'Lean']
-      }
-    ]
-  }
-];
+const portfolioCategories = PORTFOLIO_CATEGORIES;
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
@@ -434,10 +289,84 @@ export default function App() {
     };
   }, []);
 
-  // Track FoodChain ID partner links seamlessly in the background with UTM attribution
+  // Track FoodChain ID partner links and log 'Request Consultation' CTA clicks for Google Analytics and local conversion tracking
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
+      if (!target) return;
+
+      // 1. Detect and specifically log 'Request Consultation' and advisory CTA button clicks
+      const interactiveEl = target.closest('button, a, [role="button"]') as HTMLElement | null;
+      if (interactiveEl) {
+        const text = (interactiveEl.textContent || '').trim().toLowerCase();
+        const ariaLabel = (interactiveEl.getAttribute('aria-label') || '').toLowerCase();
+        const elementId = (interactiveEl.id || '').toLowerCase();
+        const dataAction = (interactiveEl.getAttribute('data-action') || '').toLowerCase();
+
+        const isConsultationCTA = 
+          text.includes('request consultation') ||
+          text.includes('schedule consultation') ||
+          text.includes('book consultation') ||
+          text.includes('book a consultation') ||
+          text.includes('request advisory') ||
+          ariaLabel.includes('consultation') ||
+          elementId.includes('consultation') ||
+          dataAction.includes('consultation');
+
+        if (isConsultationCTA) {
+          try {
+            const rawLabel = (interactiveEl.textContent || '').trim().slice(0, 80) || 'Request Consultation';
+            const trackingPayload = {
+              event: 'request_consultation_click',
+              button_text: rawLabel,
+              element_id: interactiveEl.id || undefined,
+              current_view: currentView,
+              page_location: window.location.href,
+              user_email: currentUser?.email || 'anonymous',
+              timestamp: new Date().toISOString()
+            };
+
+            // Dispatch to Google Analytics (GA4 gtag) if present
+            if (typeof (window as any).gtag === 'function') {
+              (window as any).gtag('event', 'request_consultation_click', {
+                event_category: 'conversion_funnel',
+                event_label: rawLabel,
+                current_view: currentView,
+                value: 1
+              });
+            }
+
+            // Dispatch to Google Tag Manager dataLayer if present
+            if (Array.isArray((window as any).dataLayer)) {
+              (window as any).dataLayer.push(trackingPayload);
+            }
+
+            // Record to local referral & conversion log for reporting
+            const localLog = {
+              id: `cta_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+              eventType: 'request_consultation_click',
+              buttonText: rawLabel,
+              elementId: interactiveEl.id || 'unlabeled_cta',
+              currentView,
+              targetUrl: window.location.href,
+              userEmail: currentUser?.email || 'guest@yitzak.co.za',
+              createdAt: new Date().toISOString()
+            };
+
+            const referralLogs = JSON.parse(localStorage.getItem('yitzak_referral_clicks') || '[]');
+            referralLogs.push(localLog);
+            localStorage.setItem('yitzak_referral_clicks', JSON.stringify(referralLogs));
+
+            const consultationLogs = JSON.parse(localStorage.getItem('yitzak_consultation_clicks') || '[]');
+            consultationLogs.push(localLog);
+            localStorage.setItem('yitzak_consultation_clicks', JSON.stringify(consultationLogs));
+          } catch (err) {
+            console.debug('Consultation CTA tracking error:', err);
+          }
+        }
+      }
+
+      // 2. Track FoodChain ID partner links seamlessly in the background with UTM attribution
       const anchor = target.closest('a');
       if (anchor && anchor.href && anchor.href.includes('foodchainid.com')) {
         e.preventDefault();
@@ -454,6 +383,7 @@ export default function App() {
           // Silently log click locally for internal partner attribution analytics
           const logData = {
             id: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            eventType: 'partner_referral_click',
             targetUrl: rawUrl,
             trackingUrl: utmUrl.toString(),
             userEmail: currentUser?.email || 'guest@yitzak.co.za',
@@ -473,7 +403,7 @@ export default function App() {
     return () => {
       document.removeEventListener('click', handleGlobalClick, true);
     };
-  }, [currentUser]);
+  }, [currentUser, currentView]);
 
   // Monitor scroll for Back to Top button visibility
   useEffect(() => {
@@ -509,6 +439,53 @@ export default function App() {
   };
 
   const handleOpenBooking = (pillarId = 'compliance', initialNotes = '') => {
+    // Log conversion event for programmatic triggers
+    try {
+      const trackingPayload = {
+        event: 'request_consultation_click',
+        button_text: 'Open Booking Modal',
+        pillar_id: pillarId,
+        current_view: currentView,
+        page_location: window.location.href,
+        user_email: currentUser?.email || 'anonymous',
+        timestamp: new Date().toISOString()
+      };
+
+      if (typeof (window as any).gtag === 'function') {
+        (window as any).gtag('event', 'request_consultation_click', {
+          event_category: 'conversion_funnel',
+          event_label: pillarId,
+          current_view: currentView,
+          value: 1
+        });
+      }
+
+      if (Array.isArray((window as any).dataLayer)) {
+        (window as any).dataLayer.push(trackingPayload);
+      }
+
+      const logRecord = {
+        id: `conv_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        eventType: 'request_consultation_click',
+        pillarId,
+        initialNotes,
+        currentView,
+        targetUrl: window.location.href,
+        userEmail: currentUser?.email || 'guest@yitzak.co.za',
+        createdAt: new Date().toISOString()
+      };
+
+      const referralLogs = JSON.parse(localStorage.getItem('yitzak_referral_clicks') || '[]');
+      referralLogs.push(logRecord);
+      localStorage.setItem('yitzak_referral_clicks', JSON.stringify(referralLogs));
+
+      const consultationLogs = JSON.parse(localStorage.getItem('yitzak_consultation_clicks') || '[]');
+      consultationLogs.push(logRecord);
+      localStorage.setItem('yitzak_consultation_clicks', JSON.stringify(consultationLogs));
+    } catch (err) {
+      console.debug('Analytics logging note:', err);
+    }
+
     setSelectedPillarId(pillarId);
     setSelectedBookingNotes(initialNotes);
     setIsBookingOpen(true);
@@ -672,8 +649,8 @@ export default function App() {
                           <AppIcon name="verified" size={18} color="#B68A35" />
                         </div>
                         <div>
-                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Certification Support</div>
-                          <div className="text-[11px] text-ash">FoodChain ID accredited scheme alignment</div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Certification</div>
+                          <div className="text-[11px] text-ash">FoodChain ID accredited audits &amp; schemes</div>
                         </div>
                       </button>
 
@@ -869,7 +846,7 @@ export default function App() {
                               }`}
                             >
                               <Award size={14} className={currentView === 'certifications' ? 'text-[#E6CA85]' : 'text-white/40'} />
-                              <span>Certification Support</span>
+                              <span>Certification</span>
                             </button>
 
                             <button
@@ -999,7 +976,7 @@ export default function App() {
                   <div className="inline-flex items-center gap-1.5 bg-[#023625]/5 border border-[#023625]/15 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full mb-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35] animate-pulse"></span>
                     <span className="text-[#023625] font-sans text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">
-                      Yitzak Institutional Advisory &amp; Compliance
+                      Yitzak Institutional Advisory · Southern Africa &amp; Global Markets
                     </span>
                   </div>
                 </ScrollReveal>
@@ -1012,7 +989,7 @@ export default function App() {
 
                 <ScrollReveal direction="up" delay={0.15}>
                   <p className="font-sans text-xs sm:text-sm md:text-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                    From ISO and BRCGS to GLOBALG.A.P. and beyond. We help teams build competence, strengthen systems, and achieve certification success.
+                    Delivering across Southern Africa and global markets. We help teams build competence, strengthen systems, and achieve accredited certification success.
                   </p>
                 </ScrollReveal>
 
@@ -1150,7 +1127,7 @@ export default function App() {
                     </div>
                   </motion.div>
 
-                  {/* Service 2: Certification Support (Capability Building) */}
+                  {/* Service 2: Certification (Capability Building) */}
                   <motion.div
                     variants={{
                       hidden: { opacity: 0, y: 30 },
@@ -1178,28 +1155,28 @@ export default function App() {
                           </div>
                           <div className="space-y-2">
                             <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
-                              Certification Support
+                              Certification
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              End-to-end guidance through accredited standards, navigating every phase from scope definition to final audit success.
+                              Accredited third-party certification audits conducted through FoodChain ID across international food safety and quality standards.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Scheme &amp; standard selection</span>
+                              <span>Official FoodChain ID certification audits</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Initial gap assessment &amp; pre-audit review</span>
+                              <span>Accredited third-party standard assessments</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Evidence compilation &amp; audit prep</span>
+                              <span>ISO, FSSC 22000 &amp; BRCGS audit delivery</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>FoodChain ID accredited alignment</span>
+                              <span>GLOBALG.A.P. &amp; Non-GMO scheme audits</span>
                             </li>
                           </ul>
                         </div>
@@ -1340,6 +1317,46 @@ export default function App() {
                     </div>
                   </motion.div>
                 </motion.div>
+
+                {/* Regional & Cross-Border Delivery Banner */}
+                <div className="mt-8 sm:mt-12 bg-white border border-[#B68A35]/30 rounded-2xl p-5 sm:p-7 md:p-8 shadow-xs">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 sm:gap-6">
+                    <div className="flex items-start gap-3.5 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#023625] text-[#DFC181] flex items-center justify-center shrink-0 shadow-xs">
+                        <Globe size={22} className="text-[#DFC181]" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="inline-flex items-center gap-1.5 bg-[#B68A35]/10 px-2.5 py-0.5 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35]"></span>
+                          <span className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider text-[#7a5a1f]">
+                            Regional Delivery &amp; Global Reach
+                          </span>
+                        </div>
+                        <h4 className="font-serif font-bold text-primary text-base sm:text-lg md:text-xl leading-snug">
+                          Delivering Across Southern Africa and Global Markets
+                        </h4>
+                        <p className="font-sans text-xs sm:text-sm text-on-surface-variant max-w-2xl leading-relaxed">
+                          Headquartered in Randburg, South Africa, Yitzak provides accredited FoodChain ID certification audits, compliance advisory, and capability training across Southern Africa and international supply chains.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 pt-3 lg:pt-0 border-t border-border/70 lg:border-t-0 lg:border-l lg:border-border/70 lg:pl-6">
+                      <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#023625] shrink-0"></span>
+                        <span><strong>Head Office:</strong> Randburg, South Africa</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35] shrink-0"></span>
+                        <span><strong>Regional Presence:</strong> Zimbabwe &amp; SADC</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#023625] shrink-0"></span>
+                        <span><strong>Audits &amp; Schemes:</strong> FoodChain ID Partner</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -2468,9 +2485,9 @@ export default function App() {
                         </span>
                         <span className="text-white/60 text-xs font-mono">FoodChain ID Academy</span>
                       </div>
-                      <h3 className="font-serif text-2xl md:text-3xl font-bold">Accredited Schemes &amp; Global Certification Support</h3>
+                      <h3 className="font-serif text-2xl md:text-3xl font-bold">Accredited Schemes &amp; Global Certification</h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        As an official FoodChain ID Partner, Yitzak provides comprehensive training across accredited schemes, including GFSI, GLOBALG.A.P., Non-GMO, and BRCGS, supported by direct audit readiness assistance.
+                        As an official FoodChain ID Partner, Yitzak delivers accredited certification audits and professional training across GFSI, GLOBALG.A.P., Non-GMO, and BRCGS standards.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 shrink-0">
@@ -2478,7 +2495,7 @@ export default function App() {
                         onClick={() => navigateTo('certifications')}
                         className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded transition-all cursor-pointer shadow-sm inline-flex items-center justify-center gap-2"
                       >
-                        <span>Certification Support</span>
+                        <span>Certification</span>
                         <ArrowRight size={14} />
                       </button>
                       <a
@@ -2608,13 +2625,20 @@ export default function App() {
                           className="space-y-6"
                         >
                           {/* Category Header */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#E5E5E5] pb-4 mb-6">
-                            <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">
-                              {cat.title}
-                            </h3>
-                            <span className="text-secondary font-mono text-[11px] uppercase tracking-wider bg-secondary-fixed px-3 py-1 rounded-md font-bold shrink-0 text-center border border-secondary/20 self-start sm:self-auto">
-                              {cat.badge}
-                            </span>
+                          <div className="border-b border-[#E5E5E5] pb-4 mb-6 space-y-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                              <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">
+                                {cat.title}
+                              </h3>
+                              <span className="text-secondary font-mono text-[11px] uppercase tracking-wider bg-secondary-fixed px-3 py-1 rounded-md font-bold shrink-0 text-center border border-secondary/20 self-start sm:self-auto">
+                                {cat.badge}
+                              </span>
+                            </div>
+                            {cat.description && (
+                              <p className="font-sans text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+                                {cat.description}
+                              </p>
+                            )}
                           </div>
 
                           {/* Courses List */}
@@ -2745,29 +2769,29 @@ export default function App() {
             className="bg-white min-h-screen text-on-surface"
           >
             {/* Certifications Page Hero */}
-            <section className="relative pt-12 md:pt-20 pb-16 px-4 md:px-16 max-w-[1280px] mx-auto overflow-hidden">
-              <div className="max-w-4xl space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-xs font-mono font-bold uppercase tracking-widest">
-                  <Award size={14} className="text-[#B68A35]" />
-                  <span>Accredited Certification Schemes &amp; Global Partnerships</span>
+            <section className="relative pt-8 sm:pt-12 md:pt-20 pb-12 sm:pb-16 px-4 sm:px-8 md:px-16 max-w-[1280px] mx-auto overflow-hidden">
+              <div className="max-w-4xl space-y-4 sm:space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider max-w-full">
+                  <Award size={14} className="text-[#B68A35] shrink-0" />
+                  <span className="truncate sm:whitespace-normal">Accredited Schemes &amp; Global Partnerships</span>
                 </div>
-                <h1 className="font-serif text-[38px] md:text-[58px] leading-[46px] md:leading-[66px] tracking-tight text-primary font-bold">
+                <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-[56px] leading-tight md:leading-[62px] tracking-tight text-primary font-bold">
                   Internationally Recognised Certification
                 </h1>
-                <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl">
-                  As an Official <strong className="text-primary font-bold">FoodChain ID</strong> Partner, Yitzak guides organisations from scope review and audit readiness through to a valid certificate, issued by FoodChain ID and its accredited certification bodies.
+                <p className="font-sans text-xs sm:text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl">
+                  As an Official <strong className="text-primary font-bold">FoodChain ID</strong> Partner, Yitzak conducts accredited third-party certification audits across international food safety, quality, and agricultural standards, delivering valid certificates across Southern Africa and global markets.
                 </p>
-                <div className="flex flex-wrap items-center gap-4 pt-2 no-print">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 pt-2 no-print">
                   <button
-                    onClick={() => handleOpenBooking('compliance', 'Inquiry: Accredited Certification Readiness')}
-                    className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2"
+                    onClick={() => handleOpenBooking('compliance', 'Inquiry: Accredited Certification Audit')}
+                    className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2 w-full sm:w-auto"
                   >
-                    <span>Inquire Audit Readiness</span>
+                    <span>Inquire Certification Audit</span>
                     <ArrowRight size={14} />
                   </button>
                   <button
                     onClick={() => exportCapabilitySheetPDF('certification_portfolio')}
-                    className="bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2"
+                    className="bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2 w-full sm:w-auto"
                     title="Print or Download certification schemes catalog for physical record-keeping"
                   >
                     <Printer size={14} className="text-[#DFC181]" />
@@ -2777,7 +2801,7 @@ export default function App() {
                     href="https://www.foodchainid.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="border border-primary text-primary hover:bg-primary hover:text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 inline-flex items-center justify-center gap-2"
+                    className="border border-primary/40 text-primary hover:bg-primary hover:text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
                   >
                     <span>FoodChain ID Global Portal</span>
                     <Globe size={14} />
@@ -2809,7 +2833,7 @@ export default function App() {
                     <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Comprehensive Scheme Catalog</span>
                     <h2 className="font-serif text-3xl md:text-[42px] text-primary font-bold">Accredited Schemes &amp; Standards</h2>
                     <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                      Explore our core accredited certification routes. Each scheme includes full technical support, gap assessments, and official audit preparation.
+                      Explore our official FoodChain ID accredited certification routes, covering on-site third-party audits, standards evaluation, and internationally recognized certificate issuance.
                     </p>
                     <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
                   </div>
@@ -2841,7 +2865,7 @@ export default function App() {
                         </div>
 
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Certification for product claims that hold up to market and regulatory scrutiny, including organic, Non-GMO Project Verification, and Gluten-Free. We help you choose the right scheme and move through assessment with total confidence.
+                          Official FoodChain ID certification audits for product claims that hold up to global market and regulatory scrutiny, including organic, Non-GMO Project Verification, and Gluten-Free.
                         </p>
 
                         <div className="pt-2">
@@ -2867,10 +2891,10 @@ export default function App() {
                           <span>↗</span>
                         </a>
                         <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Product & Label Certification')}
+                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Product & Label Certification Audit')}
                           className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Inquire Readiness</span>
+                          <span>Inquire Audit</span>
                           <ArrowRight size={12} />
                         </button>
                       </div>
@@ -2902,7 +2926,7 @@ export default function App() {
                         </div>
 
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Good agricultural practice certification covering food safety, traceability, and responsible production. GFSI-benchmarked and recognised by major international retailers worldwide.
+                          Accredited good agricultural practice certification audits covering food safety, traceability, and worker welfare. GFSI-benchmarked and recognised by major international retailers.
                         </p>
 
                         <div className="pt-2">
@@ -2928,10 +2952,10 @@ export default function App() {
                           <span>↗</span>
                         </a>
                         <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: GLOBALG.A.P. Certification')}
+                          onClick={() => handleOpenBooking('compliance', 'Inquiry: GLOBALG.A.P. Certification Audit')}
                           className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Inquire Readiness</span>
+                          <span>Inquire Audit</span>
                           <ArrowRight size={12} />
                         </button>
                       </div>
@@ -2963,7 +2987,7 @@ export default function App() {
                         </div>
 
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Globally recognised food-safety standards spanning manufacturing, packaging, storage, and distribution. We prepare your team, documentation, and quality management systems for certification.
+                          Globally recognised food safety certification audits across manufacturing, packaging, storage, and distribution, conducted through FoodChain ID's accredited audit body.
                         </p>
 
                         <div className="pt-2">
@@ -2989,10 +3013,10 @@ export default function App() {
                           <span>↗</span>
                         </a>
                         <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: BRCGS Certification')}
+                          onClick={() => handleOpenBooking('compliance', 'Inquiry: BRCGS Certification Audit')}
                           className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Inquire Readiness</span>
+                          <span>Inquire Audit</span>
                           <ArrowRight size={12} />
                         </button>
                       </div>
@@ -3016,7 +3040,7 @@ export default function App() {
                       </div>
                       <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">FSSC 22000 &amp; Integrated ISO Management Systems</h3>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Full certification support for FSSC 22000 (Version 6), ISO 22000 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), and ISO 45001 (Occupational Health &amp; Safety). Build an integrated management framework that meets international buyer requirements.
+                        Official FoodChain ID certification audits for FSSC 22000 (Version 6), ISO 22000 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), and ISO 45001 (Occupational Health &amp; Safety). Full third-party auditing that meets international buyer and retail requirements.
                       </p>
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {['FSSC 22000 v6', 'ISO 22000', 'ISO 9001', 'ISO 14001', 'ISO 45001'].map((iso, idx) => (
@@ -3027,10 +3051,10 @@ export default function App() {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleOpenBooking('compliance', 'Inquiry: FSSC 22000 / ISO Management Systems')}
+                      onClick={() => handleOpenBooking('compliance', 'Inquiry: FSSC 22000 / ISO Certification Audit')}
                       className="bg-primary hover:bg-[#1f4d3a] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-md transition-all cursor-pointer shrink-0 inline-flex items-center justify-center gap-2 shadow-2xs active:scale-[0.98] w-full sm:w-auto"
                     >
-                      <span>Inquire ISO &amp; FSSC</span>
+                      <span>Inquire ISO &amp; FSSC Audit</span>
                       <ArrowRight size={14} />
                     </button>
                   </div>
@@ -3235,16 +3259,18 @@ export default function App() {
                   <Phone size={16} className="text-[#B68A35] mt-0.5 shrink-0" />
                   <div>
                     <span className="block text-white/50 text-[10px] uppercase font-mono">Phone Enquiries</span>
-                    <p className="font-mono text-xs">+27 (0) 11 463 2000</p>
+                    <a href="tel:+27102107715" className="hover:text-[#B68A35] transition-colors block font-mono text-xs">
+                      +27 (0)102107715
+                    </a>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
                   <MapPin size={16} className="text-[#B68A35] mt-0.5 shrink-0" />
                   <div>
-                    <span className="block text-white/50 text-[10px] uppercase font-mono">Head Office</span>
+                    <span className="block text-white/50 text-[10px] uppercase font-mono">Head Office &amp; Operations</span>
                     <p className="leading-relaxed">
-                      359 Surrey Avenue, Randburg<br />
-                      South Africa
+                      359 Surrey Avenue, Randburg, South Africa<br />
+                      <span className="text-white/60 text-[11px] font-mono">Delivering across Southern Africa &amp; global markets</span>
                     </p>
                   </div>
                 </li>

@@ -2,24 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Calendar, 
-  Clock, 
   CheckCircle2, 
   X, 
   Loader2, 
-  ExternalLink, 
   Sparkles, 
   ShieldCheck, 
-  RotateCcw, 
-  Settings2,
   CalendarCheck,
-  Video,
-  Info,
   Send,
   User as UserIcon,
   Mail,
   Building,
   Phone,
-  MessageSquare
+  ChevronRight,
+  ExternalLink,
+  Info
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -39,7 +35,6 @@ interface BookingModalProps {
 }
 
 const PRIMARY_CALENDLY_URL = 'https://calendly.com/cgumpo-yitzak/30min';
-const PROFILE_CALENDLY_URL = 'https://calendly.com/cgumpo-yitzak';
 
 export default function BookingModal({
   isOpen,
@@ -49,15 +44,11 @@ export default function BookingModal({
   initialNotes = '',
   onBookingSuccess
 }: BookingModalProps) {
-  const [bookingMode, setBookingMode] = useState<'calendly' | 'direct'>('calendly');
+  // Default to Direct Institutional Request for 0-latency and no CAPTCHA friction
+  const [bookingMode, setBookingMode] = useState<'direct' | 'calendly'>('direct');
   const [selectedPillar, setSelectedPillar] = useState(initialPillarId);
   const [notes, setNotes] = useState(initialNotes);
-  const [calendlyUrl, setCalendlyUrl] = useState(() => {
-    return PRIMARY_CALENDLY_URL;
-  });
-  const [isEditingUrl, setIsEditingUrl] = useState(false);
-  const [customUrlInput, setCustomUrlInput] = useState('');
-  const [isLoadingIframe, setIsLoadingIframe] = useState(true);
+  const [isIframeLoaded, setIsIframeLoaded] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
   // Direct Form State
@@ -67,7 +58,7 @@ export default function BookingModal({
     company: '',
     phone: '',
     preferredDate: '',
-    preferredTime: '10:00 AM (SAST)',
+    preferredTime: '10:00 AM - 12:00 PM (SAST)',
     message: initialNotes || ''
   });
   const [isSubmittingDirect, setIsSubmittingDirect] = useState(false);
@@ -79,6 +70,7 @@ export default function BookingModal({
   // Sync state when modal opens
   useEffect(() => {
     if (isOpen) {
+      setBookingMode('direct');
       setSelectedPillar(initialPillarId || 'consulting');
       setNotes(initialNotes || '');
       setDirectForm(prev => ({
@@ -87,12 +79,10 @@ export default function BookingModal({
         email: currentUser?.email || prev.email || '',
         message: initialNotes || prev.message || ''
       }));
-      setCalendlyUrl(PRIMARY_CALENDLY_URL);
-      setIsLoadingIframe(true);
       setBookingConfirmed(false);
       setDirectSuccess(false);
       setDirectError(null);
-      setIsEditingUrl(false);
+      setIsIframeLoaded(false);
     }
   }, [isOpen, initialPillarId, initialNotes, currentUser]);
 
@@ -154,14 +144,12 @@ export default function BookingModal({
   // Cleanly format Calendly URL for iframe embedding
   const getFullCalendlyUrl = () => {
     try {
-      const cleanBase = calendlyUrl.trim() || PRIMARY_CALENDLY_URL;
-      const url = new URL(cleanBase);
-      
-      // Standard embed params
+      const url = new URL(PRIMARY_CALENDLY_URL);
       url.searchParams.set('hide_landing_page_details', '1');
       url.searchParams.set('hide_gdpr_banner', '1');
+      url.searchParams.set('background_color', 'ffffff');
+      url.searchParams.set('text_color', '012b1d');
       url.searchParams.set('primary_color', '023625');
-      url.searchParams.set('text_color', '012B1D');
       
       if (directForm.fullName) {
         url.searchParams.set('name', directForm.fullName);
@@ -172,32 +160,14 @@ export default function BookingModal({
 
       return url.toString();
     } catch {
-      return calendlyUrl;
+      return PRIMARY_CALENDLY_URL;
     }
-  };
-
-  const handleSaveCustomUrl = () => {
-    if (customUrlInput.trim()) {
-      let formatted = customUrlInput.trim();
-      if (!formatted.startsWith('http://') && !formatted.startsWith('https://')) {
-        formatted = 'https://' + formatted;
-      }
-      setCalendlyUrl(formatted);
-      setIsEditingUrl(false);
-      setIsLoadingIframe(true);
-    }
-  };
-
-  const handleResetUrl = () => {
-    setCalendlyUrl(PRIMARY_CALENDLY_URL);
-    setIsEditingUrl(false);
-    setIsLoadingIframe(true);
   };
 
   const handleDirectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!directForm.fullName || !directForm.email || !directForm.company) {
-      setDirectError('Please fill in your name, work email, and company.');
+    if (!directForm.fullName.trim() || !directForm.email.trim() || !directForm.company.trim()) {
+      setDirectError('Please fill in your full name, work email, and company.');
       return;
     }
 
@@ -217,10 +187,10 @@ export default function BookingModal({
     const refCode = `YTZ-DIR-${Math.floor(100000 + Math.random() * 900000)}`;
     const payload = {
       bookingRef: refCode,
-      userName: directForm.fullName,
-      userEmail: directForm.email,
-      company: directForm.company,
-      phone: directForm.phone,
+      userName: directForm.fullName.trim(),
+      userEmail: directForm.email.trim(),
+      company: directForm.company.trim(),
+      phone: directForm.phone.trim(),
       pillar: currentPillarObj.title,
       pillarId: selectedPillar,
       preferredDate: directForm.preferredDate || 'Earliest Available',
@@ -232,7 +202,6 @@ export default function BookingModal({
     };
 
     try {
-      // 1. Save to Firestore
       const docId = `booking_${Date.now()}_${refCode}`;
       await setDoc(doc(db, 'consultation_requests', docId), {
         ...payload,
@@ -242,14 +211,12 @@ export default function BookingModal({
       console.warn('Firestore direct write fallback:', dbErr);
     }
 
-    // 2. Local Storage Backup
     try {
       const stored = JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]');
       stored.push(payload);
       localStorage.setItem('yitzak_consultation_requests', JSON.stringify(stored));
     } catch {}
 
-    // 3. Email Dispatch via Resend / Vercel Service
     try {
       await sendEmailViaVercel({
         to: ['christinagumpo@gmail.com', 'info@yitzak.co.za'],
@@ -278,433 +245,384 @@ export default function BookingModal({
   return (
     <AnimatePresence>
       <div 
-        id="calendly-modal-backdrop"
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-[#00140D]/80 backdrop-blur-md overflow-y-auto"
+        id="consultation-booking-modal"
+        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-[#00140D]/85 backdrop-blur-md overflow-y-auto"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 16 }}
+          initial={{ opacity: 0, scale: 0.98, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ duration: 0.2 }}
-          className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-white/20 overflow-hidden flex flex-col max-h-[92vh]"
+          exit={{ opacity: 0, scale: 0.98, y: 10 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+          className="relative w-full max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[92vh]"
         >
-          {/* Modal Header */}
-          <div className="bg-[#012B1D] text-white px-5 sm:px-8 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#B68A35]/20 border border-[#B68A35]/40 flex items-center justify-center text-[#E6CA85]">
-                <CalendarCheck size={20} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-serif font-bold text-base sm:text-lg text-white">
+          {/* Executive Header */}
+          <div className="bg-[#023625] text-white px-4 sm:px-6 py-3.5 sm:py-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center justify-between w-full sm:w-auto">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#B68A35]/20 border border-[#B68A35]/40 flex items-center justify-center text-[#E6CA85] shrink-0">
+                  <CalendarCheck size={18} />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-sm sm:text-base text-white tracking-tight leading-tight">
                     Schedule Institutional Consultation
                   </h3>
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#B68A35]/20 text-[#E6CA85] text-[10px] font-mono tracking-wider font-semibold border border-[#B68A35]/30">
-                    <Sparkles size={10} />
-                    Live Calendar
-                  </span>
+                  <p className="text-[11px] text-white/70 leading-tight mt-0.5">
+                    Select your advisory focus and scheduling preference
+                  </p>
                 </div>
-                <p className="text-xs text-white/70">
-                  Select a live advisory slot with our lead food safety compliance specialists.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Mode Toggle */}
-              <div className="hidden sm:flex items-center bg-white/10 p-0.5 rounded-lg border border-white/15 text-xs mr-1">
-                <button
-                  onClick={() => setBookingMode('calendly')}
-                  className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                    bookingMode === 'calendly' 
-                      ? 'bg-[#B68A35] text-white shadow-xs' 
-                      : 'text-white/80 hover:text-white'
-                  }`}
-                >
-                  Calendly Live
-                </button>
-                <button
-                  onClick={() => setBookingMode('direct')}
-                  className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                    bookingMode === 'direct' 
-                      ? 'bg-[#B68A35] text-white shadow-xs' 
-                      : 'text-white/80 hover:text-white'
-                  }`}
-                >
-                  Direct Form
-                </button>
               </div>
 
-              <a
-                href={calendlyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-[#E6CA85] hover:text-white text-xs font-sans font-medium transition-colors border border-white/10"
-                title="Open directly in Calendly tab"
-              >
-                <span>Open in Tab</span>
-                <ExternalLink size={12} />
-              </a>
-
+              {/* Mobile Close Button */}
               <button
                 onClick={onClose}
-                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+                className="sm:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 flex items-center justify-center transition-colors cursor-pointer"
                 aria-label="Close modal"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
-          </div>
 
-          {/* Service Pillar Selector Bar */}
-          <div className="bg-[#FAF8F5] border-b border-border/70 px-5 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
-            <div className="flex items-center gap-2 overflow-x-auto py-1 max-w-full">
-              <span className="font-semibold text-primary/70 shrink-0 font-sans">Advisory Focus:</span>
-              <div className="flex items-center gap-1.5">
-                {PILLARS.map((pillar) => {
-                  const isSelected = selectedPillar === pillar.id;
-                  return (
-                    <button
-                      key={pillar.id}
-                      onClick={() => {
-                        setSelectedPillar(pillar.id);
-                        setIsLoadingIframe(true);
-                      }}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer border ${
-                        isSelected
-                          ? 'bg-[#023625] text-white border-[#023625] shadow-xs'
-                          : 'bg-white text-primary/80 border-border/80 hover:border-[#B68A35]/50 hover:text-[#B68A35]'
-                      }`}
-                    >
-                      {pillar.title}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Mobile Switcher & Config */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => setBookingMode(bookingMode === 'calendly' ? 'direct' : 'calendly')}
-                className="sm:hidden text-[11px] font-bold text-[#B68A35] underline cursor-pointer"
-              >
-                {bookingMode === 'calendly' ? 'Switch to Direct Form' : 'Switch to Calendly'}
-              </button>
-              
-              {bookingMode === 'calendly' && (
+            {/* Header Right: Segmented Switcher & Desktop Close */}
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+              <div className="inline-flex items-center bg-black/25 p-0.5 rounded-lg border border-white/10 text-xs w-full sm:w-auto">
                 <button
-                  onClick={() => {
-                    setIsEditingUrl(!isEditingUrl);
-                    setCustomUrlInput(calendlyUrl);
-                  }}
-                  className="text-[11px] text-ash hover:text-primary flex items-center gap-1 transition-colors cursor-pointer"
-                  title="Configure Calendly URL endpoint"
+                  type="button"
+                  onClick={() => setBookingMode('direct')}
+                  className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    bookingMode === 'direct' 
+                      ? 'bg-[#B68A35] text-white shadow-xs' 
+                      : 'text-white/75 hover:text-white'
+                  }`}
                 >
-                  <Settings2 size={13} />
-                  <span>Configure Link</span>
+                  <Send size={11} />
+                  <span>Direct Request</span>
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => setBookingMode('calendly')}
+                  className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    bookingMode === 'calendly' 
+                      ? 'bg-[#B68A35] text-white shadow-xs' 
+                      : 'text-white/75 hover:text-white'
+                  }`}
+                >
+                  <Calendar size={12} />
+                  <span>Live Calendly</span>
+                </button>
+              </div>
+
+              {/* Desktop Close Button */}
+              <button
+                onClick={onClose}
+                className="hidden sm:flex w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 items-center justify-center transition-colors cursor-pointer border border-white/10 shrink-0"
+                aria-label="Close modal"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
 
-          {/* Optional Custom Link Configuration Bar */}
-          {isEditingUrl && bookingMode === 'calendly' && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="bg-mist/80 border-b border-border p-3 px-5 sm:px-8 flex flex-col gap-2 text-xs"
-            >
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <span className="font-semibold text-primary shrink-0">Calendly URL:</span>
-                <input
-                  type="url"
-                  value={customUrlInput}
-                  onChange={(e) => setCustomUrlInput(e.target.value)}
-                  placeholder="https://calendly.com/cgumpo-yitzak/30min"
-                  className="w-full bg-white border border-border px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#023625]"
-                />
-                <div className="flex items-center gap-2 shrink-0 justify-end">
-                  <button
-                    onClick={handleSaveCustomUrl}
-                    className="px-3 py-1.5 bg-[#023625] hover:bg-[#034d35] text-white font-medium rounded-lg text-xs cursor-pointer transition-colors"
+          {/* Modal Body */}
+          <div className="relative flex-1 bg-white overflow-y-auto flex flex-col">
+            {bookingMode === 'direct' ? (
+              /* PRIMARY DEFAULT: Direct Consultation Request Form */
+              <div className="p-4 sm:p-6 md:p-8 max-w-2xl mx-auto w-full">
+                {directSuccess ? (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-[#FAF8F5] border border-[#B68A35]/30 rounded-2xl p-6 sm:p-8 text-center space-y-3 shadow-xs"
                   >
-                    Apply
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCalendlyUrl(PROFILE_CALENDLY_URL);
-                      setIsEditingUrl(false);
-                      setIsLoadingIframe(true);
-                    }}
-                    className="px-2.5 py-1.5 bg-white border border-border text-primary rounded-lg text-xs cursor-pointer hover:bg-mist"
-                    title="Use main profile link"
-                  >
-                    Use Profile Link
-                  </button>
-                  <button
-                    onClick={handleResetUrl}
-                    className="px-2.5 py-1.5 text-ash hover:text-primary text-xs cursor-pointer transition-colors"
-                  >
-                    Reset
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
+                    <div className="w-12 h-12 rounded-full bg-[#023625] text-[#E6CA85] flex items-center justify-center mx-auto shadow-sm">
+                      <CheckCircle2 size={26} />
+                    </div>
+                    <h4 className="font-serif text-lg sm:text-xl font-bold text-primary">
+                      Consultation Request Received
+                    </h4>
+                    <p className="text-ash text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
+                      Thank you, <strong>{directForm.fullName}</strong>. Your consultation request for <strong>{currentPillarObj.title}</strong> has been transmitted. Our team will contact you at <strong>{directForm.email}</strong> promptly.
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        onClick={onClose}
+                        className="bg-[#023625] hover:bg-primary text-white px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                      >
+                        Close Window
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <form onSubmit={handleDirectSubmit} className="space-y-4">
+                    <div>
+                      <h4 className="font-serif text-base sm:text-lg font-bold text-primary">
+                        Institutional Consultation Request
+                      </h4>
+                      <p className="text-[11px] sm:text-xs text-ash mt-0.5">
+                        Direct priority scheduling with our lead food safety and compliance specialists.
+                      </p>
+                    </div>
 
-          {/* Main Modal Body: Calendly Embed OR Direct Booking Form */}
-          <div className="relative flex-1 bg-white min-h-[520px] sm:min-h-[580px] overflow-y-auto flex flex-col">
-            {bookingMode === 'calendly' ? (
-              <>
-                {/* Calendly Live Sync Banner */}
+                    {directError && (
+                      <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
+                        <span>{directError}</span>
+                      </div>
+                    )}
+
+                    {/* Step 1: Select Advisory Focus */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1.5">
+                        1. Advisory Pillar Focus
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+                        {PILLARS.map((pillar) => {
+                          const isSelected = selectedPillar === pillar.id;
+                          return (
+                            <button
+                              key={pillar.id}
+                              type="button"
+                              onClick={() => setSelectedPillar(pillar.id)}
+                              className={`p-2 sm:p-2.5 rounded-xl text-left transition-all cursor-pointer border flex flex-col justify-between ${
+                                isSelected
+                                  ? 'bg-[#023625] text-white border-[#023625] shadow-xs'
+                                  : 'bg-[#FAF8F5] text-primary/80 border-border/80 hover:border-[#B68A35]/60 hover:bg-white'
+                              }`}
+                            >
+                              <span className="text-[11px] sm:text-xs font-semibold leading-tight line-clamp-2">
+                                {pillar.title}
+                              </span>
+                              <span className={`text-[9px] sm:text-[10px] mt-1 flex items-center gap-0.5 font-medium ${
+                                isSelected ? 'text-[#E6CA85]' : 'text-ash'
+                              }`}>
+                                {isSelected ? 'Selected' : 'Select'}
+                                <ChevronRight size={9} />
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Step 2: Contact Information */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1.5">
+                        2. Contact &amp; Organisation Details
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
+                            Full Name *
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              required
+                              value={directForm.fullName}
+                              onChange={(e) => setDirectForm({ ...directForm, fullName: e.target.value })}
+                              placeholder="e.g. Dr. Arthur Mthembu"
+                              className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
+                            />
+                            <UserIcon size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
+                            Work Email *
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="email"
+                              required
+                              value={directForm.email}
+                              onChange={(e) => setDirectForm({ ...directForm, email: e.target.value })}
+                              placeholder="name@enterprise.co.za"
+                              className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
+                            />
+                            <Mail size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
+                            Company / Facility *
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              required
+                              value={directForm.company}
+                              onChange={(e) => setDirectForm({ ...directForm, company: e.target.value })}
+                              placeholder="e.g. AgriFoods Processing Ltd"
+                              className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
+                            />
+                            <Building size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
+                            Contact Phone (Optional)
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="tel"
+                              value={directForm.phone}
+                              onChange={(e) => setDirectForm({ ...directForm, phone: e.target.value })}
+                              placeholder="+27 (0)10 000 0000"
+                              className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
+                            />
+                            <Phone size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 3: Date & Time Preferences */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1.5">
+                        3. Scheduling Preference
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                        <CalendarDatePicker
+                          label="Preferred Date"
+                          value={directForm.preferredDate}
+                          onChange={(selectedDate) => setDirectForm({ ...directForm, preferredDate: selectedDate })}
+                          allowToday={false}
+                        />
+
+                        <div>
+                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
+                            Preferred Time Window
+                          </label>
+                          <select
+                            value={directForm.preferredTime}
+                            onChange={(e) => setDirectForm({ ...directForm, preferredTime: e.target.value })}
+                            className="w-full px-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
+                          >
+                            <option value="09:00 AM - 11:00 AM (SAST)">Morning (09:00 - 11:00 SAST)</option>
+                            <option value="11:00 AM - 01:00 PM (SAST)">Midday (11:00 - 13:00 SAST)</option>
+                            <option value="02:00 PM - 04:00 PM (SAST)">Afternoon (14:00 - 16:00 SAST)</option>
+                            <option value="04:00 PM - 05:30 PM (SAST)">Late Afternoon (16:00 - 17:30 SAST)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 4: Scope / Notes */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1">
+                        4. Scope / Notes (Optional)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={directForm.message}
+                        onChange={(e) => setDirectForm({ ...directForm, message: e.target.value })}
+                        placeholder="Detail standard targets (e.g. ISO 22000, FSSC 22000, BRCGS, HACCP)..."
+                        className="w-full px-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors resize-none"
+                      />
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={isSubmittingDirect}
+                      className="w-full bg-[#023625] hover:bg-[#034d35] text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs disabled:opacity-50"
+                    >
+                      {isSubmittingDirect ? (
+                        <>
+                          <Loader2 size={15} className="animate-spin" />
+                          <span>Transmitting Request...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send size={13} />
+                          <span>Submit Consultation Request</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                )}
+              </div>
+            ) : (
+              /* Calendly Live Sync Option */
+              <div className="flex-1 flex flex-col min-h-[580px] sm:min-h-[660px]">
+                {/* Dedicated Window Helper Banner (Bypasses iFrame CAPTCHAs completely) */}
+                <div className="bg-[#FAF8F5] border-b border-border/80 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs shrink-0">
+                  <div className="flex items-center gap-2 text-primary/80">
+                    <Info size={14} className="text-[#B68A35] shrink-0" />
+                    <span className="text-[11px] sm:text-xs">
+                      Experiencing CAPTCHA or cookie prompts in browser?
+                    </span>
+                  </div>
+                  <a
+                    href={PRIMARY_CALENDLY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#023625] hover:bg-[#034d35] text-white text-[11px] font-semibold transition-colors shrink-0 shadow-xs"
+                  >
+                    <span>Open in Full Tab</span>
+                    <ExternalLink size={11} />
+                  </a>
+                </div>
+
+                {/* Calendly Booking Success Banner */}
                 {bookingConfirmed && (
                   <motion.div
-                    initial={{ opacity: 0, y: -20 }}
+                    initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-[#023625] text-white p-4 px-6 flex items-center justify-between gap-4 shrink-0 shadow-md"
+                    className="bg-[#023625] text-white p-3 px-4 sm:px-6 flex items-center justify-between gap-3 shrink-0 shadow-xs border-b border-[#B68A35]/30"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#E6CA85] text-[#012B1D] flex items-center justify-center">
-                        <CheckCircle2 size={18} />
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded-full bg-[#E6CA85] text-[#012B1D] flex items-center justify-center shrink-0">
+                        <CheckCircle2 size={14} />
                       </div>
                       <div>
-                        <h4 className="font-serif font-bold text-sm text-[#E6CA85]">
-                          Consultation Successfully Scheduled!
+                        <h4 className="font-serif font-bold text-xs sm:text-sm text-[#E6CA85]">
+                          Consultation Scheduled!
                         </h4>
-                        <p className="text-xs text-white/80">
-                          Calendar invites and video conference details have been dispatched to your email.
+                        <p className="text-[10px] sm:text-xs text-white/80">
+                          Confirmation details have been dispatched to your email.
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={onClose}
-                      className="px-4 py-1.5 bg-[#B68A35] hover:bg-[#9E7528] text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer shrink-0"
+                      className="px-3 py-1 bg-[#B68A35] hover:bg-[#9E7528] text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer shrink-0"
                     >
                       Done
                     </button>
                   </motion.div>
                 )}
 
-                {/* Quick Helper Toolbar above iframe */}
-                <div className="bg-[#FAF8F5] border-b border-border/70 px-5 sm:px-8 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <div className="flex items-center gap-2 text-primary/80">
-                    <span className="font-mono text-[11px] font-semibold text-[#7d5800]">Endpoint:</span>
-                    <code className="text-[11px] bg-white px-2 py-0.5 rounded border border-border">{calendlyUrl}</code>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <a
-                      href={calendlyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#023625] hover:text-[#B68A35] font-bold text-xs flex items-center gap-1 underline underline-offset-2"
-                    >
-                      <span>Open directly in Calendly</span>
-                      <ExternalLink size={11} />
-                    </a>
-                    <span className="text-border">|</span>
-                    <button
-                      onClick={() => setBookingMode('direct')}
-                      className="text-[#B68A35] hover:text-[#7d5800] font-bold text-xs cursor-pointer"
-                    >
-                      Use Direct Form
-                    </button>
-                  </div>
+                {/* Sized Calendly Embed Frame with adequate height */}
+                <div className="flex-1 w-full h-full min-h-[580px] sm:min-h-[660px] relative">
+                  <iframe
+                    ref={iframeRef}
+                    src={getFullCalendlyUrl()}
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    title="Yitzak Institutional Consultation Scheduler"
+                    className="w-full h-full min-h-[580px] sm:min-h-[660px] border-0"
+                    onLoad={() => setIsIframeLoaded(true)}
+                  />
                 </div>
-
-                {/* Loading Placeholder */}
-                {isLoadingIframe && (
-                  <div className="absolute inset-0 bg-white/95 backdrop-blur-xs flex flex-col items-center justify-center gap-3 z-10">
-                    <Loader2 size={32} className="text-[#023625] animate-spin" />
-                    <div className="text-center">
-                      <p className="font-serif font-bold text-sm text-primary">Loading Live Advisory Calendar...</p>
-                      <p className="text-xs text-ash">Connecting to real-time advisor availability</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Responsive Calendly Embed iframe */}
-                <iframe
-                  ref={iframeRef}
-                  src={getFullCalendlyUrl()}
-                  width="100%"
-                  height="100%"
-                  frameBorder="0"
-                  title="Yitzak Institutional Consultation Scheduler"
-                  className="w-full flex-1 min-h-[500px] sm:min-h-[560px]"
-                  onLoad={() => setIsLoadingIframe(false)}
-                />
-              </>
-            ) : (
-              /* Direct Consultation Booking Form */
-              <div className="p-6 sm:p-10 max-w-2xl mx-auto w-full space-y-6">
-                {directSuccess ? (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
-                      <CheckCircle2 size={32} />
-                    </div>
-                    <h4 className="font-serif text-2xl font-bold text-emerald-950">
-                      Consultation Request Transmitted
-                    </h4>
-                    <p className="text-emerald-800 text-sm max-w-md mx-auto leading-relaxed">
-                      Thank you, <strong>{directForm.fullName}</strong>. Your consultation request for <strong>{currentPillarObj.title}</strong> has been received. Our lead advisory director will contact you at <strong>{directForm.email}</strong> to confirm the exact session schedule.
-                    </p>
-                    <button
-                      onClick={onClose}
-                      className="mt-4 bg-[#023625] hover:bg-primary text-white px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer"
-                    >
-                      Close Window
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleDirectSubmit} className="space-y-4">
-                    <div className="border-b border-border pb-3">
-                      <h4 className="font-serif text-xl font-bold text-primary">
-                        Direct Advisory Booking Request
-                      </h4>
-                      <p className="text-xs text-ash mt-1">
-                        Submit your details to receive immediate consultation confirmation and video credentials.
-                      </p>
-                    </div>
-
-                    {directError && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
-                        {directError}
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                          Full Name *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={directForm.fullName}
-                          onChange={(e) => setDirectForm({ ...directForm, fullName: e.target.value })}
-                          placeholder="e.g. Dr. Arthur Mthembu"
-                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                          Corporate Work Email *
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          value={directForm.email}
-                          onChange={(e) => setDirectForm({ ...directForm, email: e.target.value })}
-                          placeholder="name@enterprise.co.za"
-                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                          Company / Facility *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={directForm.company}
-                          onChange={(e) => setDirectForm({ ...directForm, company: e.target.value })}
-                          placeholder="e.g. Enterprise Agribusiness Ltd"
-                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                          Contact Phone
-                        </label>
-                        <input
-                          type="tel"
-                          value={directForm.phone}
-                          onChange={(e) => setDirectForm({ ...directForm, phone: e.target.value })}
-                          placeholder="+27 (0) 11 000 0000"
-                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <CalendarDatePicker
-                        label="Preferred Date"
-                        value={directForm.preferredDate}
-                        onChange={(selectedDate) => setDirectForm({ ...directForm, preferredDate: selectedDate })}
-                        allowToday={false}
-                      />
-
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                          Preferred Time Window
-                        </label>
-                        <select
-                          value={directForm.preferredTime}
-                          onChange={(e) => setDirectForm({ ...directForm, preferredTime: e.target.value })}
-                          className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
-                        >
-                          <option value="09:00 AM - 11:00 AM (SAST)">Morning (09:00 - 11:00 SAST)</option>
-                          <option value="11:00 AM - 01:00 PM (SAST)">Midday (11:00 - 13:00 SAST)</option>
-                          <option value="02:00 PM - 04:00 PM (SAST)">Afternoon (14:00 - 16:00 SAST)</option>
-                          <option value="04:00 PM - 05:30 PM (SAST)">Late Afternoon (16:00 - 17:30 SAST)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                        Specific Scope / Requirements
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={directForm.message}
-                        onChange={(e) => setDirectForm({ ...directForm, message: e.target.value })}
-                        placeholder="Detail your certification standard (e.g. ISO 22000, FSSC 22000, BRCGS, HACCP) or advisory scope..."
-                        className="w-full px-3.5 py-2.5 bg-mist border border-border rounded-lg text-xs text-primary focus:outline-none focus:border-[#B68A35]"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isSubmittingDirect}
-                      className="w-full bg-[#023625] hover:bg-primary text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm disabled:opacity-50"
-                    >
-                      {isSubmittingDirect ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                      <span>Submit Consultation Request</span>
-                    </button>
-                  </form>
-                )}
               </div>
             )}
           </div>
 
-          {/* Modal Footer / Value Props */}
-          <div className="bg-[#FAF8F5] border-t border-border px-5 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ash shrink-0">
-            <div className="flex items-center gap-4 text-[11px]">
-              <span className="flex items-center gap-1 text-primary/80 font-medium">
-                <ShieldCheck size={14} className="text-[#023625]" />
-                Confidential &amp; NDA Protected
-              </span>
-              <span className="flex items-center gap-1 text-primary/80 font-medium">
-                <Video size={14} className="text-[#B68A35]" />
-                Direct Video Session
-              </span>
-            </div>
+          {/* Clean Sub-Footer */}
+          <div className="bg-[#FAF8F5] border-t border-border/80 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 text-xs text-ash shrink-0">
+            <span className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-primary/80 font-medium">
+              <ShieldCheck size={13} className="text-[#023625]" />
+              Confidential &amp; NDA Protected
+            </span>
 
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] text-ash">
-                Need urgent assistance? <a href="mailto:info@yitzak.co.za" className="text-[#023625] font-semibold hover:underline">info@yitzak.co.za</a>
-              </span>
+            <div className="text-[10px] sm:text-[11px] text-ash">
+              Direct: <a href="mailto:info@yitzak.co.za" className="text-[#023625] font-semibold hover:underline">info@yitzak.co.za</a>
             </div>
           </div>
         </motion.div>

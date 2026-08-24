@@ -27,16 +27,15 @@ export const PILLARS: Pillar[] = [
   },
   {
     id: 'certification',
-    title: 'Certification Support',
+    title: 'Certification',
     icon: 'verified',
-    description: 'End-to-end guidance through internationally accredited standards, navigating every phase from initial scope definition to final certification, delivered through our partnership with FoodChain ID.',
+    description: 'Accredited third-party certification audits conducted through FoodChain ID across international food safety, quality, and sustainability standards.',
     details: [
-      'Scheme & standard selection',
-      'Initial gap assessment & pre-audit review',
-      'Evidence compilation & documentation preparation',
-      'Audit readiness & pre-assessment',
-      'FoodChain ID accredited certification alignment',
-      'Certificate maintenance & renewal support'
+      'Official FoodChain ID certification audits',
+      'Accredited third-party standards assessment',
+      'GFSI, BRCGS, FSSC 22000 & ISO scheme auditing',
+      'GLOBALG.A.P. & Non-GMO certification delivery',
+      'Formal audit reports & certificate issuance'
     ]
   },
   {

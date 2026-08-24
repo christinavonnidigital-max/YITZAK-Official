@@ -11,6 +11,7 @@ interface Category {
   label: string;
   title: string;
   badge: string;
+  description?: string;
   courses: Course[];
 }
 
@@ -437,7 +438,7 @@ export function exportCapabilitySheetPDF(type: string = 'capability_sheet') {
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(9.5);
     doc.setTextColor(65, 73, 68);
-    const introText = 'Yitzak is a specialized South African compliance and capability consulting practice. As an Official FoodChain ID Partner, we guide agricultural, food manufacturing, and commercial enterprises from scope review and audit readiness through to valid certification and operational excellence.';
+    const introText = 'Yitzak is a specialized compliance, audit, and capability consulting practice delivering across Southern Africa and global markets. As an Official FoodChain ID Partner, we deliver accredited certification audits, professional training, and institutional advisory services that empower agricultural, manufacturing, and commercial enterprises.';
     const introLines = doc.splitTextToSize(introText, contentWidth);
     doc.text(introLines, marginX, y);
 
@@ -454,8 +455,8 @@ export function exportCapabilitySheetPDF(type: string = 'capability_sheet') {
         desc: 'Practical guidance to implement learning, gap assessments, management system formulation, SOP drafting, and internal audits.'
       },
       {
-        title: '3. Accredited Certification Support',
-        desc: 'Guiding organisations from scope review to audit readiness for GLOBALG.A.P., Non-GMO, Organic, and Food Safety schemes.'
+        title: '3. Accredited Certification (FoodChain ID Audits)',
+        desc: 'Official delivery of accredited FoodChain ID certification audits across GLOBALG.A.P., Non-GMO, Organic, and GFSI food safety schemes.'
       },
       {
         title: '4. Business Process Implementation',

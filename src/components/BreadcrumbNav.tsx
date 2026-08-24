@@ -187,7 +187,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
               <li>
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
                   <Award size={13} className="text-[#B68A35]" />
-                  <span>Certification Support</span>
+                  <span>Certification</span>
                 </span>
               </li>
             </>

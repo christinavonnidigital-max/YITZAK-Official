@@ -34,7 +34,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
     'Regulatory Compliance',
     'Professional Training',
     'Consulting & Advisory',
-    'Certification Support',
+    'Certification (FoodChain ID Audits)',
     'General Support Inquiry'
   ];
 
@@ -127,7 +127,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
               Let's build competence and compliance together.
             </h3>
             <p className="text-sm text-slate-200/90 leading-relaxed max-w-sm">
-              Developing Competence. Enabling Compliance. Reach out to our head office in Randburg, South Africa.
+              Developing Competence. Enabling Compliance. Reach out to our head office in Randburg, South Africa, or connect with our advisors delivering across Southern Africa and global markets.
             </p>
           </div>
 
@@ -138,13 +138,13 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
               </div>
               <div>
                 <h4 className="text-xs uppercase tracking-wider text-[#DFC181] font-bold font-mono">
-                  Head Office
+                  Head Office &amp; Operations
                 </h4>
                 <p className="text-sm mt-1 text-white font-semibold">
                   359 Surrey Avenue, Randburg
                 </p>
                 <p className="text-xs text-slate-300">
-                  South Africa
+                  South Africa · Delivering across Southern Africa &amp; Global Markets
                 </p>
               </div>
             </div>
