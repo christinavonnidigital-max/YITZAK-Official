@@ -199,7 +199,7 @@ export default function ContactUs({ onSuccess, onOpenPrivacy }: ContactUsProps) 
             Send an Enquiry
           </h3>
           <p className="text-sm text-[#737373] mb-8">
-            Tell us what you need and we’ll connect you with the right Yitzak advisor.
+            Please complete the form and we’ll respond as soon as possible.
           </p>
 
           {success ? (
