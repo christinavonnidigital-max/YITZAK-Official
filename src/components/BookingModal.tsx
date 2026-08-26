@@ -571,9 +571,10 @@ export default function BookingModal({
                   )}
                   <iframe
                     ref={iframeRef}
-                    src={getFullCalendlyUrl()}
+                    src={bookingMode === 'calendly' ? getFullCalendlyUrl() : undefined}
                     width="100%"
                     height="100%"
+                    loading="lazy"
                     frameBorder="0"
                     title="Yitzak Consultation - 30 minutes"
                     className="w-full h-full min-h-0 border-0 block"

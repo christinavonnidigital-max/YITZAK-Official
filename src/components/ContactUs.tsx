@@ -17,12 +17,13 @@ import { dispatchInquiryEmail } from '../lib/emailService';
 
 interface ContactUsProps {
   onSuccess?: () => void;
+  onOpenPrivacy?: () => void;
 }
 
-export default function ContactUs({ onSuccess }: ContactUsProps) {
+export default function ContactUs({ onSuccess, onOpenPrivacy }: ContactUsProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('Regulatory Compliance');
+  const [subject, setSubject] = useState('Professional Training');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -31,11 +32,11 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
   const [emailStatus, setEmailStatus] = useState<'pending' | 'sent' | 'skipped' | 'failed'>('pending');
 
   const subjects = [
-    'Regulatory Compliance',
     'Professional Training',
+    'Certification',
     'Consulting & Advisory',
-    'Certification (FoodChain ID Audits)',
-    'General Support Inquiry'
+    'Business Process Implementation',
+    'Other'
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,8 +50,8 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
     setError(null);
     setEmailStatus('pending');
 
-    const inqRefId = `INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`;
-    const firestoreId = `inq_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const inqRefId = `ENQ-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    const firestoreId = `enq_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     try {
       // 1. Prepare data payload
@@ -100,7 +101,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
       // Clear fields
       setName('');
       setEmail('');
-      setSubject('Regulatory Compliance');
+      setSubject('Professional Training');
       setMessage('');
 
       if (onSuccess) {
@@ -108,7 +109,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
       }
     } catch (err: any) {
       console.error('Contact form submission failed: ', err);
-      setError(err?.message || 'An error occurred while submitting your inquiry. Please try again.');
+      setError(err?.message || 'An error occurred while submitting your enquiry. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
         <div className="relative z-10 space-y-8">
           <div>
             <span className="text-xs uppercase tracking-widest text-[#DFC181] font-bold block mb-2 font-mono">
-              Get In Touch
+              Get in touch
             </span>
             <h3 className="font-display-hero text-headline-md font-bold mb-4 text-white">
               Let's build competence and compliance together.
@@ -195,10 +196,10 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
       <div className="lg:col-span-7 bg-white p-6 sm:p-8 md:p-10 lg:p-12 border border-[#E5E5E5] shadow-xl flex flex-col justify-between rounded-2xl">
         <div className="w-full">
           <h3 className="font-display-hero text-headline-sm font-bold text-primary mb-2">
-            Submit an Advisory Inquiry
+            Send an Enquiry
           </h3>
           <p className="text-sm text-[#737373] mb-8">
-            Complete the form below to connect with our compliance experts and advisory team.
+            Tell us what you need and we’ll connect you with the right Yitzak advisor.
           </p>
 
           {success ? (
@@ -211,10 +212,10 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
                 <CheckCircle className="text-emerald-700 shrink-0 mt-0.5" size={20} />
                 <div>
                   <h4 className="font-bold text-primary text-sm uppercase tracking-wider">
-                    Inquiry Submitted Successfully
+                    Enquiry Sent Successfully
                   </h4>
                   <p className="text-xs text-emerald-800 mt-1">
-                    Thank you for reaching out. Your inquiry has been received under reference:
+                    Thank you for reaching out. Your enquiry has been received under reference:
                   </p>
                   <div className="bg-white border border-emerald-100 p-2 font-mono text-xs text-primary font-bold mt-2 select-all inline-block rounded">
                     {inquiryId}
@@ -227,9 +228,9 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
 
               <button
                 onClick={() => setSuccess(false)}
-                className="w-full bg-primary hover:bg-primary-container text-white text-xs font-bold tracking-wider py-2.5 px-4 transition-all uppercase rounded-lg"
+                className="w-full bg-primary hover:bg-primary-container text-white text-xs font-bold tracking-wider py-2.5 px-4 transition-all uppercase rounded-lg cursor-pointer"
               >
-                Submit Another Inquiry
+                Send Another Enquiry
               </button>
             </motion.div>
           ) : (
@@ -279,7 +280,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
 
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-[#737373] block mb-1.5 font-mono">
-                  Subject Stream <span className="text-red-500">*</span>
+                  How can we help? <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ash" size={16} />
@@ -302,7 +303,7 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
 
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-[#737373] block mb-1.5 font-mono">
-                  Detailed Message Brief <span className="text-red-500">*</span>
+                  Tell us about your needs <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <MessageSquare className="absolute left-3.5 top-3 text-ash" size={16} />
@@ -315,29 +316,42 @@ export default function ContactUs({ onSuccess }: ContactUsProps) {
                     className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal placeholder:text-ash/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all resize-none rounded-lg"
                   ></textarea>
                 </div>
-                <div className="flex justify-between items-center mt-1.5 font-mono text-[10px] text-ash">
-                  <span>Up to 10,000 characters permitted</span>
-                  <span>{message.length} chars</span>
+                <div className="mt-1.5 text-xs text-[#737373] italic">
+                  Include the standard, facility type, and timing if relevant.
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[#023625] hover:bg-[#1f4d3a] text-white py-3.5 px-6 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    <span>Sending Inquiry...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send size={14} />
-                    <span>Submit Inquiry</span>
-                  </>
-                )}
-              </button>
+              <div className="space-y-3">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#023625] hover:bg-[#1f4d3a] text-white py-3.5 px-6 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Sending Enquiry...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={14} />
+                      <span>Send Enquiry</span>
+                    </>
+                  )}
+                </button>
+
+                <p className="text-center text-xs text-[#737373] leading-relaxed">
+                  By submitting this form, you acknowledge our{' '}
+                  <button
+                    type="button"
+                    onClick={onOpenPrivacy}
+                    className="underline text-[#023625] hover:text-[#B68A35] font-medium cursor-pointer"
+                  >
+                    Privacy Notice
+                  </button>{' '}
+                  and consent to being contacted regarding your enquiry.
+                </p>
+              </div>
             </form>
           )}
         </div>

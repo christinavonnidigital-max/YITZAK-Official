@@ -80,18 +80,18 @@ export async function dispatchInquiryEmail(
     </head>
     <body>
       <div class="container">
-        <div class="header">YITZAK Institutional Advisory Inquiry</div>
-        <p>A new advisory inquiry has been submitted via the website contact form.</p>
+        <div class="header">YITZAK Advisory Enquiry</div>
+        <p>A new enquiry has been submitted via the website contact form.</p>
         <div class="box">
           <p><strong>Enquirer:</strong> ${details.senderName} (${details.senderEmail})</p>
-          <p><strong>Subject Stream:</strong> ${details.subject}</p>
+          <p><strong>Service Requested:</strong> ${details.subject}</p>
           <div>
             <strong>Message:</strong>
             <div class="msg">${details.message}</div>
           </div>
         </div>
         <p>Logged for immediate response by the advisory team.</p>
-        <div class="footer">&copy; 2026 YITZAK Institutional Advisory · Randburg, South Africa</div>
+        <div class="footer">&copy; 2026 YITZAK Consulting &amp; Advisory · Randburg, South Africa</div>
       </div>
     </body>
     </html>

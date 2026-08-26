@@ -6,6 +6,7 @@ import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase
 import ContactUs from './components/ContactUs';
 import ComplianceCalculator from './components/ComplianceCalculator';
 import FAQSection from './components/FAQSection';
+import ProcessImplementationRoadmap from './components/ProcessImplementationRoadmap';
 import FloatingChatWidget from './components/FloatingChatWidget';
 import { checkEmailWhitelist, preRegisterGuest } from './lib/whitelist';
 import { exportPortfolioToCSV, exportPortfolioToPDF, triggerSmartPrint, exportCapabilitySheetPDF } from './utils/portfolioExport';
@@ -23,7 +24,6 @@ const Dashboard = lazy(() => import('./components/Dashboard'));
 const TrainingCalendar = lazy(() => import('./components/TrainingCalendar'));
 const WhitelistManager = lazy(() => import('./components/WhitelistManager'));
 const KnowledgeCenter = lazy(() => import('./components/KnowledgeCenter'));
-const ProcessImplementationRoadmap = lazy(() => import('./components/ProcessImplementationRoadmap'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
 
 const ViewLoadingFallback = () => (
@@ -2027,7 +2027,7 @@ export default function App() {
                     }}
                     className="w-full sm:w-auto border border-white/30 hover:border-white hover:bg-white/5 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-8 rounded-xl cursor-pointer transition-all active:scale-95 text-center"
                   >
-                    Contact Advisory Team
+                    Talk to Our Advisory Team
                   </button>
                 </div>
               </div>
@@ -2036,7 +2036,7 @@ export default function App() {
             {/* Embedded Contact Us Section at Bottom of Home Page */}
             <section id="home-contact-section" className="pt-24 pb-16 md:pt-24 md:pb-20 bg-[#F9F9F9] text-[#2D3142] px-4 md:px-16 border-t border-border scroll-mt-[150px]">
               <div className="max-w-[1280px] mx-auto">
-                <ContactUs />
+                <ContactUs onOpenPrivacy={() => navigateTo('privacy')} />
               </div>
             </section>
           </motion.div>
@@ -2088,6 +2088,10 @@ export default function App() {
                       className="w-full h-full object-cover"
                       src="https://lh3.googleusercontent.com/aida-public/AB6AXuCh8qjKo1mwyVEx2R4hcz_37lRzkxGHkT6V-oq1p6-aNLPzSIK1PeKocPwmsavBw-jzyWVB7YGBWC7mQGezHM9vJgXqXzW6XP-LZ0F3KVj7xjUPf9A30emofQLCDZzMztfEV_elrnRp7EgBGuSsJrD3EK0M9h-zOPiHOpehrbBdtNYBmiSgUTd0LjaWVrc-kU93-69KQ9lqCIkb1UTr7OvswZEbEAmW5BkzB5_ThEx55RADoHMnem4L"
                       alt="A professional corporate training room with executives engaged in a focused workshop"
+                      loading="lazy"
+                      decoding="async"
+                      width={640}
+                      height={480}
                       referrerPolicy="no-referrer"
                     />
                   </div>
@@ -2860,11 +2864,9 @@ export default function App() {
             {/* Implementation Phased Roadmap Component */}
             <section className="bg-[#F9F9F9] py-10 sm:py-14 md:py-16 px-4 sm:px-8 md:px-16 border-t border-[#E5E5E5]">
               <div className="max-w-[1280px] mx-auto space-y-8 sm:space-y-10">
-                <Suspense fallback={<ViewLoadingFallback />}>
-                  <ProcessImplementationRoadmap 
-                    onInquirePhase={(phaseTitle) => handleOpenBooking('process_implementation', `Inquiry regarding ${phaseTitle}`)}
-                  />
-                </Suspense>
+                <ProcessImplementationRoadmap 
+                  onInquirePhase={(phaseTitle) => handleOpenBooking('process_implementation', `Inquiry regarding ${phaseTitle}`)}
+                />
 
                 <div className="bg-[#023625] text-white p-6 sm:p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-md border border-white/10">
                   <div className="space-y-2 max-w-2xl text-center md:text-left">
@@ -2928,13 +2930,13 @@ export default function App() {
             className="bg-[#F9F9F9] min-h-screen text-[#2D3142] py-12 md:py-16 px-4 sm:px-6 md:px-12 lg:px-16"
           >
             <div className="max-w-[1280px] mx-auto mb-10 text-center space-y-3">
-              <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Direct Institutional Advisory</span>
-              <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary">Contact Advisory Team</h1>
+              <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Get in touch</span>
+              <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary">Talk to Our Advisory Team</h1>
               <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                Connect directly with Yitzak's principal advisors to schedule a gap assessment, system analysis, or custom corporate workshop.
+                Tell us what you need and we’ll connect you with the right Yitzak advisor.
               </p>
             </div>
-            <ContactUs />
+            <ContactUs onOpenPrivacy={() => navigateTo('privacy')} />
           </motion.div>
         )}
 

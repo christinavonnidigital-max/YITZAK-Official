@@ -79,6 +79,9 @@ export const YitzakLogo: React.FC<YitzakLogoProps> = ({
       <img
         src={src}
         alt="YITZAK Logo"
+        loading="eager"
+        fetchPriority="high"
+        decoding="sync"
         style={{ height: numSize, width: 'auto' }}
         className={`object-contain ${lightMode ? 'brightness-0 invert' : ''} ${className}`}
         onError={() => setImgFailed(true)}

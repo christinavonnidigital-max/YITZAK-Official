@@ -195,6 +195,10 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
               <img 
                 src={currentUser.photoURL} 
                 alt="Avatar" 
+                loading="lazy"
+                decoding="async"
+                width={48}
+                height={48}
                 referrerPolicy="no-referrer" 
                 className="w-full h-full object-cover" 
               />
