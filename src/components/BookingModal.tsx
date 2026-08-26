@@ -3,26 +3,24 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Calendar, 
   CheckCircle2, 
+  Check,
   X, 
   Loader2, 
-  Sparkles, 
   ShieldCheck, 
   CalendarCheck,
   Send,
   User as UserIcon,
   Mail,
   Building,
-  Phone,
-  ChevronRight,
   ExternalLink,
-  Info
+  Clock,
+  Globe
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { sendEmailViaVercel } from '../lib/emailService';
 import { PILLARS } from '../data';
-import CalendarDatePicker from './CalendarDatePicker';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -32,6 +30,7 @@ interface BookingModalProps {
   initialPillarId?: string;
   initialNotes?: string;
   onBookingSuccess?: () => void;
+  onNavigatePrivacy?: () => void;
 }
 
 const PRIMARY_CALENDLY_URL = 'https://calendly.com/cgumpo-yitzak/30min';
@@ -42,23 +41,20 @@ export default function BookingModal({
   currentUser,
   initialPillarId = 'consulting',
   initialNotes = '',
-  onBookingSuccess
+  onBookingSuccess,
+  onNavigatePrivacy
 }: BookingModalProps) {
-  // Default to Direct Institutional Request for 0-latency and no CAPTCHA friction
   const [bookingMode, setBookingMode] = useState<'direct' | 'calendly'>('direct');
   const [selectedPillar, setSelectedPillar] = useState(initialPillarId);
   const [notes, setNotes] = useState(initialNotes);
   const [isIframeLoaded, setIsIframeLoaded] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // Direct Form State
+  // Simplified Direct Form State
   const [directForm, setDirectForm] = useState({
     fullName: currentUser?.displayName || '',
     email: currentUser?.email || '',
     company: '',
-    phone: '',
-    preferredDate: '',
-    preferredTime: '10:00 AM - 12:00 PM (SAST)',
     message: initialNotes || ''
   });
   const [isSubmittingDirect, setIsSubmittingDirect] = useState(false);
@@ -97,7 +93,7 @@ export default function BookingModal({
 
         const refCode = `YTZ-CAL-${Math.floor(100000 + Math.random() * 900000)}`;
         const pillarInfo = PILLARS.find(p => p.id === selectedPillar);
-        const pillarTitle = pillarInfo ? pillarInfo.title : 'Institutional Advisory';
+        const pillarTitle = pillarInfo ? pillarInfo.title : 'Advisory Consultation';
 
         const bookingRecord = {
           bookingRef: refCode,
@@ -141,7 +137,7 @@ export default function BookingModal({
 
   const currentPillarObj = PILLARS.find(p => p.id === selectedPillar) || PILLARS[0];
 
-  // Cleanly format Calendly URL for iframe embedding
+  // Cleanly format Calendly URL for embedding & full-tab with South Africa Standard Time (SAST)
   const getFullCalendlyUrl = () => {
     try {
       const url = new URL(PRIMARY_CALENDLY_URL);
@@ -150,6 +146,8 @@ export default function BookingModal({
       url.searchParams.set('background_color', 'ffffff');
       url.searchParams.set('text_color', '012b1d');
       url.searchParams.set('primary_color', '023625');
+      // Set timezone to Africa/Johannesburg (South Africa Standard Time - SAST)
+      url.searchParams.set('timezone', 'Africa/Johannesburg');
       
       if (directForm.fullName) {
         url.searchParams.set('name', directForm.fullName);
@@ -160,44 +158,31 @@ export default function BookingModal({
 
       return url.toString();
     } catch {
-      return PRIMARY_CALENDLY_URL;
+      return `${PRIMARY_CALENDLY_URL}?timezone=Africa%2FJohannesburg`;
     }
   };
 
   const handleDirectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!directForm.fullName.trim() || !directForm.email.trim() || !directForm.company.trim()) {
-      setDirectError('Please fill in your full name, work email, and company.');
+      setDirectError('Please fill in your full name, work email, and company/facility.');
       return;
-    }
-
-    if (directForm.preferredDate) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const selected = new Date(directForm.preferredDate);
-      if (selected < today) {
-        setDirectError('Preferred consultation date must be in the future.');
-        return;
-      }
     }
 
     setIsSubmittingDirect(true);
     setDirectError(null);
 
-    const refCode = `YTZ-DIR-${Math.floor(100000 + Math.random() * 900000)}`;
+    const refCode = `YTZ-REQ-${Math.floor(100000 + Math.random() * 900000)}`;
     const payload = {
       bookingRef: refCode,
       userName: directForm.fullName.trim(),
       userEmail: directForm.email.trim(),
       company: directForm.company.trim(),
-      phone: directForm.phone.trim(),
       pillar: currentPillarObj.title,
       pillarId: selectedPillar,
-      preferredDate: directForm.preferredDate || 'Earliest Available',
-      preferredTime: directForm.preferredTime,
       notes: directForm.message || notes,
       status: 'pending',
-      scheduledVia: 'Direct Institutional Request',
+      scheduledVia: 'Direct Request',
       createdAt: new Date().toISOString()
     };
 
@@ -220,21 +205,18 @@ export default function BookingModal({
     try {
       await sendEmailViaVercel({
         to: ['christinagumpo@gmail.com', 'info@yitzak.co.za'],
-        subject: `Institutional Consultation Request: ${directForm.company} (${directForm.fullName})`,
+        subject: `Consultation Request: ${directForm.company} (${directForm.fullName})`,
         html: `
-          <h2>New Institutional Consultation Scheduled</h2>
+          <h2>New Consultation Request Received</h2>
           <p><strong>Client:</strong> ${directForm.fullName} (${directForm.email})</p>
-          <p><strong>Company:</strong> ${directForm.company}</p>
-          <p><strong>Phone:</strong> ${directForm.phone || 'N/A'}</p>
-          <p><strong>Advisory Focus:</strong> ${currentPillarObj.title}</p>
-          <p><strong>Requested Date:</strong> ${directForm.preferredDate || 'Flexible'}</p>
-          <p><strong>Preferred Time Slot:</strong> ${directForm.preferredTime}</p>
-          <p><strong>Inquiry Notes:</strong><br>${(directForm.message || notes || 'None specified').replace(/\n/g, '<br>')}</p>
+          <p><strong>Company / Facility:</strong> ${directForm.company}</p>
+          <p><strong>Service Required:</strong> ${currentPillarObj.title}</p>
+          <p><strong>Notes:</strong><br>${(directForm.message || notes || 'None specified').replace(/\n/g, '<br>')}</p>
         `,
         type: 'booking'
       });
     } catch (mailErr) {
-      console.warn('Direct consultation notification dispatch note:', mailErr);
+      console.warn('Consultation request dispatch notification:', mailErr);
     }
 
     setIsSubmittingDirect(false);
@@ -246,7 +228,7 @@ export default function BookingModal({
     <AnimatePresence>
       <div 
         id="consultation-booking-modal"
-        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-[#00140D]/85 backdrop-blur-md overflow-y-auto"
+        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-[#00140D]/85 backdrop-blur-md"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
@@ -256,9 +238,9 @@ export default function BookingModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 10 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="relative w-full max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[92vh]"
+          className="relative w-full max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 overflow-hidden flex flex-col h-[92vh] sm:h-[88vh] max-h-[780px]"
         >
-          {/* Executive Header */}
+          {/* Header */}
           <div className="bg-[#023625] text-white px-4 sm:px-6 py-3.5 sm:py-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
             <div className="flex items-center justify-between w-full sm:w-auto">
               <div className="flex items-center gap-2.5 sm:gap-3">
@@ -267,7 +249,7 @@ export default function BookingModal({
                 </div>
                 <div>
                   <h3 className="font-serif font-bold text-sm sm:text-base text-white tracking-tight leading-tight">
-                    Schedule Institutional Consultation
+                    Request a Consultation
                   </h3>
                   <p className="text-[11px] text-white/70 leading-tight mt-0.5">
                     Select your advisory focus and scheduling preference
@@ -325,10 +307,10 @@ export default function BookingModal({
             </div>
           </div>
 
-          {/* Modal Body */}
-          <div className="relative flex-1 bg-white overflow-y-auto flex flex-col">
+          {/* Modal Body: No double-scroll in Calendly mode */}
+          <div className={`relative flex-1 bg-white flex flex-col min-h-0 ${bookingMode === 'direct' ? 'overflow-y-auto' : 'overflow-hidden'}`}>
             {bookingMode === 'direct' ? (
-              /* PRIMARY DEFAULT: Direct Consultation Request Form */
+              /* PRIMARY DEFAULT: Simplified Direct Consultation Request Form */
               <div className="p-4 sm:p-6 md:p-8 max-w-2xl mx-auto w-full">
                 {directSuccess ? (
                   <motion.div 
@@ -343,7 +325,7 @@ export default function BookingModal({
                       Consultation Request Received
                     </h4>
                     <p className="text-ash text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
-                      Thank you, <strong>{directForm.fullName}</strong>. Your consultation request for <strong>{currentPillarObj.title}</strong> has been transmitted. Our team will contact you at <strong>{directForm.email}</strong> promptly.
+                      Thank you, <strong>{directForm.fullName}</strong>. Your consultation request for <strong>{currentPillarObj.title}</strong> has been received. We’ll get back to you at <strong>{directForm.email}</strong> to arrange a suitable time.
                     </p>
                     <div className="pt-2">
                       <button
@@ -358,10 +340,10 @@ export default function BookingModal({
                   <form onSubmit={handleDirectSubmit} className="space-y-4">
                     <div>
                       <h4 className="font-serif text-base sm:text-lg font-bold text-primary">
-                        Institutional Consultation Request
+                        Request a Consultation
                       </h4>
                       <p className="text-[11px] sm:text-xs text-ash mt-0.5">
-                        Direct priority scheduling with our lead food safety and compliance specialists.
+                        Tell us what you need and we’ll get back to arrange a suitable time.
                       </p>
                     </div>
 
@@ -371,10 +353,10 @@ export default function BookingModal({
                       </div>
                     )}
 
-                    {/* Step 1: Select Advisory Focus */}
+                    {/* Field 1: Service Required */}
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1.5">
-                        1. Advisory Pillar Focus
+                        Service Required *
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                         {PILLARS.map((pillar) => {
@@ -384,20 +366,26 @@ export default function BookingModal({
                               key={pillar.id}
                               type="button"
                               onClick={() => setSelectedPillar(pillar.id)}
-                              className={`p-2 sm:p-2.5 rounded-xl text-left transition-all cursor-pointer border flex flex-col justify-between ${
+                              className={`p-2.5 rounded-xl text-left transition-all cursor-pointer border flex flex-col justify-between min-h-[72px] ${
                                 isSelected
-                                  ? 'bg-[#023625] text-white border-[#023625] shadow-xs'
+                                  ? 'bg-[#023625] text-white border-[#023625] ring-2 ring-[#B68A35]/50 shadow-xs'
                                   : 'bg-[#FAF8F5] text-primary/80 border-border/80 hover:border-[#B68A35]/60 hover:bg-white'
                               }`}
                             >
                               <span className="text-[11px] sm:text-xs font-semibold leading-tight line-clamp-2">
                                 {pillar.title}
                               </span>
-                              <span className={`text-[9px] sm:text-[10px] mt-1 flex items-center gap-0.5 font-medium ${
-                                isSelected ? 'text-[#E6CA85]' : 'text-ash'
+                              <span className={`text-[10px] mt-1 flex items-center gap-1 font-bold ${
+                                isSelected ? 'text-[#E6CA85]' : 'text-ash/70'
                               }`}>
-                                {isSelected ? 'Selected' : 'Select'}
-                                <ChevronRight size={9} />
+                                {isSelected ? (
+                                  <>
+                                    <Check size={11} className="text-[#E6CA85] stroke-[3]" />
+                                    <span>Selected</span>
+                                  </>
+                                ) : (
+                                  <span>Select</span>
+                                )}
                               </span>
                             </button>
                           );
@@ -405,166 +393,142 @@ export default function BookingModal({
                       </div>
                     </div>
 
-                    {/* Step 2: Contact Information */}
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1.5">
-                        2. Contact &amp; Organisation Details
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                        <div>
-                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
-                            Full Name *
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              required
-                              value={directForm.fullName}
-                              onChange={(e) => setDirectForm({ ...directForm, fullName: e.target.value })}
-                              placeholder="e.g. Dr. Arthur Mthembu"
-                              className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
-                            />
-                            <UserIcon size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
-                          </div>
+                    {/* Field 2 & 3: Full Name & Work Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-primary/70 mb-1">
+                          Full Name *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            required
+                            value={directForm.fullName}
+                            onChange={(e) => setDirectForm({ ...directForm, fullName: e.target.value })}
+                            placeholder="e.g. Dr. Arthur Mthembu"
+                            className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
+                          />
+                          <UserIcon size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
                         </div>
+                      </div>
 
-                        <div>
-                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
-                            Work Email *
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="email"
-                              required
-                              value={directForm.email}
-                              onChange={(e) => setDirectForm({ ...directForm, email: e.target.value })}
-                              placeholder="name@enterprise.co.za"
-                              className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
-                            />
-                            <Mail size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
-                            Company / Facility *
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              required
-                              value={directForm.company}
-                              onChange={(e) => setDirectForm({ ...directForm, company: e.target.value })}
-                              placeholder="e.g. AgriFoods Processing Ltd"
-                              className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
-                            />
-                            <Building size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
-                            Contact Phone (Optional)
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="tel"
-                              value={directForm.phone}
-                              onChange={(e) => setDirectForm({ ...directForm, phone: e.target.value })}
-                              placeholder="+27 (0)10 000 0000"
-                              className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
-                            />
-                            <Phone size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
-                          </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-primary/70 mb-1">
+                          Work Email *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="email"
+                            required
+                            value={directForm.email}
+                            onChange={(e) => setDirectForm({ ...directForm, email: e.target.value })}
+                            placeholder="name@enterprise.co.za"
+                            className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
+                          />
+                          <Mail size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Step 3: Date & Time Preferences */}
+                    {/* Field 4: Company / Facility */}
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1.5">
-                        3. Scheduling Preference
+                      <label className="block text-[10px] font-semibold text-primary/70 mb-1">
+                        Company / Facility *
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                        <CalendarDatePicker
-                          label="Preferred Date"
-                          value={directForm.preferredDate}
-                          onChange={(selectedDate) => setDirectForm({ ...directForm, preferredDate: selectedDate })}
-                          allowToday={false}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          value={directForm.company}
+                          onChange={(e) => setDirectForm({ ...directForm, company: e.target.value })}
+                          placeholder="e.g. AgriFoods Processing Ltd"
+                          className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
                         />
-
-                        <div>
-                          <label className="block text-[10px] font-semibold text-primary/70 mb-1">
-                            Preferred Time Window
-                          </label>
-                          <select
-                            value={directForm.preferredTime}
-                            onChange={(e) => setDirectForm({ ...directForm, preferredTime: e.target.value })}
-                            className="w-full px-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors"
-                          >
-                            <option value="09:00 AM - 11:00 AM (SAST)">Morning (09:00 - 11:00 SAST)</option>
-                            <option value="11:00 AM - 01:00 PM (SAST)">Midday (11:00 - 13:00 SAST)</option>
-                            <option value="02:00 PM - 04:00 PM (SAST)">Afternoon (14:00 - 16:00 SAST)</option>
-                            <option value="04:00 PM - 05:30 PM (SAST)">Late Afternoon (16:00 - 17:30 SAST)</option>
-                          </select>
-                        </div>
+                        <Building size={13} className="absolute left-2.5 top-2.5 text-ash pointer-events-none" />
                       </div>
                     </div>
 
-                    {/* Step 4: Scope / Notes */}
+                    {/* Field 5: Notes Optional */}
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1">
-                        4. Scope / Notes (Optional)
+                        Notes (Optional)
                       </label>
                       <textarea
-                        rows={2}
+                        rows={3}
                         value={directForm.message}
                         onChange={(e) => setDirectForm({ ...directForm, message: e.target.value })}
-                        placeholder="Detail standard targets (e.g. ISO 22000, FSSC 22000, BRCGS, HACCP)..."
+                        placeholder="Detail standard targets (e.g. ISO 22000, FSSC 22000, BRCGS, HACCP) or specific requirements..."
                         className="w-full px-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors resize-none"
                       />
                     </div>
 
                     {/* Submit Button */}
-                    <button
-                      type="submit"
-                      disabled={isSubmittingDirect}
-                      className="w-full bg-[#023625] hover:bg-[#034d35] text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs disabled:opacity-50"
-                    >
-                      {isSubmittingDirect ? (
-                        <>
-                          <Loader2 size={15} className="animate-spin" />
-                          <span>Transmitting Request...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send size={13} />
-                          <span>Submit Consultation Request</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="space-y-2 pt-1">
+                      <button
+                        type="submit"
+                        disabled={isSubmittingDirect}
+                        className="w-full bg-[#023625] hover:bg-[#034d35] text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs disabled:opacity-50"
+                      >
+                        {isSubmittingDirect ? (
+                          <>
+                            <Loader2 size={15} className="animate-spin" />
+                            <span>Transmitting Request...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send size={13} />
+                            <span>Submit Consultation Request</span>
+                          </>
+                        )}
+                      </button>
+
+                      <p className="text-[11px] text-center text-ash">
+                        By submitting, you acknowledge our{' '}
+                        {onNavigatePrivacy ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onClose();
+                              onNavigatePrivacy();
+                            }}
+                            className="text-[#B68A35] font-semibold hover:underline cursor-pointer"
+                          >
+                            Privacy Notice
+                          </button>
+                        ) : (
+                          <span className="text-[#B68A35] font-semibold">Privacy Notice</span>
+                        )}.
+                      </p>
+                    </div>
                   </form>
                 )}
               </div>
             ) : (
-              /* Calendly Live Sync Option */
-              <div className="flex-1 flex flex-col min-h-[580px] sm:min-h-[660px]">
-                {/* Dedicated Window Helper Banner (Bypasses iFrame CAPTCHAs completely) */}
-                <div className="bg-[#FAF8F5] border-b border-border/80 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs shrink-0">
-                  <div className="flex items-center gap-2 text-primary/80">
-                    <Info size={14} className="text-[#B68A35] shrink-0" />
-                    <span className="text-[11px] sm:text-xs">
-                      Experiencing CAPTCHA or cookie prompts in browser?
-                    </span>
+              /* Calendly Live Sync Option - Fills modal without inner container scrollbar */
+              <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
+                {/* Header Banner: Explicit Event Title, SAST Timezone & Open in Full Tab CTA */}
+                <div className="bg-[#FAF8F5] border-b border-border/80 px-4 sm:px-6 py-2.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 text-xs shrink-0">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Clock size={15} className="text-[#B68A35] shrink-0" />
+                    <div>
+                      <div className="font-serif font-bold text-xs sm:text-sm text-primary">
+                        Yitzak Consultation - 30 minutes
+                      </div>
+                      <div className="text-[11px] text-ash inline-flex items-center gap-1 font-sans">
+                        <Globe size={11} className="text-[#B68A35]" />
+                        <span>South Africa Standard Time (SAST)</span>
+                      </div>
+                    </div>
                   </div>
+
                   <a
-                    href={PRIMARY_CALENDLY_URL}
+                    href={getFullCalendlyUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#023625] hover:bg-[#034d35] text-white text-[11px] font-semibold transition-colors shrink-0 shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#023625] hover:bg-[#034d35] text-white text-[11px] font-semibold transition-colors shrink-0 shadow-xs cursor-pointer ml-auto"
                   >
                     <span>Open in Full Tab</span>
-                    <ExternalLink size={11} />
+                    <ExternalLink size={12} />
                   </a>
                 </div>
 
@@ -597,16 +561,22 @@ export default function BookingModal({
                   </motion.div>
                 )}
 
-                {/* Sized Calendly Embed Frame with adequate height */}
-                <div className="flex-1 w-full h-full min-h-[580px] sm:min-h-[660px] relative">
+                {/* Direct Full-Height Embed Frame without parent double-scroll */}
+                <div className="flex-1 w-full h-full min-h-0 relative overflow-hidden bg-white">
+                  {!isIframeLoaded && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 gap-2 text-ash text-xs">
+                      <Loader2 size={24} className="animate-spin text-[#023625]" />
+                      <span>Loading consultation scheduler...</span>
+                    </div>
+                  )}
                   <iframe
                     ref={iframeRef}
                     src={getFullCalendlyUrl()}
                     width="100%"
                     height="100%"
                     frameBorder="0"
-                    title="Yitzak Institutional Consultation Scheduler"
-                    className="w-full h-full min-h-[580px] sm:min-h-[660px] border-0"
+                    title="Yitzak Consultation - 30 minutes"
+                    className="w-full h-full min-h-0 border-0 block"
                     onLoad={() => setIsIframeLoaded(true)}
                   />
                 </div>
@@ -618,7 +588,7 @@ export default function BookingModal({
           <div className="bg-[#FAF8F5] border-t border-border/80 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 text-xs text-ash shrink-0">
             <span className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-primary/80 font-medium">
               <ShieldCheck size={13} className="text-[#023625]" />
-              Confidential &amp; NDA Protected
+              Your enquiry will be handled confidentially.
             </span>
 
             <div className="text-[10px] sm:text-[11px] text-ash">

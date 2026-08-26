@@ -115,7 +115,7 @@ Total Risk Exposure Value Mitigated: ${includeYitzakSupport ? 'R ' + totalMitiga
   };
 
   return (
-    <div id="compliance-roi-calculator" className="py-16 md:py-20 bg-[#F9F9F9] border-t border-b border-[#E5E5E5] scroll-mt-20 font-sans">
+    <div id="compliance-roi-calculator" className="pt-24 pb-16 sm:pt-24 sm:pb-20 md:pt-24 md:pb-20 bg-[#F9F9F9] border-t border-b border-[#E5E5E5] scroll-mt-[150px] font-sans">
       <div className="max-w-[1280px] mx-auto px-4 md:px-16">
         
         {/* Header Block */}

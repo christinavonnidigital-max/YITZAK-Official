@@ -80,6 +80,16 @@
   --radius-3xl: 24px;
 }
 
+/* Smooth scrolling and anchor offset defaults */
+html {
+  scroll-behavior: smooth;
+}
+
+[id],
+section[id] {
+  scroll-margin-top: 150px;
+}
+
 /* Custom styling from target design */
 .fade-up {
   opacity: 0;

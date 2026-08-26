@@ -1,43 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%">
-  <rect width="240" height="240" fill="transparent" />
-  <g transform="translate(20, 0)" fill="#023625">
-    <!-- Outer Shield Border -->
-    <path fill-rule="evenodd" d="
-      M 100 12
-      C 132 28, 164 36, 185 48
-      C 185 122, 158 190, 100 230
-      C 42 190, 15 122, 15 48
-      C 36 36, 68 28, 100 12 Z
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Solid dark-green background with zero transparent padding -->
+  <rect width="512" height="512" fill="#023625" />
+  
+  <!-- Simplified Shield Outline (Gold / White) -->
+  <path
+    d="M 256 64 C 344 112 422 116 430 134 C 434 236 408 336 256 448 C 104 336 78 236 82 134 C 90 116 168 112 256 64 Z"
+    fill="none"
+    stroke="#E6CA85"
+    stroke-width="32"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
 
-      M 100 34
-      C 126 47, 151 54, 166 64
-      C 166 122, 144 176, 100 210
-      C 56 176, 34 122, 34 64
-      C 49 54, 74 47, 100 34 Z
-    " />
-
-    <!-- Center Checkmark -->
-    <path d="
-      M 56 116
-      L 86 150
-      L 150 72
-      L 136 61
-      L 86 130
-      L 67 107 Z
-    " />
-
-    <!-- Left Leaf Motif -->
-    <path d="
-      M 100 198
-      C 72 184, 48 170, 42 144
-      C 58 147, 80 168, 100 198 Z
-    " />
-
-    <!-- Right Leaf Motif -->
-    <path d="
-      M 100 198
-      C 128 184, 152 170, 158 144
-      C 142 147, 120 168, 100 198 Z
-    " />
-  </g>
+  <!-- Bold Simplified Tick / Checkmark (White) -->
+  <path
+    d="M 180 256 L 236 316 L 336 196"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="40"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 </svg>

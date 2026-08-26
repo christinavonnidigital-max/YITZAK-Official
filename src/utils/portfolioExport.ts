@@ -1,4 +1,8 @@
-import { jsPDF } from 'jspdf';
+// Dynamic loader for jsPDF to keep the initial page bundle lightweight and fast
+async function getJsPDF() {
+  const { jsPDF } = await import('jspdf');
+  return jsPDF;
+}
 
 interface Course {
   title: string;
@@ -62,7 +66,8 @@ export function exportPortfolioToCSV(categories: Category[]) {
  * Styled to fit the Yitzak identity (Forest green and antique gold highlights).
  * Includes auto-wrap, dynamic height calculation, and clean page breaks.
  */
-export function exportPortfolioToPDF(categories: Category[]) {
+export async function exportPortfolioToPDF(categories: Category[]) {
+  const jsPDF = await getJsPDF();
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -236,7 +241,8 @@ export function exportPortfolioToPDF(categories: Category[]) {
 /**
  * Exports an individual course syllabus specification as a formal PDF document.
  */
-export function exportCourseSyllabusPDF(course: any) {
+export async function exportCourseSyllabusPDF(course: any) {
+  const jsPDF = await getJsPDF();
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -378,8 +384,9 @@ export function triggerSmartPrint(fallbackFn?: () => void) {
  * Exports the Yitzak Official Institutional Capabilities Statement as a professional PDF document.
  * Includes letterhead, accreditation credentials, 4 advisory pillars, and contact information.
  */
-export function exportCapabilitySheetPDF(type: string = 'capability_sheet') {
+export async function exportCapabilitySheetPDF(type: string = 'capability_sheet') {
   try {
+    const jsPDF = await getJsPDF();
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -577,8 +584,9 @@ export interface ExportableKnowledgeResource {
 /**
  * Exports a specific Knowledge Centre publication / whitepaper as an official Yitzak PDF document.
  */
-export function exportKnowledgeResourcePDF(resource: ExportableKnowledgeResource) {
+export async function exportKnowledgeResourcePDF(resource: ExportableKnowledgeResource) {
   try {
+    const jsPDF = await getJsPDF();
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',

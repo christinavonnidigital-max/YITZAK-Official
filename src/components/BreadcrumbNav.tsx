@@ -1,5 +1,6 @@
 import React from 'react';
-import { Home, ChevronRight, GraduationCap, ShieldCheck, Award, Headphones, Workflow, Calendar, Mail, FileText, Lock } from 'lucide-react';
+import { Home, ChevronRight, GraduationCap, ShieldCheck, Award, Headphones, Workflow, Calendar, Mail, FileText, Lock, Shield } from 'lucide-react';
+import { AppView } from '../lib/routes';
 import AppIcon from './AppIcon';
 
 interface PortfolioCategory {
@@ -9,8 +10,8 @@ interface PortfolioCategory {
 }
 
 interface BreadcrumbNavProps {
-  currentView: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge' | 'portal';
-  navigateTo: (view: 'home' | 'consulting' | 'training' | 'certifications' | 'calendar' | 'contact' | 'process_implementation' | 'knowledge' | 'portal') => void;
+  currentView: AppView;
+  navigateTo: (view: AppView) => void;
   activeSidebarSection?: string;
   setActiveSidebarSection?: (section: string) => void;
   portfolioCategories?: PortfolioCategory[];
@@ -206,13 +207,21 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
               </li>
             </>
           )}
-        </ol>
 
-        {/* Quick Context Tag / Standard Status indicator */}
-        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-ash/80">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>GFSI &amp; ISO Aligned Frameworks</span>
-        </div>
+          {currentView === 'privacy' && (
+            <>
+              <li className="flex items-center">
+                <ChevronRight size={13} className="text-ash/50 shrink-0" />
+              </li>
+              <li>
+                <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
+                  <ShieldCheck size={13} className="text-[#B68A35]" />
+                  <span>Privacy Notice</span>
+                </span>
+              </li>
+            </>
+          )}
+        </ol>
 
       </div>
     </nav>

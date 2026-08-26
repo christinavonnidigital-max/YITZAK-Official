@@ -1,17 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
-import BookingModal from './components/BookingModal';
-import Dashboard from './components/Dashboard';
-import TrainingCalendar from './components/TrainingCalendar';
 import ContactUs from './components/ContactUs';
 import ComplianceCalculator from './components/ComplianceCalculator';
 import FAQSection from './components/FAQSection';
-import WhitelistManager from './components/WhitelistManager';
-import KnowledgeCenter from './components/KnowledgeCenter';
-import ProcessImplementationRoadmap from './components/ProcessImplementationRoadmap';
+import FloatingChatWidget from './components/FloatingChatWidget';
 import { checkEmailWhitelist, preRegisterGuest } from './lib/whitelist';
 import { exportPortfolioToCSV, exportPortfolioToPDF, triggerSmartPrint, exportCapabilitySheetPDF } from './utils/portfolioExport';
 import { getViewFromLocation, updateBrowserUrl, AppView } from './lib/routes';
@@ -21,6 +16,24 @@ import YitzakLogo, { YitzakShieldIcon } from './components/YitzakLogo';
 import AppIcon from './components/AppIcon';
 import { PILLARS } from './data';
 import { PORTFOLIO_CATEGORIES, TrainingCategory } from './data/trainingStandards';
+
+// Lazy load non-initial heavy views and modals to keep the landing page load instantaneous
+const BookingModal = lazy(() => import('./components/BookingModal'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const TrainingCalendar = lazy(() => import('./components/TrainingCalendar'));
+const WhitelistManager = lazy(() => import('./components/WhitelistManager'));
+const KnowledgeCenter = lazy(() => import('./components/KnowledgeCenter'));
+const ProcessImplementationRoadmap = lazy(() => import('./components/ProcessImplementationRoadmap'));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
+
+const ViewLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-[320px] py-16">
+    <div className="flex flex-col items-center justify-center gap-3">
+      <Loader2 className="w-6 h-6 animate-spin text-[#023625]" />
+      <span className="text-xs font-sans font-medium text-ash">Loading module...</span>
+    </div>
+  </div>
+);
 
 const portfolioCategories = PORTFOLIO_CATEGORIES;
 
@@ -40,6 +53,7 @@ export default function App() {
     }
     return 'home';
   });
+  const [activeHomeSection, setActiveHomeSection] = useState<'home' | 'about'>('home');
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(true);
   const [activeSidebarSection, setActiveSidebarSection] = useState('food-safety');
@@ -61,6 +75,20 @@ export default function App() {
   const [portalLoginError, setPortalLoginError] = useState<string | null>(null);
   const [portalGuestWorkEmail, setPortalGuestWorkEmail] = useState('');
   const [activeApproachPhase, setActiveApproachPhase] = useState<number>(0);
+  const phaseTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const phaseTouchStartX = useRef<number | null>(null);
+
+  // Auto-scroll the active phase tab into center view whenever the active phase changes
+  useEffect(() => {
+    const activeTabEl = phaseTabRefs.current[activeApproachPhase];
+    if (activeTabEl) {
+      activeTabEl.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
+  }, [activeApproachPhase]);
 
   const isBusinessEmail = (email: string): boolean => {
     if (!email || !email.includes('@')) return false;
@@ -242,6 +270,13 @@ export default function App() {
     setCurrentView(view);
     setMobileMenuOpen(false);
     setServicesDropdownOpen(false);
+    if (view === 'home') {
+      if (elementId === 'why-us' || elementId === 'about-section') {
+        setActiveHomeSection('about');
+      } else {
+        setActiveHomeSection('home');
+      }
+    }
     updateBrowserUrl(view, elementId, false);
     if (elementId) {
       setTimeout(() => {
@@ -259,6 +294,13 @@ export default function App() {
   useEffect(() => {
     const loc = getViewFromLocation();
     setCurrentView(loc.view);
+    if (loc.view === 'home') {
+      if (loc.elementId === 'why-us' || loc.elementId === 'about-section' || (typeof window !== 'undefined' && window.location.pathname === '/about')) {
+        setActiveHomeSection('about');
+      } else {
+        setActiveHomeSection('home');
+      }
+    }
     updateBrowserUrl(loc.view, loc.elementId, true);
 
     if (loc.elementId) {
@@ -273,6 +315,13 @@ export default function App() {
     const handlePopState = () => {
       const updated = getViewFromLocation();
       setCurrentView(updated.view);
+      if (updated.view === 'home') {
+        if (updated.elementId === 'why-us' || updated.elementId === 'about-section' || (typeof window !== 'undefined' && window.location.pathname === '/about')) {
+          setActiveHomeSection('about');
+        } else {
+          setActiveHomeSection('home');
+        }
+      }
       updateBrowserUrl(updated.view, updated.elementId, true);
       if (updated.elementId) {
         setTimeout(() => {
@@ -288,20 +337,28 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Initialize Auth state on load
+  // Scroll spy to update active navbar state between Home and About when on Home view
   useEffect(() => {
-    const unsubscribe = initAuth(
-      (user, token) => {
-        setCurrentUser(user);
-        setIsAuthLoading(false);
-      },
-      () => {
-        setCurrentUser(null);
-        setIsAuthLoading(false);
-      }
-    );
+    if (currentView !== 'home') return;
 
-    // Also directly hook into the standard auth state in case token is already refreshed
+    const handleScrollSpy = () => {
+      const whyUsEl = document.getElementById('why-us');
+      if (!whyUsEl) return;
+      const rect = whyUsEl.getBoundingClientRect();
+      // When why-us is scrolled into focus
+      if (rect.top <= 280 && rect.bottom >= 150) {
+        setActiveHomeSection('about');
+      } else if (window.scrollY < 350) {
+        setActiveHomeSection('home');
+      }
+    };
+
+    window.addEventListener('scroll', handleScrollSpy, { passive: true });
+    return () => window.removeEventListener('scroll', handleScrollSpy);
+  }, [currentView]);
+
+  // Initialize Auth state on load with single clean listener
+  useEffect(() => {
     const unsubAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         setCurrentUser(user);
@@ -312,7 +369,6 @@ export default function App() {
     });
 
     return () => {
-      unsubscribe();
       unsubAuth();
     };
   }, []);
@@ -433,10 +489,10 @@ export default function App() {
     };
   }, [currentUser, currentView]);
 
-  // Monitor scroll for Back to Top button visibility
+  // Monitor scroll for Back to Top button visibility (appears after deeper scroll)
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 400) {
+      if (window.scrollY > 600) {
         setShowBackToTop(true);
       } else {
         setShowBackToTop(false);
@@ -570,7 +626,7 @@ export default function App() {
   };
 
   return (
-    <div className="bg-surface-container-lowest text-on-surface font-sans selection:bg-antique-gold selection:text-white overflow-x-clip min-h-screen flex flex-col">
+    <div className="bg-[#F6F8F6] text-on-surface font-sans selection:bg-antique-gold selection:text-white overflow-x-clip min-h-screen flex flex-col">
       
       {/* Top Notification Toast */}
       <AnimatePresence>
@@ -589,7 +645,7 @@ export default function App() {
 
       {/* TopNavBar */}
       <header className="bg-white/98 backdrop-blur-md text-primary sticky top-0 border-b border-border/80 shadow-xs z-50 transition-all">
-        <div className="flex justify-between items-center w-full px-4 sm:px-8 md:px-12 py-3 sm:py-3.5 max-w-[1280px] mx-auto gap-4">
+        <div className="flex justify-between items-center w-full px-4 sm:px-8 md:px-12 py-2.5 sm:py-3 max-w-[1280px] mx-auto gap-4">
           
           {/* Logo */}
           <button 
@@ -602,20 +658,49 @@ export default function App() {
           
           {/* Desktop Right Navigation & CTA Area (Aligned to match page grid edge) */}
           <div className="flex items-center gap-5 xl:gap-7 ml-auto">
-            {/* Desktop Core Links with refined pill states */}
-            <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 font-sans text-[13.5px] font-medium tracking-wide shrink-0">
+            {/* Desktop Core Links with clean typography & active indicator */}
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-2 font-sans text-[13.5px] shrink-0">
+              {/* Home */}
               <button 
                 onClick={() => {
+                  setActiveHomeSection('home');
                   navigateTo('home');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center border ${
-                  currentView === 'home' 
-                    ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
-                    : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
+                className={`transition-colors duration-200 cursor-pointer whitespace-nowrap px-3 py-1.5 text-[14px] flex items-center relative ${
+                  currentView === 'home' && activeHomeSection === 'home'
+                    ? 'text-[#023625] font-bold' 
+                    : 'text-primary/75 hover:text-[#023625] font-medium'
+                }`}
+              >
+                <span>Home</span>
+                {currentView === 'home' && activeHomeSection === 'home' && (
+                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#023625] rounded-full" />
+                )}
+              </button>
+
+              {/* About */}
+              <button 
+                onClick={() => {
+                  setActiveHomeSection('about');
+                  if (currentView !== 'home') {
+                    navigateTo('home', 'why-us');
+                  } else {
+                    const el = document.getElementById('why-us');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    updateBrowserUrl('home', 'why-us', false);
+                  }
+                }}
+                className={`transition-colors duration-200 cursor-pointer whitespace-nowrap px-3 py-1.5 text-[14px] flex items-center relative ${
+                  currentView === 'home' && activeHomeSection === 'about'
+                    ? 'text-[#023625] font-bold' 
+                    : 'text-primary/75 hover:text-[#023625] font-medium'
                 }`}
               >
                 <span>About</span>
+                {currentView === 'home' && activeHomeSection === 'about' && (
+                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#023625] rounded-full" />
+                )}
               </button>
 
               {/* Services Dropdown */}
@@ -637,14 +722,17 @@ export default function App() {
                       if (el) el.scrollIntoView({ behavior: 'smooth' });
                     }
                   }}
-                  className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 border group ${
+                  className={`transition-colors duration-200 cursor-pointer whitespace-nowrap px-3 py-1.5 text-[14px] flex items-center gap-1.5 relative group ${
                     ['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView)
-                      ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
-                      : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
+                      ? 'text-[#023625] font-bold' 
+                      : 'text-primary/75 hover:text-[#023625] font-medium'
                   }`}
                 >
                   <span>Services</span>
-                  <ChevronDown size={12} className={`transition-transform duration-200 opacity-60 group-hover:opacity-100 ${servicesDropdownOpen ? 'rotate-180 opacity-100 text-[#B68A35]' : ''}`} />
+                  <ChevronDown size={13} className={`transition-transform duration-200 opacity-60 group-hover:opacity-100 ${servicesDropdownOpen ? 'rotate-180 opacity-100 text-[#023625]' : ''}`} />
+                  {['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView) && (
+                    <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#023625] rounded-full" />
+                  )}
                 </button>
 
                 <AnimatePresence>
@@ -654,11 +742,11 @@ export default function App() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 6, scale: 0.98 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 w-84 bg-white/98 backdrop-blur-md rounded-2xl shadow-xl border border-border/80 p-2 z-50 space-y-1 mt-2"
+                      className="absolute top-full left-0 w-84 bg-white/98 backdrop-blur-md rounded-xl shadow-xl border border-border/80 p-2 z-50 space-y-1 mt-2"
                     >
                       <button
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('training'); }}
-                        className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
+                        className="w-full text-left p-3 rounded-lg hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
                         <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] transition-colors">
                           <GraduationCap size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
@@ -671,7 +759,7 @@ export default function App() {
 
                       <button
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('certifications'); }}
-                        className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
+                        className="w-full text-left p-3 rounded-lg hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
                         <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] transition-colors">
                           <Award size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
@@ -684,7 +772,7 @@ export default function App() {
 
                       <button
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('consulting'); }}
-                        className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
+                        className="w-full text-left p-3 rounded-lg hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
                         <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] transition-colors">
                           <Headphones size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
@@ -697,7 +785,7 @@ export default function App() {
 
                       <button
                         onClick={() => { setServicesDropdownOpen(false); navigateTo('process_implementation'); }}
-                        className="w-full text-left p-3 rounded-xl hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
+                        className="w-full text-left p-3 rounded-lg hover:bg-[#023625]/5 transition-colors group flex items-start gap-3 cursor-pointer"
                       >
                         <div className="w-8 h-8 rounded-lg bg-[#023625]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#023625] transition-colors">
                           <Workflow size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
@@ -713,34 +801,26 @@ export default function App() {
               </div>
 
               <button 
-                onClick={() => navigateTo('knowledge')}
-                className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center border ${
-                  currentView === 'knowledge' 
-                    ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
-                    : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
-                }`}
-              >
-                <span>Knowledge Centre</span>
-              </button>
-
-              <button 
                 onClick={() => navigateTo('contact')}
-                className={`transition-all duration-200 cursor-pointer whitespace-nowrap px-3.5 py-1.5 rounded-xl flex items-center border ${
+                className={`transition-colors duration-200 cursor-pointer whitespace-nowrap px-3 py-1.5 text-[14px] flex items-center relative ${
                   currentView === 'contact' 
-                    ? 'text-[#023625] bg-[#023625]/8 border-[#023625]/15 font-semibold shadow-2xs' 
-                    : 'text-primary/75 border-transparent hover:text-[#023625] hover:bg-[#023625]/5'
+                    ? 'text-[#023625] font-bold' 
+                    : 'text-primary/75 hover:text-[#023625] font-medium'
                 }`}
               >
                 <span>Contact</span>
+                {currentView === 'contact' && (
+                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#023625] rounded-full" />
+                )}
               </button>
             </nav>
 
             {/* Right Action Area (Desktop CTA + Mobile Hamburger) */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* Request Consultation Gold Button - Desktop/Tablet Only */}
+              {/* Request Consultation Gold Button - ONLY Gold Action */}
               <button 
                 onClick={() => handleOpenBooking()}
-                className="hidden sm:flex bg-[#B68A35] hover:bg-[#9E7528] text-white font-serif font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 items-center gap-1.5 sm:gap-2"
+                className="hidden sm:flex bg-[#B68A35] hover:bg-[#9E7528] text-white font-serif font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-lg shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 items-center gap-1.5 sm:gap-2"
               >
                 <span>Request Consultation</span>
               </button>
@@ -748,7 +828,7 @@ export default function App() {
               {/* Mobile Hamburger Icon */}
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden text-primary bg-mist/80 hover:bg-mist active:scale-95 cursor-pointer p-2 sm:p-2.5 focus:outline-none rounded-xl border border-border/60 transition-all flex items-center justify-center shrink-0"
+                className="lg:hidden text-primary bg-mist/80 hover:bg-mist active:scale-95 cursor-pointer p-2 sm:p-2.5 focus:outline-none rounded-lg border border-border/60 transition-all flex items-center justify-center shrink-0"
                 aria-label="Toggle Navigation Menu"
               >
                 {mobileMenuOpen ? <X size={22} className="text-[#023625]" /> : <Menu size={22} className="text-[#023625]" />}
@@ -798,44 +878,96 @@ export default function App() {
 
                   {/* Drawer Stacked Menu Items */}
                   <nav className="p-5 space-y-1.5 font-sans">
-                    {/* 1. About */}
+                    {/* 1. Home */}
                     <button
                       onClick={() => {
+                        setActiveHomeSection('home');
                         navigateTo('home');
                         setMobileMenuOpen(false);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                        currentView === 'home'
+                        currentView === 'home' && activeHomeSection === 'home'
                           ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
                           : 'text-white/80 hover:text-white hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Building2 size={17} className={currentView === 'home' ? 'text-[#E6CA85]' : 'text-white/50'} />
+                        <Shield size={17} className={currentView === 'home' && activeHomeSection === 'home' ? 'text-[#E6CA85]' : 'text-white/50'} />
+                        <span>Home</span>
+                      </div>
+                    </button>
+
+                    {/* 2. About */}
+                    <button
+                      onClick={() => {
+                        setActiveHomeSection('about');
+                        setMobileMenuOpen(false);
+                        if (currentView !== 'home') {
+                          navigateTo('home', 'why-us');
+                        } else {
+                          const el = document.getElementById('why-us');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          updateBrowserUrl('home', 'why-us', false);
+                        }
+                      }}
+                      className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                        currentView === 'home' && activeHomeSection === 'about'
+                          ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Building2 size={17} className={currentView === 'home' && activeHomeSection === 'about' ? 'text-[#E6CA85]' : 'text-white/50'} />
                         <span>About</span>
                       </div>
                     </button>
 
-                    {/* 2. Services (Expandable) */}
+                    {/* 3. Services (Split Navigation: Text goes to overview, chevron toggles sub-services) */}
                     <div className="space-y-1">
-                      <button
-                        onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
-                        className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                          ['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView)
+                      <div
+                        className={`flex items-center justify-between w-full rounded-xl text-sm font-medium transition-all ${
+                          ['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView) || (currentView === 'home' && activeHomeSection === 'services')
                             ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
                             : 'text-white/80 hover:text-white hover:bg-white/5'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <LayoutGrid size={17} className={['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView) ? 'text-[#E6CA85]' : 'text-white/50'} />
+                        {/* Services Text Button -> Navigates to Services Overview */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            setActiveHomeSection('services');
+                            if (currentView !== 'home') {
+                              navigateTo('home', 'services-overview');
+                            } else {
+                              const el = document.getElementById('services-overview') || document.getElementById('services');
+                              if (el) el.scrollIntoView({ behavior: 'smooth' });
+                              updateBrowserUrl('home', 'services-overview', false);
+                            }
+                          }}
+                          className="flex items-center gap-3 px-4 py-3 flex-1 text-left cursor-pointer min-h-[44px]"
+                        >
+                          <LayoutGrid size={17} className={['training', 'certifications', 'consulting', 'process_implementation'].includes(currentView) || (currentView === 'home' && activeHomeSection === 'services') ? 'text-[#E6CA85]' : 'text-white/50'} />
                           <span>Services</span>
-                        </div>
-                        <ChevronDown 
-                          size={15} 
-                          className={`text-white/60 transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180 text-[#E6CA85]' : ''}`} 
-                        />
-                      </button>
+                        </button>
+
+                        {/* Chevron Trigger -> Expands / Collapses Sub-Services */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMobileServicesOpen(!mobileServicesOpen);
+                          }}
+                          aria-label={mobileServicesOpen ? "Collapse services" : "Expand services"}
+                          className="px-3.5 py-3 text-white/60 hover:text-white transition-colors cursor-pointer border-l border-white/10 min-h-[44px] flex items-center justify-center"
+                        >
+                          <ChevronDown 
+                            size={16} 
+                            className={`transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180 text-[#E6CA85]' : ''}`} 
+                          />
+                        </button>
+                      </div>
 
                       {/* Expanded Services Sub-Items with vertical connector tree */}
                       <AnimatePresence>
@@ -911,23 +1043,7 @@ export default function App() {
                       </AnimatePresence>
                     </div>
 
-                    {/* 3. Knowledge Centre */}
-                    <button
-                      onClick={() => {
-                        navigateTo('knowledge');
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                        currentView === 'knowledge'
-                          ? 'bg-[#B68A35]/15 text-[#E6CA85] font-semibold border border-[#B68A35]/30 shadow-xs'
-                          : 'text-white/80 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <FileText size={17} className={currentView === 'knowledge' ? 'text-[#E6CA85]' : 'text-white/50'} />
-                      <span>Knowledge Centre</span>
-                    </button>
-
-                    {/* 4. Contact */}
+                    {/* 3. Contact */}
                     <button
                       onClick={() => {
                         navigateTo('contact');
@@ -982,88 +1098,76 @@ export default function App() {
       <main className="flex-grow">
         {currentView === 'home' && (
           <>
-            {/* 1. Hero Section */}
-            <section className="relative py-8 sm:py-12 md:py-16 px-4 sm:px-8 md:px-12 max-w-[1280px] mx-auto overflow-hidden">
-              <div className="max-w-3xl mx-auto text-center space-y-4 sm:space-y-6">
+            {/* 1. Hero Section - Streamlined & Focused */}
+            <section className="relative pt-10 pb-12 sm:pt-14 sm:pb-16 md:pt-16 md:pb-20 px-4 sm:px-8 md:px-12 max-w-[1280px] mx-auto text-center">
+              <div className="max-w-3xl mx-auto space-y-5 sm:space-y-6">
+                
+                {/* One Credibility Signal */}
                 <ScrollReveal direction="up" delay={0.05}>
-                  <div className="inline-flex items-center gap-1.5 bg-[#023625]/5 border border-[#023625]/15 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full mb-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35] animate-pulse"></span>
-                    <span className="text-[#023625] font-sans text-[9px] sm:text-[10px] uppercase tracking-wider font-bold">
-                      Yitzak Institutional Advisory · Southern Africa &amp; Global Markets
+                  <div className="inline-flex items-center gap-2 bg-[#023625]/8 border border-[#023625]/15 px-3.5 py-1.5 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-[#B68A35]"></span>
+                    <span className="text-[#023625] font-sans text-xs uppercase tracking-wider font-bold">
+                      Official FoodChain ID Partner
                     </span>
                   </div>
                 </ScrollReveal>
 
+                {/* What Yitzak Does */}
                 <ScrollReveal direction="up" delay={0.1}>
-                  <h1 className="font-serif text-2xl sm:text-3xl md:text-5xl lg:text-6xl leading-tight text-primary font-bold tracking-tight">
-                    Empowering Organisations Through Compliance &amp; Capability.
+                  <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold text-primary tracking-tight leading-[1.12]">
+                    Professional Training, Consulting &amp; Certification
                   </h1>
                 </ScrollReveal>
 
                 <ScrollReveal direction="up" delay={0.15}>
-                  <p className="font-sans text-xs sm:text-sm md:text-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                    Delivering across Southern Africa and global markets. We help teams build competence, strengthen systems, and achieve accredited certification success.
+                  <p className="font-sans text-base sm:text-lg md:text-xl text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
+                    We help manufacturers, producers, and businesses across Southern Africa meet international standards, train their teams, and achieve accredited certification.
                   </p>
                 </ScrollReveal>
 
+                {/* Primary CTA */}
                 <ScrollReveal direction="up" delay={0.2}>
-                  <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-4">
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                    {/* Primary Filled Gold Button */}
+                    <button
+                      onClick={() => handleOpenBooking()}
+                      className="w-full sm:w-auto bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-8 rounded-lg cursor-pointer transition-all active:scale-98 shadow-sm hover:shadow-md flex items-center justify-center gap-2.5"
+                    >
+                      <Calendar size={15} className="shrink-0" />
+                      <span>Request Consultation</span>
+                    </button>
+
+                    {/* Secondary Outlined Dark Green Button */}
                     <button
                       onClick={() => {
                         const el = document.getElementById('services');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 sm:py-4 sm:px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md flex items-center justify-center gap-2.5 w-full sm:w-auto"
+                      className="w-full sm:w-auto bg-transparent hover:bg-[#023625]/8 text-[#023625] border border-[#023625]/40 hover:border-[#023625] font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-7 rounded-lg cursor-pointer transition-all active:scale-98 flex items-center justify-center gap-2.5"
                     >
-                      <LayoutGrid size={16} className="shrink-0 text-white" />
-                      <span>Explore Our Services</span>
+                      <LayoutGrid size={15} className="shrink-0 text-[#023625]" />
+                      <span>Explore Services</span>
                     </button>
-                    <button
-                      onClick={() => handleOpenBooking('consulting')}
-                      className="bg-[#023625] hover:bg-[#034d35] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 sm:py-4 sm:px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md flex items-center justify-center gap-2.5 w-full sm:w-auto"
-                    >
-                      <Calendar size={16} className="text-[#B68A35] shrink-0" />
-                      <span>Book a Consultation</span>
-                    </button>
-                  </div>
-                </ScrollReveal>
-
-                <ScrollReveal direction="up" delay={0.25}>
-                  <div className="pt-2 max-w-xs sm:max-w-sm mx-auto">
-                    <div className="grid grid-cols-3 divide-x divide-stone-200/70 bg-stone-50/70 border border-stone-200/70 rounded-lg px-1.5 py-1.5 shadow-2xs text-center">
-                      <div className="px-1">
-                        <div className="font-serif font-bold text-[11px] sm:text-xs text-[#023625] leading-tight">100%</div>
-                        <div className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-ash mt-0.5">Audit Success</div>
-                      </div>
-                      <div className="px-1">
-                        <div className="font-serif font-bold text-[11px] sm:text-xs text-[#023625] leading-tight">Global</div>
-                        <div className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-ash mt-0.5">ISO / GFSI</div>
-                      </div>
-                      <div className="px-1">
-                        <div className="font-serif font-bold text-[11px] sm:text-xs text-[#023625] leading-tight">Partner</div>
-                        <div className="text-[8px] sm:text-[9px] font-mono uppercase tracking-widest text-ash mt-0.5">FoodChain ID</div>
-                      </div>
-                    </div>
                   </div>
                 </ScrollReveal>
               </div>
             </section>
 
-            {/* 2. Our Core Services */}
-            <section id="services" className="py-10 sm:py-16 md:py-20 bg-mist/60 border-y border-border px-4 sm:px-8 md:px-16 scroll-mt-20 overflow-hidden">
+            {/* 2. Our Core Services - Straight after Hero */}
+            <section id="services" className="pt-24 pb-16 sm:pt-24 sm:pb-20 md:pt-24 md:pb-24 bg-mist/60 border-y border-border px-4 sm:px-8 md:px-16 scroll-mt-[150px] overflow-hidden">
               <div className="max-w-[1280px] mx-auto space-y-8 sm:space-y-12">
                 <ScrollReveal direction="up" delay={0.05}>
                   <div className="text-center space-y-3 max-w-3xl mx-auto">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Comprehensive Capabilities</span>
-                    <h2 className="font-serif text-3xl md:text-5xl text-primary font-bold">Our Core Services</h2>
+                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Our Core Services</span>
+                    <h2 className="font-serif text-3xl md:text-5xl text-primary font-bold">What We Do</h2>
                     <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed">
-                      Integrated advisory, training, and auditing solutions designed to guide your team through every stage of compliance.
+                      Practical training, consulting, and accredited certification audits for quality, food safety, environmental, and business management systems.
                     </p>
                     <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
                   </div>
                 </ScrollReveal>
 
-                {/* Core Services Grid with Staggered Entrance Animation & Parallax Depth */}
+                {/* Core Services Grid */}
                 <motion.div
                   initial="hidden"
                   whileInView="visible"
@@ -1080,7 +1184,7 @@ export default function App() {
                   }}
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch"
                 >
-                  {/* Service 1: Professional Training (Capability Building) */}
+                  {/* Service 1: Professional Training */}
                   <motion.div
                     variants={{
                       hidden: { opacity: 0, y: 30 },
@@ -1102,8 +1206,8 @@ export default function App() {
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
                               <GraduationCap size={24} />
                             </div>
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2.5 py-1 rounded-full">
-                              Capability Building
+                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#7d5800] bg-[#B68A35]/15 px-2.5 py-1 rounded-full">
+                              Training
                             </span>
                           </div>
                           <div className="space-y-2">
@@ -1117,15 +1221,15 @@ export default function App() {
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Yitzak professional programmes</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
                               <span>FoodChain ID Academy courses</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Corporate &amp; in-house delivery</span>
+                              <span>HACCP &amp; Food Safety Lead Auditor</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
+                              <span>Corporate &amp; in-house workshops</span>
                             </li>
                           </ul>
                         </div>
@@ -1142,7 +1246,7 @@ export default function App() {
                     </div>
                   </motion.div>
 
-                  {/* Service 2: Certification (Capability Building) */}
+                  {/* Service 2: Certification */}
                   <motion.div
                     variants={{
                       hidden: { opacity: 0, y: 30 },
@@ -1158,14 +1262,14 @@ export default function App() {
                     className="h-full"
                   >
                     <div className="h-full">
-                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-[#B68A35]/40 shadow-xs hover:shadow-lg hover:border-[#B68A35] transition-all flex flex-col justify-between h-full group">
                         <div className="space-y-5">
                           <div className="flex items-center justify-between">
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
                               <ShieldCheck size={24} />
                             </div>
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#B68A35] bg-[#B68A35]/10 px-2.5 py-1 rounded-full">
-                              Capability Building
+                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#7d5800] bg-[#B68A35]/15 px-2.5 py-1 rounded-full border border-[#B68A35]/20">
+                              FoodChain ID Partner
                             </span>
                           </div>
                           <div className="space-y-2">
@@ -1173,25 +1277,21 @@ export default function App() {
                               Certification
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              Accredited third-party certification audits conducted through FoodChain ID across international food safety and quality standards.
+                              Accredited third-party certification audits conducted through FoodChain ID across international quality, food safety, and agricultural standards.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Official FoodChain ID certification audits</span>
+                              <span>BRCGS, FSSC 22000 &amp; ISO standards</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Accredited third-party standard assessments</span>
+                              <span>GLOBALG.A.P. &amp; Non-GMO audits</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>ISO, FSSC 22000 &amp; BRCGS audit delivery</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>GLOBALG.A.P. &amp; Non-GMO scheme audits</span>
+                              <span>Recognised across Southern Africa</span>
                             </li>
                           </ul>
                         </div>
@@ -1208,7 +1308,7 @@ export default function App() {
                     </div>
                   </motion.div>
 
-                  {/* Service 3: Consulting & Advisory (Advisory) */}
+                  {/* Service 3: Consulting & Advisory */}
                   <motion.div
                     variants={{
                       hidden: { opacity: 0, y: 30 },
@@ -1230,7 +1330,7 @@ export default function App() {
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
                               <Headphones size={24} />
                             </div>
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
+                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
                               Advisory
                             </span>
                           </div>
@@ -1239,21 +1339,21 @@ export default function App() {
                               Consulting &amp; Advisory
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              Practical guidance to implement learning, optimize management systems, and strengthen organisational resilience.
+                              Expert guidance to prepare your team, update procedures, and pass upcoming compliance audits.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Gap assessments &amp; reviews</span>
+                              <span>Gap analysis and pre-audits</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Management system formulation</span>
+                              <span>Quality manual &amp; SOP writing</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Documentation &amp; internal audits</span>
+                              <span>Corrective action (CAPA) support</span>
                             </li>
                           </ul>
                         </div>
@@ -1262,7 +1362,7 @@ export default function App() {
                             onClick={() => navigateTo('consulting')}
                             className="text-xs font-bold uppercase tracking-wider text-[#023625] hover:text-[#B68A35] inline-flex items-center gap-2 transition-colors cursor-pointer"
                           >
-                            <span>Explore Advisory</span>
+                            <span>View Advisory Services</span>
                             <ArrowRight size={14} />
                           </button>
                         </div>
@@ -1270,7 +1370,7 @@ export default function App() {
                     </div>
                   </motion.div>
 
-                  {/* Service 4: Business Process Implementation (Advisory) */}
+                  {/* Service 4: Business Process Implementation */}
                   <motion.div
                     variants={{
                       hidden: { opacity: 0, y: 30 },
@@ -1292,8 +1392,8 @@ export default function App() {
                             <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
                               <Workflow size={24} />
                             </div>
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
-                              Advisory
+                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
+                              Operations
                             </span>
                           </div>
                           <div className="space-y-2">
@@ -1301,21 +1401,21 @@ export default function App() {
                               Business Process Implementation
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              Building operational foundations from zero: process mapping, risk controls, and HR &amp; accounting systems setup.
+                              Setting up essential workflows, process mapping, and HR and accounting systems for growing enterprises.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Phase 1: Mapping &amp; Governance</span>
+                              <span>Process mapping and roles</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Phase 2: Lean Audits &amp; Efficiency</span>
+                              <span>HR and staff governance</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>HR, Accounting &amp; Operations Systems</span>
+                              <span>Accounting and operational controls</span>
                             </li>
                           </ul>
                         </div>
@@ -1335,167 +1435,205 @@ export default function App() {
               </div>
             </section>
 
-            {/* 3. Why Work With Us */}
-            <section className="py-20 px-4 md:px-16 max-w-[1280px] mx-auto">
-              <div className="space-y-12">
-                <ScrollReveal direction="up" delay={0.05}>
-                  <div className="text-center space-y-3 max-w-3xl mx-auto">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Institutional Advantage</span>
-                    <h2 className="font-serif text-3xl md:text-5xl text-primary font-bold">Why Work With Us</h2>
-                    <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed">
-                      Five key principles that define Yitzak Consulting as your long-term compliance partner.
-                    </p>
-                    <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
+            {/* 3. Compact High-Value Credibility Banner (FoodChain ID Partnership) */}
+            <section className="bg-[#023625] text-white py-8 sm:py-10 px-4 sm:px-8 md:px-12 border-y border-[#B68A35]/30 relative overflow-hidden">
+              <div className="max-w-[1280px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+                <div className="flex items-start sm:items-center gap-4 text-left">
+                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-[#DFC181] shrink-0">
+                    <ShieldCheck size={26} />
                   </div>
-                </ScrollReveal>
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#DFC181] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                        Official Technical Partner
+                      </span>
+                      <span className="text-white/60 text-xs hidden sm:inline">&bull;</span>
+                      <span className="text-xs text-white/80 font-sans font-medium">
+                        FoodChain ID Southern Africa
+                      </span>
+                    </div>
+                    <p className="font-serif text-base sm:text-lg text-white font-bold">
+                      Accredited Management System Certifications &amp; Official FoodChain ID Academy Curricula
+                    </p>
+                    <p className="text-xs text-white/70 font-sans">
+                      ISO 9001 &bull; ISO 14001 &bull; ISO 45001 &bull; ISO 22000 &bull; BRCGS &bull; FSSC 22000 &bull; GLOBALG.A.P. &bull; Non-GMO
+                    </p>
+                  </div>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 items-stretch">
-                  {[
-                    {
-                      icon: <Globe size={24} className="text-[#B68A35]" />,
-                      title: "Regional & Global Reach",
-                      desc: "Delivering across Southern Africa and international markets."
-                    },
-                    {
-                      icon: <Workflow size={24} className="text-[#B68A35]" />,
-                      title: "Structured Methodology",
-                      desc: "Discover → Assess → Develop → Deliver → Improve."
-                    },
-                    {
-                      icon: <ShieldCheck size={24} className="text-[#B68A35]" />,
-                      title: "FoodChain ID Partnership",
-                      desc: "Access to accredited certification programmes."
-                    },
-                    {
-                      icon: <Target size={24} className="text-[#B68A35]" />,
-                      title: "Tailored Solutions",
-                      desc: "Designed around your organisation’s objectives."
-                    },
-                    {
-                      icon: <TrendingUp size={24} className="text-[#B68A35]" />,
-                      title: "Long-Term Value",
-                      desc: "Building competence for lasting success."
-                    }
-                  ].map((item, idx) => (
-                    <ScrollReveal key={idx} direction="up" delay={0.08 * (idx + 1)} className="h-full flex flex-col">
-                      <div className="bg-white p-6 rounded-2xl border border-border shadow-xs hover:border-[#B68A35] hover:shadow-md transition-all flex flex-col justify-between h-full text-center sm:text-left">
-                        <div>
-                          <div className="w-12 h-12 rounded-xl bg-[#B68A35]/10 flex items-center justify-center mx-auto sm:mx-0 shrink-0 mb-5">
-                            {item.icon}
-                          </div>
-                          <h3 className="font-serif font-bold text-primary text-base leading-snug min-h-[42px] flex items-start">
-                            {item.title}
-                          </h3>
-                          <p className="font-sans text-xs text-on-surface-variant leading-relaxed mt-2.5">
-                            {item.desc}
-                          </p>
-                        </div>
-                      </div>
-                    </ScrollReveal>
-                  ))}
+                <div className="shrink-0 flex items-center gap-3 w-full sm:w-auto">
+                  <button
+                    onClick={() => navigateTo('certifications')}
+                    className="w-full sm:w-auto bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-lg cursor-pointer transition-all flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    <span>View Certification Schemes</span>
+                    <ArrowRight size={14} />
+                  </button>
                 </div>
               </div>
             </section>
 
-            {/* 4. Our Approach */}
-            <section id="approach" className="py-8 sm:py-12 md:py-14 bg-[#023625] text-white px-4 sm:px-8 md:px-12 scroll-mt-20 relative overflow-hidden">
-              <div className="max-w-[1280px] mx-auto space-y-6 sm:space-y-10 relative z-10">
+            {/* 4. What Guides Our Work - Core Principles */}
+            <section id="why-us" className="pt-24 pb-16 sm:pt-24 sm:pb-20 px-4 sm:px-8 md:px-12 bg-[#F6F8F6] border-b border-border/80 scroll-mt-[150px]">
+              <div className="max-w-[1280px] mx-auto space-y-10 sm:space-y-12">
                 <ScrollReveal direction="up" delay={0.05}>
-                  <div className="text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[#B68A35] font-mono text-[10px] sm:text-xs uppercase tracking-widest font-bold shadow-xs">
-                      <AppIcon name="route" size={14} color="#B68A35" />
-                      <span>5-Phase Implementation Framework</span>
-                    </div>
-                    <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-white">Our Approach</h2>
-                    <p className="text-white/80 font-sans text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
-                      A structured methodology engineered to transform complex compliance requirements into permanent operational excellence.
+                  <div className="text-center max-w-3xl mx-auto space-y-2.5">
+                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">
+                      WHAT GUIDES OUR WORK
+                    </span>
+                    <h2 className="font-serif text-2xl sm:text-3xl lg:text-[34px] font-bold text-primary tracking-tight leading-snug text-balance">
+                      Practical systems. Capable teams. Lasting readiness.
+                    </h2>
+                    <p className="font-sans text-sm sm:text-base text-on-surface-variant leading-relaxed max-w-2xl mx-auto">
+                      We design management systems and training that fit real workplace routines and stay effective between audits.
                     </p>
-                    <div className="w-16 sm:w-20 h-1 bg-[#B68A35] mx-auto mt-2 rounded-full"></div>
                   </div>
                 </ScrollReveal>
 
-                {/* 5-Phase Implementation Framework Navigation */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+                  {[
+                    {
+                      icon: Sliders,
+                      title: "Practical systems",
+                      desc: "We review your operations and build workable procedures structured around real shifts, site layout, and daily routines."
+                    },
+                    {
+                      icon: GraduationCap,
+                      title: "Capable teams",
+                      desc: "We build the confidence and practical know-how your team needs to maintain control every day."
+                    },
+                    {
+                      icon: ShieldCheck,
+                      title: "Lasting readiness",
+                      desc: "We carry out regular reviews, standard updates, and continual-improvement work to keep your facility audit-ready throughout the year."
+                    }
+                  ].map((pillar, pIdx) => {
+                    const PillarIcon = pillar.icon;
+                    return (
+                      <ScrollReveal key={pIdx} direction="up" delay={0.1 * (pIdx + 1)} className="h-full">
+                        <div className="bg-white p-7 rounded-xl border border-border hover:border-[#B68A35]/50 transition-all flex flex-col justify-start h-full shadow-2xs group">
+                          <div className="w-10 h-10 rounded-lg bg-[#023625]/8 text-[#023625] flex items-center justify-center shrink-0 mb-4 group-hover:bg-[#023625] group-hover:text-[#DFC181] transition-colors">
+                            <PillarIcon size={20} />
+                          </div>
+                          <div className="space-y-2">
+                            <h3 className="font-serif font-bold text-lg text-primary group-hover:text-[#023625] transition-colors leading-snug">
+                              {pillar.title}
+                            </h3>
+                            <p className="font-sans text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+                              {pillar.desc}
+                            </p>
+                          </div>
+                        </div>
+                      </ScrollReveal>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* 4. Our Approach - Streamlined Horizontal Numbered Timeline & Featured Phase Detail */}
+            <section id="approach" className="pt-24 pb-16 sm:pt-24 sm:pb-20 bg-[#023625] text-white px-4 sm:px-8 md:px-12 scroll-mt-[150px] relative overflow-x-clip">
+              <div className="max-w-[1280px] mx-auto space-y-8 sm:space-y-10 relative z-10">
+                <ScrollReveal direction="up" delay={0.05}>
+                  <div className="text-center space-y-2 sm:space-y-3 max-w-3xl mx-auto">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[#DFC181] font-sans text-xs uppercase tracking-widest font-bold shadow-xs">
+                      <Workflow size={13} className="text-[#DFC181]" />
+                      <span>How We Work</span>
+                    </div>
+                    <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-white">Our 5-Step Process</h2>
+                    <p className="text-white/80 font-sans text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
+                      A clear, step-by-step pathway from your initial review through to accredited certification and ongoing compliance.
+                    </p>
+                    <div className="pt-1 flex items-center justify-center gap-2 text-xs font-sans text-[#DFC181]">
+                      <ShieldCheck size={14} />
+                      <span className="font-medium tracking-wide">Aligned to applicable GFSI and ISO requirements</span>
+                    </div>
+                    <div className="w-16 sm:w-20 h-0.5 bg-[#B68A35] mx-auto mt-2"></div>
+                  </div>
+                </ScrollReveal>
+
+                {/* 5-Phase Implementation Framework */}
                 {(() => {
                   const approachPhasesData = [
                     {
                       num: "01",
                       phase: "Discover",
-                      subtitle: "Diagnostic Mapping",
-                      fullSubtitle: "Diagnostic Mapping & Scoping",
+                      subtitle: "Initial review",
+                      fullSubtitle: "Initial Review & Site Scoping",
                       icon: Target,
-                      summary: "Exhaustive operational & organizational scoping to map risk baselines.",
-                      description: "We initiate every client engagement with a deep-dive diagnostic mapping exercise. By examining organizational structures, facility workflows, existing documentation, and operational pain points, we construct an accurate, unfiltered baseline of your management systems.",
+                      summary: "Reviewing your operations, workflows, and current documentation.",
+                      description: "We begin with a thorough walkthrough of your facility, processes, and current records. This helps us understand how your team works day-to-day and where the key gaps or risks sit.",
                       deliverables: [
-                        "Comprehensive Contextual Scoping & Process Mapping",
-                        "Management System Readiness & Resource Evaluation",
-                        "Preliminary Risk Profile & Regulatory Alignment Scoping"
+                        "Review of existing quality or food safety manuals",
+                        "Facility walkthrough and operational flow mapping",
+                        "Clear summary of priorities and next steps"
                       ],
-                      outcome: "Complete operational transparency with clear baseline metrics and zero diagnostic blindspots.",
-                      benefitTag: "Foundation Scoping"
+                      outcome: "A clear picture of where your organisation stands before any changes begin.",
+                      benefitTag: "Clear Starting Point"
                     },
                     {
                       num: "02",
                       phase: "Assess",
-                      subtitle: "Gap Analysis & Audit",
-                      fullSubtitle: "Gap Analysis & Technical Audit",
+                      subtitle: "Gap analysis",
+                      fullSubtitle: "Gap Analysis & Compliance Review",
                       icon: FileText,
-                      summary: "Line-by-line evaluation against GFSI & management standards.",
-                      description: "Our certified lead auditors conduct rigorous gap analyses against targeted quality, environmental, safety, energy, and food safety standards (ISO 9001, ISO 14001, ISO 45001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP). We systematically identify non-conformances before certification bodies arrive.",
+                      summary: "Checking your current systems against target international standards.",
+                      description: "Our lead auditors review your processes clause-by-clause against the standards you need (ISO 9001, ISO 22000, FSSC 22000, BRCGS, GLOBALG.A.P., or HACCP). We pinpoint non-conformances before external auditors arrive.",
                       deliverables: [
-                        "Line-by-Line Gap Analysis Scorecard & Findings Matrix",
-                        "Hazard Analysis & Critical Control Point (HACCP) Re-validation",
-                        "Prioritised Risk Mitigation & CAPA Action Plan"
+                        "Detailed gap analysis report against the target standard",
+                        "HACCP plan review and hazard verification",
+                        "Prioritised action list with clear responsibilities"
                       ],
-                      outcome: "Data-driven clarity on audit vulnerability, non-conformance root causes, and exact steps required for certification.",
+                      outcome: "Exact clarity on what needs fixing to pass your target certification audit.",
                       benefitTag: "Audit Readiness"
                     },
                     {
                       num: "03",
                       phase: "Develop",
-                      subtitle: "System Engineering",
-                      fullSubtitle: "System Engineering & SOP Architecture",
+                      subtitle: "System design",
+                      fullSubtitle: "System Design & Practical Procedures",
                       icon: Sliders,
-                      summary: "Architecting bespoke FSMS & QMS standard operating procedures.",
-                      description: "We design and build customized Management Systems (FSMS/QMS) tailored to your operational realities. Rather than imposing rigid, generic templates, we craft intuitive procedures, record-keeping tools, and traceability workflows that integrate seamlessly into daily shifts.",
+                      summary: "Drafting clear SOPs and record sheets your staff can easily use.",
+                      description: "We develop or update your management system manuals, Standard Operating Procedures (SOPs), and record sheets. Everything is written clearly and structured around your real shifts to avoid unnecessary paperwork.",
                       deliverables: [
-                        "Custom Standard Operating Procedures (SOPs), Manuals & Work Instructions",
-                        "Integrated Traceability, Mock Recall & Supplier Verification Frameworks",
-                        "Root-Cause Analysis & Corrective Action (CAPA) Toolkits"
+                        "Practical SOPs, work instructions, and recording templates",
+                        "Traceability, recall, and supplier control procedures",
+                        "Corrective action (CAPA) tracking system"
                       ],
-                      outcome: "An audit-ready, lean, and user-friendly management system that eliminates administrative burden.",
-                      benefitTag: "Tailored Engineering"
+                      outcome: "A lean, practical management system that your team can run without confusion.",
+                      benefitTag: "Practical Systems"
                     },
                     {
                       num: "04",
                       phase: "Deliver",
-                      subtitle: "Capability Building",
-                      fullSubtitle: "Capability Building & Workforce Training",
+                      subtitle: "Training & rollout",
+                      fullSubtitle: "Team Training & System Rollout",
                       icon: GraduationCap,
-                      summary: "Instructor-led workforce training & practical system implementation.",
-                      description: "Systems only succeed when personnel understand and own them. In partnership with FoodChain ID Academy, we deliver instructor-led training, practical simulations, and change management workshops to build verifiable capability across shop-floor workers, supervisors, and executives.",
+                      summary: "Hands-on staff training and internal audit practice.",
+                      description: "A procedure only works if people know how to follow it. Through FoodChain ID Academy materials and practical training sessions, we train your operators, supervisors, and internal auditors so they run the system with confidence.",
                       deliverables: [
-                        "Instructor-Led Accredited Training Programs & Curricula",
-                        "Interactive Internal Audit Simulations & Mock Inspection Drills",
-                        "Management Review Workshops & System Handover Verification"
+                        "Accredited course delivery for team leaders and auditors",
+                        "Practical mock audit drills on the factory floor",
+                        "Management review and readiness check before certification"
                       ],
-                      outcome: "Empowered teams possessing real operational competence, capable of maintaining standards independently.",
-                      benefitTag: "Verifiable Competence"
+                      outcome: "Confident, well-trained staff ready to explain and run procedures during real audits.",
+                      benefitTag: "Capable Team"
                     },
                     {
                       num: "05",
                       phase: "Improve",
-                      subtitle: "Sustained Governance",
-                      fullSubtitle: "Sustained Governance & Recertification",
+                      subtitle: "Continual improvement",
+                      fullSubtitle: "Continual Improvement & Recertification",
                       icon: TrendingUp,
-                      summary: "Continuous monitoring, surveillance audits & recertification support.",
-                      description: "Achieving compliance is a milestone; sustaining it is a discipline. Yitzak provides continuous surveillance support, periodic internal audits, and regulatory update advisories to keep your business permanently audit-ready and compliant year-round.",
+                      summary: "Regular surveillance audits and continual system refinement.",
+                      description: "Staying compliant and competitive requires ongoing refinement. We provide regular surveillance audits, review standard updates, and help your team execute continual improvement initiatives, annual renewals, and unannounced customer visits.",
                       deliverables: [
-                        "Periodic Internal Surveillance & System Health Audits",
-                        "Standards Evolution Briefings & SOP Regulatory Patches",
-                        "Executive Compliance Dashboards & Annual Recertification Support"
+                        "Periodic internal audits and system check-ins",
+                        "Continual improvement reviews and standard updates",
+                        "Support ahead of annual surveillance and renewal audits"
                       ],
-                      outcome: "Long-term compliance resilience, protection against unannounced audits, and sustained brand trust.",
-                      benefitTag: "Permanent Compliance"
+                      outcome: "Long-term compliance and continual process optimization all year round.",
+                      benefitTag: "Continual Compliance"
                     }
                   ];
 
@@ -1504,147 +1642,135 @@ export default function App() {
 
                   return (
                     <div className="space-y-6">
-                      {/* Mobile View: 5-Phase Step Bar - All 5 phases visible on screen */}
-                      <div className="block md:hidden space-y-2">
-                        <div className="grid grid-cols-5 gap-1.5 p-1 bg-white/10 rounded-xl border border-white/15">
-                          {approachPhasesData.map((step, idx) => {
-                            const StepIcon = step.icon;
-                            const isActive = activeApproachPhase === idx;
-                            return (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => setActiveApproachPhase(idx)}
-                                className={`flex flex-col items-center justify-center p-1.5 rounded-lg text-center transition-all duration-200 cursor-pointer border ${
-                                  isActive
-                                    ? 'bg-[#B68A35] text-[#023625] border-[#B68A35] font-bold shadow-md'
-                                    : 'bg-white/5 text-white/80 border-transparent hover:bg-white/10'
-                                }`}
-                              >
-                                <span className={`w-5 h-5 rounded font-mono text-[10px] font-extrabold flex items-center justify-center shrink-0 mb-0.5 ${
-                                  isActive ? 'bg-[#023625] text-[#B68A35]' : 'bg-white/15 text-white'
-                                }`}>
-                                  {step.num}
-                                </span>
-                                <span className="font-serif font-bold text-[9px] leading-tight truncate w-full">
-                                  {step.phase}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] font-mono text-[#B68A35] px-1">
-                          <span>Phase {activeApproachPhase + 1} of 5</span>
-                          <span className="font-bold text-white uppercase text-[10px]">{currentPhase.phase}: {currentPhase.subtitle}</span>
-                        </div>
-                      </div>
+                      {/* Horizontal Numbered Timeline Bar - Sticky directly below main header with smooth snap carousel */}
+                      <div className="sticky top-[64px] sm:top-[70px] z-30 py-2 -my-2 bg-[#023625]/95 backdrop-blur-md">
+                        <div className="p-2 bg-white/10 rounded-2xl border border-white/20 shadow-md relative overflow-hidden">
+                          {/* Left and Right edge fade gradient on mobile to cue horizontal scrollability */}
+                          {activeApproachPhase > 0 && (
+                            <div className="sm:hidden absolute top-2 left-2 bottom-2 w-8 bg-gradient-to-r from-[#023625] to-transparent pointer-events-none z-10 rounded-l-xl opacity-90 transition-opacity" />
+                          )}
+                          {activeApproachPhase < approachPhasesData.length - 1 && (
+                            <div className="sm:hidden absolute top-2 right-2 bottom-2 w-8 bg-gradient-to-l from-[#023625] to-transparent pointer-events-none z-10 rounded-r-xl opacity-90 transition-opacity" />
+                          )}
 
-                      {/* Desktop View: 5-Phase Infographic Nav Cards Grid */}
-                      <div className="hidden md:grid md:grid-cols-5 gap-3">
-                        {approachPhasesData.map((step, idx) => {
-                          const StepIcon = step.icon;
-                          const isActive = activeApproachPhase === idx;
+                          <div className="flex sm:grid sm:grid-cols-5 gap-2 relative overflow-x-auto pb-1 sm:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory px-1 sm:px-0">
+                            {approachPhasesData.map((step, idx) => {
+                              const isActive = activeApproachPhase === idx;
 
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setActiveApproachPhase(idx)}
-                              className={`w-full text-left p-4 sm:p-5 rounded-2xl transition-all duration-300 flex flex-col justify-between h-full space-y-3 group cursor-pointer border ${
-                                isActive
-                                  ? 'bg-white text-[#023625] border-[#B68A35] shadow-2xl scale-[1.01]'
-                                  : 'bg-white/10 backdrop-blur-md border-white/15 text-white hover:bg-white/15 hover:border-white/30'
-                              }`}
-                            >
-                              <div className="space-y-2.5">
-                                <div className="flex items-center justify-between">
-                                  <div className={`w-9 h-9 rounded-xl font-mono font-bold text-xs flex items-center justify-center transition-colors ${
-                                    isActive ? 'bg-[#023625] text-[#B68A35]' : 'bg-[#B68A35] text-[#023625]'
+                              return (
+                                <button
+                                  key={idx}
+                                  ref={el => { phaseTabRefs.current[idx] = el; }}
+                                  type="button"
+                                  onClick={() => setActiveApproachPhase(idx)}
+                                  className={`text-left p-3 rounded-xl transition-all duration-200 cursor-pointer flex items-center sm:items-start gap-3 border shrink-0 sm:shrink min-w-[175px] sm:min-w-0 snap-center sm:snap-start min-h-[52px] ${
+                                    isActive
+                                      ? 'bg-white text-[#023625] border-[#DFC181] shadow-lg scale-[1.01]'
+                                      : 'bg-white/5 text-white/85 border-white/10 hover:bg-white/10 hover:text-white'
+                                  }`}
+                                >
+                                  <div className={`w-8 h-8 rounded-lg font-serif font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
+                                    isActive ? 'bg-[#023625] text-[#DFC181]' : 'bg-white/15 text-white'
                                   }`}>
                                     {step.num}
                                   </div>
-                                  <StepIcon size={18} className={isActive ? 'text-[#023625]' : 'text-[#B68A35]'} />
-                                </div>
+                                  <div className="text-left min-w-0 flex-1">
+                                    <div className={`font-serif font-bold text-xs sm:text-sm leading-tight ${
+                                      isActive ? 'text-[#023625]' : 'text-white'
+                                    }`}>
+                                      {step.phase}
+                                    </div>
+                                    <div className={`text-[11px] font-sans mt-0.5 leading-snug line-clamp-1 sm:line-clamp-2 ${
+                                      isActive ? 'text-[#7d5800]' : 'text-white/60'
+                                    }`}>
+                                      {step.subtitle}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
 
-                                <div>
-                                  <h3 className={`font-serif text-base font-bold transition-colors ${
-                                    isActive ? 'text-[#023625]' : 'text-white group-hover:text-[#B68A35]'
-                                  }`}>
-                                    {step.phase}
-                                  </h3>
-                                  <p className={`text-[10px] font-mono tracking-wider uppercase font-semibold mt-0.5 ${
-                                    isActive ? 'text-[#7d5800]' : 'text-[#B68A35]'
-                                  }`}>
-                                    {step.subtitle}
-                                  </p>
-                                </div>
-
-                                <p className={`font-sans text-xs leading-relaxed ${
-                                  isActive ? 'text-[#023625]/85 font-medium' : 'text-white/75'
-                                }`}>
-                                  {step.summary}
-                                </p>
-                              </div>
-
-                              <div className={`pt-2.5 border-t text-[10px] font-mono font-bold uppercase tracking-widest flex items-center justify-between ${
-                                isActive ? 'border-[#023625]/15 text-[#023625]' : 'border-white/10 text-[#B68A35]'
-                              }`}>
-                                <span>Phase {step.num}</span>
-                                <span className={`text-[9px] px-2 py-0.5 rounded font-sans font-semibold ${
-                                  isActive ? 'bg-[#023625] text-white' : 'bg-[#B68A35]/20 text-[#B68A35]'
-                                }`}>
-                                  {isActive ? 'Active View' : 'Inspect →'}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
+                          {/* Subtle progress track indicators on mobile */}
+                          <div className="sm:hidden flex items-center justify-center gap-1.5 pt-2 pb-0.5">
+                            {approachPhasesData.map((_, pIdx) => (
+                              <button
+                                key={pIdx}
+                                type="button"
+                                onClick={() => setActiveApproachPhase(pIdx)}
+                                aria-label={`Go to phase ${pIdx + 1}`}
+                                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                                  activeApproachPhase === pIdx 
+                                    ? 'w-6 bg-[#DFC181]' 
+                                    : 'w-2 bg-white/25 hover:bg-white/40'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Detailed Phase Spotlight Banner */}
+                      {/* Featured Phase Spotlight Deep Dive */}
                       <motion.div
                         key={activeApproachPhase}
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.25 }}
-                        className="bg-white text-primary border border-[#B68A35]/40 rounded-2xl p-5 sm:p-7 shadow-2xl space-y-4"
+                        onTouchStart={(e) => {
+                          phaseTouchStartX.current = e.touches[0].clientX;
+                        }}
+                        onTouchEnd={(e) => {
+                          if (phaseTouchStartX.current === null) return;
+                          const touchEndX = e.changedTouches[0].clientX;
+                          const deltaX = phaseTouchStartX.current - touchEndX;
+                          if (deltaX > 50) {
+                            // Swiped left -> Next phase
+                            setActiveApproachPhase(prev => Math.min(approachPhasesData.length - 1, prev + 1));
+                          } else if (deltaX < -50) {
+                            // Swiped right -> Previous phase
+                            setActiveApproachPhase(prev => Math.max(0, prev - 1));
+                          }
+                          phaseTouchStartX.current = null;
+                        }}
+                        className="bg-white text-primary border border-border rounded-2xl p-5 sm:p-8 shadow-xl space-y-5"
                       >
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-4 border-b border-border/80 pb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#023625] text-[#B68A35] font-serif font-extrabold text-sm sm:text-base flex items-center justify-center shadow-sm font-mono shrink-0">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/80 pb-4">
+                          <div className="flex items-start sm:items-center gap-3.5 w-full sm:w-auto">
+                            <div className="w-10 h-10 rounded-xl bg-[#023625] text-[#DFC181] font-serif font-bold text-base flex items-center justify-center shadow-xs shrink-0 mt-0.5 sm:mt-0">
                               {currentPhase.num}
                             </div>
-                            <div>
-                              <span className="text-[#B68A35] font-mono text-[9px] sm:text-[10px] uppercase tracking-widest font-bold block">
-                                Phase {currentPhase.num} Deep Dive
+                            <div className="min-w-0 flex-1">
+                              <span className="text-[#7d5800] font-sans text-[11px] sm:text-xs uppercase tracking-wider font-bold block">
+                                Step {currentPhase.num} Details
                               </span>
-                              <h3 className="font-serif text-base sm:text-xl font-bold text-[#023625]">
+                              <h3 className="font-serif text-base sm:text-2xl font-bold text-[#023625] leading-snug">
                                 {currentPhase.phase}: {currentPhase.fullSubtitle}
                               </h3>
                             </div>
                           </div>
 
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#B68A35]/10 border border-[#B68A35]/30 text-[#7d5800] text-[10px] sm:text-[11px] font-mono font-bold">
-                            <PhaseIcon size={12} className="text-[#B68A35]" />
+                          {/* Outcome / Benefit badge - neatly placed on mobile without competing for title space */}
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#023625]/8 border border-[#023625]/15 text-[#023625] text-xs font-sans font-semibold shrink-0 self-start sm:self-auto">
+                            <PhaseIcon size={13} className="text-[#B68A35]" />
                             <span>{currentPhase.benefitTag}</span>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                          <div className="lg:col-span-7 space-y-3">
-                            <p className="font-sans text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                          <div className="lg:col-span-7 space-y-4">
+                            <p className="font-sans text-sm text-on-surface-variant leading-relaxed">
                               {currentPhase.description}
                             </p>
 
-                            <div className="space-y-1.5 pt-1">
-                              <h4 className="font-serif font-bold text-[11px] sm:text-xs text-[#023625] uppercase tracking-wider flex items-center gap-1.5">
-                                <CheckCircle2 size={14} className="text-[#B68A35]" />
-                                <span>Key Deliverables &amp; Actions</span>
+                            <div className="space-y-2 pt-1">
+                              <h4 className="font-serif font-bold text-xs text-[#023625] uppercase tracking-wider flex items-center gap-1.5">
+                                <CheckCircle2 size={15} className="text-[#B68A35]" />
+                                <span>What We Deliver</span>
                               </h4>
-                              <ul className="space-y-1 sm:space-y-1.5">
+                              <ul className="space-y-1.5">
                                 {currentPhase.deliverables.map((item, dIdx) => (
-                                  <li key={dIdx} className="flex items-start gap-2 text-xs text-primary font-sans">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35] shrink-0 mt-1.5"></span>
+                                  <li key={dIdx} className="flex items-start gap-2.5 text-xs sm:text-sm text-primary font-sans">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35] shrink-0 mt-2"></span>
                                     <span>{item}</span>
                                   </li>
                                 ))}
@@ -1652,52 +1778,49 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="lg:col-span-5 bg-mist border border-border p-3.5 sm:p-4 rounded-xl space-y-2">
-                            <div className="flex items-center gap-1.5 text-[#023625] font-serif font-bold text-[10px] sm:text-[11px] uppercase tracking-wider">
-                              <Award size={14} className="text-[#B68A35]" />
-                              <span>Primary Business Outcome</span>
+                          <div className="lg:col-span-5 bg-[#F6F8F6] border border-border p-5 rounded-xl space-y-3">
+                            <div className="flex items-center gap-1.5 text-[#023625] font-serif font-bold text-xs uppercase tracking-wider">
+                              <Award size={15} className="text-[#B68A35]" />
+                              <span>Expected Result</span>
                             </div>
-                            <p className="font-sans text-xs text-primary leading-relaxed font-medium bg-white p-2.5 sm:p-3 rounded-lg border border-border shadow-xs">
+                            <p className="font-sans text-xs sm:text-sm text-primary leading-relaxed font-medium bg-white p-3.5 rounded-lg border border-border shadow-xs">
                               "{currentPhase.outcome}"
                             </p>
-                            <div className="pt-1 text-[10px] text-ash font-mono flex items-center justify-between">
-                              <span>YITZAK Guarantee</span>
-                              <span className="text-[#B68A35] font-bold">GFSI Aligned</span>
-                            </div>
                           </div>
                         </div>
 
-                        {/* Mobile Prev/Next Phase Controls */}
-                        <div className="flex items-center justify-between pt-3 border-t border-border/80 md:hidden">
+                        {/* Prev/Next Phase Controls - Clean unwrapped 1 / 5 and balanced layout */}
+                        <div className="flex items-center justify-between pt-4 border-t border-border/80 gap-2">
                           <button
                             type="button"
                             disabled={activeApproachPhase === 0}
                             onClick={() => setActiveApproachPhase(prev => Math.max(0, prev - 1))}
-                            className={`inline-flex items-center gap-1 text-xs font-mono font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                            className={`inline-flex items-center gap-1.5 text-xs font-sans font-semibold px-3 sm:px-3.5 py-2 rounded-lg border transition-all cursor-pointer whitespace-nowrap min-h-[40px] shrink-0 ${
                               activeApproachPhase === 0
                                 ? 'opacity-40 border-border text-ash cursor-not-allowed'
                                 : 'bg-mist border-border text-[#023625] hover:bg-[#023625] hover:text-white'
                             }`}
                           >
                             <ChevronLeft size={14} />
-                            <span>Prev Phase</span>
+                            <span>Back</span>
                           </button>
 
-                          <span className="text-[11px] font-mono font-bold text-[#B68A35]">
-                            Phase {activeApproachPhase + 1} / 5
-                          </span>
+                          {/* Phase count indicator with nowrap and clean centered pill */}
+                          <div className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-[#023625]/5 border border-[#023625]/10 text-xs font-sans font-bold text-[#7d5800] whitespace-nowrap">
+                            <span>{activeApproachPhase + 1} / {approachPhasesData.length}</span>
+                          </div>
 
                           <button
                             type="button"
                             disabled={activeApproachPhase === approachPhasesData.length - 1}
                             onClick={() => setActiveApproachPhase(prev => Math.min(approachPhasesData.length - 1, prev + 1))}
-                            className={`inline-flex items-center gap-1 text-xs font-mono font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                            className={`inline-flex items-center gap-1.5 text-xs font-sans font-semibold px-3 sm:px-3.5 py-2 rounded-lg border transition-all cursor-pointer whitespace-nowrap min-h-[40px] shrink-0 ${
                               activeApproachPhase === approachPhasesData.length - 1
                                 ? 'opacity-40 border-border text-ash cursor-not-allowed'
-                                : 'bg-[#023625] text-white border-[#023625] shadow-xs'
+                                : 'bg-[#023625] text-white border-[#023625] shadow-xs hover:bg-[#034d35]'
                             }`}
                           >
-                            <span>Next Phase</span>
+                            <span>Next</span>
                             <ChevronRight size={14} />
                           </button>
                         </div>
@@ -1705,61 +1828,6 @@ export default function App() {
                     </div>
                   );
                 })()}
-              </div>
-            </section>
-
-            {/* 4b. Methodology Foundations / Why Our Implementation Delivers Results */}
-            <section className="py-16 bg-[#F9F8F6] border-y border-border px-4 sm:px-8 md:px-12">
-              <div className="max-w-[1280px] mx-auto space-y-10">
-                <ScrollReveal direction="up" delay={0.05}>
-                  <div className="text-center space-y-2 max-w-3xl mx-auto">
-                    <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold">Methodology Foundations</span>
-                    <h2 className="font-serif text-2xl sm:text-3xl font-bold text-primary">Why Our Implementation Delivers Results</h2>
-                    <p className="font-sans text-xs sm:text-sm text-ash max-w-xl mx-auto">
-                      Four core structural pillars engineered into every advisory engagement.
-                    </p>
-                    <div className="w-16 h-1 bg-[#B68A35] mx-auto mt-2 rounded-full"></div>
-                  </div>
-                </ScrollReveal>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {[
-                    {
-                      title: "Practical Grounding",
-                      iconName: "precision_manufacturing",
-                      desc: "No abstract theory. Built around actual floor shifts, operational constraints, and commercial targets."
-                    },
-                    {
-                      title: "Zero-Distortion Systems",
-                      iconName: "tune",
-                      desc: "Eliminating burdensome paperwork. Lightweight, intuitive procedures that staff actually follow."
-                    },
-                    {
-                      title: "Verifiable Competence",
-                      iconName: "psychology",
-                      desc: "Focusing on human capability. Hands-on training ensures your team owns every control point."
-                    },
-                    {
-                      title: "Permanent Readiness",
-                      iconName: "published_with_changes",
-                      desc: "Continuous surveillance and recertification support keep you prepared for unannounced audits 365 days a year."
-                    }
-                  ].map((pillar, pIdx) => {
-                    return (
-                      <ScrollReveal key={pIdx} direction="up" delay={0.08 * (pIdx + 1)}>
-                        <div className="bg-white border border-border hover:border-[#B68A35] p-6 rounded-2xl space-y-3 shadow-xs hover:shadow-md transition-all h-full flex flex-col justify-between">
-                          <div className="space-y-3">
-                            <div className="w-11 h-11 rounded-xl bg-[#023625] text-[#DFC181] flex items-center justify-center shadow-xs">
-                              <AppIcon name={pillar.iconName} size={22} color="#DFC181" />
-                            </div>
-                            <h3 className="font-serif font-bold text-base text-primary">{pillar.title}</h3>
-                            <p className="font-sans text-xs text-ash leading-relaxed">{pillar.desc}</p>
-                          </div>
-                        </div>
-                      </ScrollReveal>
-                    );
-                  })}
-                </div>
               </div>
             </section>
           </>
@@ -1966,7 +2034,7 @@ export default function App() {
             </section>
 
             {/* Embedded Contact Us Section at Bottom of Home Page */}
-            <section id="home-contact-section" className="py-16 bg-[#F9F9F9] text-[#2D3142] px-4 md:px-16 border-t border-border">
+            <section id="home-contact-section" className="pt-24 pb-16 md:pt-24 md:pb-20 bg-[#F9F9F9] text-[#2D3142] px-4 md:px-16 border-t border-border scroll-mt-[150px]">
               <div className="max-w-[1280px] mx-auto">
                 <ContactUs />
               </div>
@@ -2030,7 +2098,7 @@ export default function App() {
             </section>
 
             {/* The Three Streams Section */}
-            <section id="streams" className="bg-[#F9F9F9] py-16 md:py-20 px-4 md:px-16 border-t border-[#E5E5E5] scroll-mt-24">
+            <section id="streams" className="bg-[#F9F9F9] pt-24 pb-16 sm:pt-24 sm:pb-20 md:pt-24 md:pb-20 px-4 md:px-16 border-t border-[#E5E5E5] scroll-mt-[150px]">
               <div className="max-w-[1280px] mx-auto">
                 <div className="text-center mb-12">
                   <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold mb-4">The Three Streams</h2>
@@ -2148,7 +2216,7 @@ export default function App() {
             </section>
 
             {/* Training Portfolio Section */}
-            <section id="portfolio" className="py-16 md:py-20 px-4 md:px-16 bg-white scroll-mt-24">
+            <section id="portfolio" className="pt-24 pb-16 sm:pt-24 sm:pb-20 md:pt-24 md:pb-20 px-4 md:px-16 bg-white scroll-mt-[150px]">
               <div className="max-w-[1280px] mx-auto">
                 
                 {/* Print Letterhead Header (Visible only during printing) */}
@@ -2792,9 +2860,11 @@ export default function App() {
             {/* Implementation Phased Roadmap Component */}
             <section className="bg-[#F9F9F9] py-10 sm:py-14 md:py-16 px-4 sm:px-8 md:px-16 border-t border-[#E5E5E5]">
               <div className="max-w-[1280px] mx-auto space-y-8 sm:space-y-10">
-                <ProcessImplementationRoadmap 
-                  onInquirePhase={(phaseTitle) => handleOpenBooking('process_implementation', `Inquiry regarding ${phaseTitle}`)}
-                />
+                <Suspense fallback={<ViewLoadingFallback />}>
+                  <ProcessImplementationRoadmap 
+                    onInquirePhase={(phaseTitle) => handleOpenBooking('process_implementation', `Inquiry regarding ${phaseTitle}`)}
+                  />
+                </Suspense>
 
                 <div className="bg-[#023625] text-white p-6 sm:p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-md border border-white/10">
                   <div className="space-y-2 max-w-2xl text-center md:text-left">
@@ -2824,9 +2894,11 @@ export default function App() {
             className="bg-[#F9F9F9] min-h-screen text-[#2D3142] py-12 px-4 md:px-16"
           >
             <div className="max-w-[1280px] mx-auto">
-              <TrainingCalendar 
-                onReserveCourse={(notesStr) => handleOpenBooking('training', notesStr)} 
-              />
+              <Suspense fallback={<ViewLoadingFallback />}>
+                <TrainingCalendar 
+                  onReserveCourse={(notesStr) => handleOpenBooking('training', notesStr)} 
+                />
+              </Suspense>
             </div>
           </motion.div>
         )}
@@ -2838,10 +2910,12 @@ export default function App() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <KnowledgeCenter
-              onOpenBooking={handleOpenBooking}
-              onNavigateToContact={() => navigateTo('contact')}
-            />
+            <Suspense fallback={<ViewLoadingFallback />}>
+              <KnowledgeCenter
+                onOpenBooking={handleOpenBooking}
+                onNavigateToContact={() => navigateTo('contact')}
+              />
+            </Suspense>
           </motion.div>
         )}
 
@@ -2890,15 +2964,17 @@ export default function App() {
                   <p className="font-sans text-xs text-ash">Securing network authorization...</p>
                 </div>
               ) : currentUser ? (
-                <Dashboard
-                  currentUser={currentUser}
-                  onLogout={() => {
-                    setCurrentUser(null);
-                    triggerNotification('Logged out successfully.');
-                  }}
-                  onOpenBooking={() => setIsBookingOpen(true)}
-                  refreshTrigger={refreshTrigger}
-                />
+                <Suspense fallback={<ViewLoadingFallback />}>
+                  <Dashboard
+                    currentUser={currentUser}
+                    onLogout={() => {
+                      setCurrentUser(null);
+                      triggerNotification('Logged out successfully.');
+                    }}
+                    onOpenBooking={() => setIsBookingOpen(true)}
+                    refreshTrigger={refreshTrigger}
+                  />
+                </Suspense>
               ) : (
                 <div className="bg-mist/40 border border-border/80 rounded-2xl p-4 sm:p-8 shadow-sm max-w-5xl mx-auto">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
@@ -3077,6 +3153,19 @@ export default function App() {
                                 </>
                               )}
                             </button>
+                            <p className="text-[11px] text-ash/80 text-center font-sans mt-3">
+                              By signing in, you acknowledge our{' '}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigateTo('privacy');
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="text-[#B68A35] underline hover:text-primary font-semibold cursor-pointer transition-colors"
+                              >
+                                Privacy Policy
+                              </button>.
+                            </p>
                           </div>
                         </form>
                       ) : (
@@ -3136,6 +3225,19 @@ export default function App() {
                                 </>
                               )}
                             </button>
+                            <p className="text-[11px] text-ash/80 text-center font-sans mt-3">
+                              By signing in, you acknowledge our{' '}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigateTo('privacy');
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="text-[#B68A35] underline hover:text-primary font-semibold cursor-pointer transition-colors"
+                              >
+                                Privacy Policy
+                              </button>.
+                            </p>
                           </div>
                         </form>
                       )}
@@ -3195,7 +3297,19 @@ export default function App() {
                       {/* Trust Signal Reassurance */}
                       <div className="border-t border-white/15 pt-4 text-[11px] text-white/70 leading-relaxed font-sans flex items-start gap-2.5">
                         <Lock className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
-                        <span>Access restricted to verified business accounts. Your data is encrypted and protected under GDPR &amp; POPIA standards.</span>
+                        <div>
+                          <span>Access restricted to verified business accounts. Your data is encrypted and protected under POPIA &amp; GDPR standards. </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigateTo('privacy');
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="text-[#DFC181] hover:underline font-semibold cursor-pointer inline-flex items-center gap-1 ml-1"
+                          >
+                            <span>Read POPIA Notice →</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3204,13 +3318,37 @@ export default function App() {
                   {showWhitelistModal && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
                       <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <WhitelistManager onClose={() => setShowWhitelistModal(false)} />
+                        <Suspense fallback={<ViewLoadingFallback />}>
+                          <WhitelistManager onClose={() => setShowWhitelistModal(false)} />
+                        </Suspense>
                       </div>
                     </div>
                   )}
                 </div>
               )}
             </div>
+          </motion.div>
+        )}
+
+        {currentView === 'privacy' && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Suspense fallback={<ViewLoadingFallback />}>
+              <PrivacyPolicy 
+                onNavigateHome={() => {
+                  navigateTo('home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onNavigateContact={() => {
+                  navigateTo('contact');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            </Suspense>
           </motion.div>
         )}
       </main>
@@ -3266,77 +3404,92 @@ export default function App() {
               <h3 className="text-[#B68A35] font-serif font-bold text-base tracking-wider uppercase">
                 Quick Links
               </h3>
-              <ul className="space-y-3 font-sans text-xs md:text-sm text-white/80">
+              <ul className="space-y-2.5 font-sans text-xs md:text-sm text-white/80">
                 <li>
                   <button
                     onClick={() => {
+                      setActiveHomeSection('home');
                       navigateTo('home');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                    className="flex items-center gap-2.5 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
                   >
-                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={14} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Home</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setActiveHomeSection('about');
+                      if (currentView !== 'home') {
+                        navigateTo('home', 'why-us');
+                      } else {
+                        const el = document.getElementById('why-us');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        updateBrowserUrl('home', 'why-us', false);
+                      }
+                    }}
+                    className="flex items-center gap-2.5 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={14} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
                     <span>About</span>
                   </button>
                 </li>
                 <li>
                   <button
                     onClick={() => {
-                      navigateTo('home');
-                      setTimeout(() => {
-                        const el = document.getElementById('services');
+                      if (currentView !== 'home') {
+                        navigateTo('home', 'services-overview');
+                      } else {
+                        const el = document.getElementById('services-overview') || document.getElementById('services');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      }, 100);
+                      }
                     }}
-                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                    className="flex items-center gap-2.5 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
                   >
-                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={14} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
                     <span>Services</span>
                   </button>
+
+                  {/* Sub-services collapsed on mobile, visible on desktop */}
+                  <div className="hidden sm:flex flex-col space-y-1.5 pl-4 pt-1.5 border-l border-white/10 ml-2">
+                    <button onClick={() => navigateTo('training')} className="text-left text-xs text-white/60 hover:text-white transition-colors cursor-pointer">
+                      • Professional Training
+                    </button>
+                    <button onClick={() => navigateTo('certifications')} className="text-left text-xs text-white/60 hover:text-white transition-colors cursor-pointer">
+                      • Certification
+                    </button>
+                    <button onClick={() => navigateTo('consulting')} className="text-left text-xs text-white/60 hover:text-white transition-colors cursor-pointer">
+                      • Consulting &amp; Advisory
+                    </button>
+                    <button onClick={() => navigateTo('process_implementation')} className="text-left text-xs text-white/60 hover:text-white transition-colors cursor-pointer">
+                      • Business Process Implementation
+                    </button>
+                  </div>
                 </li>
                 <li>
                   <button
-                    onClick={() => navigateTo('training')}
-                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                    onClick={() => {
+                      navigateTo('contact');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="flex items-center gap-2.5 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
                   >
-                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
-                    <span>Training</span>
+                    <ChevronRight size={14} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Contact</span>
                   </button>
                 </li>
                 <li>
                   <button
-                    onClick={() => navigateTo('certifications')}
-                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                    onClick={() => {
+                      navigateTo('privacy');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="flex items-center gap-2.5 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
                   >
-                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
-                    <span>Certifications</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => navigateTo('consulting')}
-                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
-                  >
-                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
-                    <span>Advisory &amp; Consulting</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => navigateTo('knowledge')}
-                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
-                  >
-                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
-                    <span>Knowledge Centre</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => navigateTo('contact')}
-                    className="flex items-center gap-3 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
-                  >
-                    <ChevronRight size={16} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
-                    <span>Contact Us</span>
+                    <ChevronRight size={14} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Privacy Notice</span>
                   </button>
                 </li>
               </ul>
@@ -3384,50 +3537,64 @@ export default function App() {
 
           </div>
 
-          {/* Bottom Branding & Legal */}
-          <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-white/50">
-            <div className="flex items-center gap-3">
+          {/* Bottom Branding & Legal - Cleanly stacked on mobile: logo/tagline, Privacy Notice, copyright */}
+          <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 text-xs font-sans text-white/60 text-center md:text-left">
+            {/* 1. Logo and Tagline */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
               <YitzakLogo lightMode size={28} />
-              <span>·</span>
-              <span>Empowering Organisations Through Compliance &amp; Capability</span>
+              <span className="hidden sm:inline text-white/20">·</span>
+              <span className="text-white/70 text-xs">
+                Empowering Organisations Through Compliance &amp; Capability
+              </span>
             </div>
-            <div>
-              © 2026 YITZAK. All rights reserved. Official FoodChain ID Partner.
+
+            {/* 2. Privacy Notice Link */}
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  navigateTo('privacy');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-white/80 hover:text-[#B68A35] underline underline-offset-2 transition-colors cursor-pointer text-xs"
+              >
+                Privacy Notice
+              </button>
+            </div>
+
+            {/* 3. Copyright */}
+            <div className="text-white/50 text-[11px] font-mono">
+              © 2026 YITZAK. All rights reserved.
             </div>
           </div>
         </div>
       </footer>
 
       {/* Global Booking Modal Component */}
-      <BookingModal
-        isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
-        currentUser={currentUser}
-        onAuthSuccess={handleAuthSuccess}
-        initialPillarId={selectedPillarId}
-        initialNotes={selectedBookingNotes}
-        onBookingSuccess={handleBookingSuccess}
-      />
+      {isBookingOpen && (
+        <Suspense fallback={null}>
+          <BookingModal
+            isOpen={isBookingOpen}
+            onClose={() => setIsBookingOpen(false)}
+            currentUser={currentUser}
+            onAuthSuccess={handleAuthSuccess}
+            initialPillarId={selectedPillarId}
+            initialNotes={selectedBookingNotes}
+            onBookingSuccess={handleBookingSuccess}
+            onNavigatePrivacy={() => {
+              navigateTo('privacy');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </Suspense>
+      )}
 
-      {/* Floating Back to Top Button */}
-      <AnimatePresence>
-        {showBackToTop && (
-          <motion.button
-            key="back-to-top"
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            onClick={scrollToTop}
-            className="fixed bottom-8 right-8 z-50 p-4 bg-secondary text-white hover:bg-gold-hover shadow-xl cursor-pointer flex items-center justify-center border border-white/20 transition-all duration-300 group"
-            title="Back to Top"
-            aria-label="Back to Top"
-            whileHover={{ y: -4 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <ArrowUp size={18} className="group-hover:-translate-y-0.5 transition-transform duration-300" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {/* Floating Action Cluster: Quiet 52px Chat Launcher & 40px Back-to-Top */}
+      <FloatingChatWidget
+        onOpenBooking={() => handleOpenBooking()}
+        showBackToTop={showBackToTop}
+        onScrollToTop={scrollToTop}
+      />
     </div>
   );
 }

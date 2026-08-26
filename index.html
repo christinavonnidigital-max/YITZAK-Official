@@ -3,6 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Ensure window.fetch is writable and configurable in all sandboxed/getter-only environments
+      (function() {
+        try {
+          if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
+            var nativeFetch = window.fetch.bind(window);
+            Object.defineProperty(window, 'fetch', {
+              value: nativeFetch,
+              writable: true,
+              configurable: true,
+              enumerable: true
+            });
+          }
+        } catch (e) {
+          // Fallback if property definition is restricted
+        }
+      })();
+    </script>
     <title>YITZAK | Professional Training, Certification, Consulting &amp; Process Implementation</title>
 
     <!-- Primary SEO Meta Tags -->
@@ -13,12 +31,12 @@
     <meta name="theme-color" content="#0F3D3E" />
     <link rel="canonical" href="https://yitzak-official.vercel.app/" />
 
-    <!-- Google Fonts: IBM Plex Sans, Source Sans 3, Montserrat -->
+    <!-- Google Fonts: Preconnect and optimized font display -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Montserrat:wght@500;600;700;800&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
-    <!-- Open Graph / Facebook / LinkedIn / WhatsApp Sharing -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Montserrat:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://yitzak-official.vercel.app/" />
     <meta property="og:site_name" content="Yitzak" />
@@ -33,11 +51,9 @@
     <meta name="twitter:description" content="Empowering organisations through Professional Training, Certification, Consulting &amp; Advisory, and Business Process Implementation." />
 
     <!-- Favicon & Icons -->
-    <link rel="icon" type="image/png" href="/YITZAK-icon-green.png" />
-    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/YITZAK-icon-green.png" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
     <!-- JSON-LD Structured Data for Search Engines -->
     <script type="application/ld+json">

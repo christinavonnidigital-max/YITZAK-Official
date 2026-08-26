@@ -68,7 +68,7 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
   };
 
   return (
-    <section id="faq-homepage-section" className="py-16 md:py-24 bg-white border-t border-b border-[#E5E5E5] scroll-mt-24">
+    <section id="faq-homepage-section" className="pt-24 pb-16 sm:pt-24 sm:pb-20 md:pt-24 md:pb-24 bg-white border-t border-b border-[#E5E5E5] scroll-mt-[150px]">
       <div className="max-w-[1280px] mx-auto px-4 md:px-16">
         
         {/* FAQ Header Block */}

@@ -7,7 +7,8 @@ export type AppView =
   | 'contact' 
   | 'process_implementation' 
   | 'knowledge' 
-  | 'portal';
+  | 'portal'
+  | 'privacy';
 
 export interface RouteMeta {
   view: AppView;
@@ -43,9 +44,9 @@ export const ROUTES: Record<AppView, RouteMeta> = {
   },
   process_implementation: {
     view: 'process_implementation',
-    path: '/services/process-implementation',
+    path: '/services/business-process-implementation',
     title: 'Business Process Implementation | Yitzak Consulting',
-    description: 'Structured 5-phase roadmap from gap discovery to audit readiness and continuous improvement.'
+    description: 'Structured roadmap for business process implementation, management system formulation, and audit readiness.'
   },
   knowledge: {
     view: 'knowledge',
@@ -70,6 +71,12 @@ export const ROUTES: Record<AppView, RouteMeta> = {
     path: '/client-portal',
     title: 'Institutional Client Portal | Yitzak Consulting',
     description: 'Authorized corporate portal access for compliance records, bookings, and audit documentation.'
+  },
+  privacy: {
+    view: 'privacy',
+    path: '/privacy-notice',
+    title: 'Privacy Notice | Yitzak Consulting',
+    description: 'POPIA Privacy Notice for Yitzak Consulting (Pty) Ltd in compliance with Act No. 4 of 2013.'
   }
 };
 
@@ -84,19 +91,23 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   const rawPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
   const hash = window.location.hash.replace(/^#/, '').toLowerCase();
 
-  // Hash-based quick matches (e.g. /#contact, /#about, /#training)
+  // Hash-based quick matches (e.g. /#contact, /#about, /#training, /#privacy)
   if (hash === 'contact' || hash === 'advisory-desk') return { view: 'contact', elementId: 'contact' };
-  if (hash === 'about' || hash === 'about-section') return { view: 'home', elementId: 'about-section' };
+  if (hash === 'about' || hash === 'about-section' || hash === 'why-us') return { view: 'home', elementId: 'why-us' };
   if (hash === 'training') return { view: 'training' };
   if (hash === 'certifications' || hash === 'schemes') return { view: 'certifications' };
   if (hash === 'consulting' || hash === 'advisory') return { view: 'consulting' };
   if (hash === 'process' || hash === 'implementation') return { view: 'process_implementation' };
   if (hash === 'knowledge' || hash === 'whitepapers') return { view: 'knowledge' };
   if (hash === 'calendar' || hash === 'schedule') return { view: 'calendar' };
-  if (hash === 'portal' || hash === 'login') return { view: 'contact' };
+  if (hash === 'portal' || hash === 'login') return { view: 'portal' };
+  if (hash === 'privacy' || hash === 'privacy-policy' || hash === 'popia') return { view: 'privacy' };
 
   // Path-based matches
-  if (rawPath === '/about') return { view: 'home', elementId: 'about-section' };
+  if (rawPath === '/about') return { view: 'home', elementId: 'why-us' };
+  if (rawPath === '/privacy-policy' || rawPath === '/privacy' || rawPath === '/popia' || rawPath === '/popia-notice' || rawPath === '/legal/privacy') {
+    return { view: 'privacy' };
+  }
   if (rawPath === '/knowledge-centre' || rawPath === '/knowledge' || rawPath === '/knowledge-center' || rawPath === '/whitepapers' || rawPath === '/publications' || rawPath === '/resources') {
     return { view: 'knowledge' };
   }
@@ -119,7 +130,7 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
     return { view: 'calendar' };
   }
   if (rawPath === '/client-portal' || rawPath === '/portal' || rawPath === '/login' || rawPath === '/client-area') {
-    return { view: 'contact' };
+    return { view: 'portal' };
   }
 
   return { view: 'home' };
@@ -135,7 +146,7 @@ export function updateBrowserUrl(view: AppView, elementId?: string, replace = fa
   let targetUrl = route.path;
 
   if (elementId && elementId !== 'top') {
-    if (view === 'home' && elementId === 'about-section') {
+    if (view === 'home' && (elementId === 'about-section' || elementId === 'why-us')) {
       targetUrl = '/about';
     } else {
       targetUrl = `${route.path}#${elementId}`;
