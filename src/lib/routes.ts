@@ -33,8 +33,8 @@ export const ROUTES: Record<AppView, RouteMeta> = {
   certifications: {
     view: 'certifications',
     path: '/services/certifications',
-    title: 'Global Certification & Accredited Schemes | Yitzak Consulting',
-    description: 'ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 22000, FSSC 22000, BRCGS, and HACCP accredited certification pathways.'
+    title: 'Certification Pathways | Yitzak Consulting',
+    description: 'Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.'
   },
   consulting: {
     view: 'consulting',

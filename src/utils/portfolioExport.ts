@@ -431,7 +431,7 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
     y += 10;
 
     const docTitle = type === 'certification_portfolio'
-      ? 'ACCREDITED CERTIFICATION PORTFOLIO & AUDIT READINESS'
+      ? 'CERTIFICATION PATHWAYS & AUDIT READINESS'
       : type === 'consulting_statement'
       ? 'CONSULTING & ADVISORY CAPABILITIES STATEMENT'
       : 'BUSINESS PROCESS IMPLEMENTATION CAPABILITY SHEET';
@@ -445,7 +445,7 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(9.5);
     doc.setTextColor(65, 73, 68);
-    const introText = 'Yitzak is a specialized compliance, audit, and capability consulting practice delivering across Southern Africa. Through our official partnership with FoodChain ID, we provide access to selected FoodChain ID Academy training courses and accredited certification pathways, alongside practical management system advisory.';
+    const introText = 'Yitzak is a specialized compliance, audit readiness, and capability consulting practice delivering across Southern Africa. Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.';
     const introLines = doc.splitTextToSize(introText, contentWidth);
     doc.text(introLines, marginX, y);
 
@@ -455,15 +455,15 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
     const pillars = [
       {
         title: '1. Professional Training',
-        desc: 'Instructor-led competence building across BRCGS, FSSC 22000, ISO 22000 & HACCP. Official partner with FoodChain ID Academy.'
+        desc: 'Instructor-led competence building across BRCGS, FSSC 22000, ISO 22000 & HACCP. Access to selected FoodChain ID Academy courses.'
       },
       {
         title: '2. Consulting & Advisory',
         desc: 'Practical guidance to implement learning, gap assessments, management system formulation, SOP drafting, and internal audits.'
       },
       {
-        title: '3. Accredited Certification (FoodChain ID Audits)',
-        desc: 'Official delivery of accredited FoodChain ID certification audits across GLOBALG.A.P., Non-GMO, Organic, and GFSI food safety schemes.'
+        title: '3. Certification Pathways (FoodChain ID Partner)',
+        desc: 'Preparation and advisory for certification routes across GLOBALG.A.P., Non-GMO, Organic, and GFSI food safety schemes. Certification is issued by the accredited certification body.'
       },
       {
         title: '4. Business Process Implementation',

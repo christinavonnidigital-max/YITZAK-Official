@@ -765,8 +765,8 @@ export default function App() {
                           <Award size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
                         </div>
                         <div>
-                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Certification</div>
-                          <div className="text-[11px] text-ash">FoodChain ID accredited audits &amp; schemes</div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Certification Pathways</div>
+                          <div className="text-[11px] text-ash">FoodChain ID partner &amp; advisory route</div>
                         </div>
                       </button>
 
@@ -1005,7 +1005,7 @@ export default function App() {
                               }`}
                             >
                               <Award size={15} className={currentView === 'certifications' ? 'text-[#E6CA85]' : 'text-white/40'} />
-                              <span>Certification</span>
+                              <span>Certification Pathways</span>
                             </button>
 
                             <button
@@ -1273,24 +1273,24 @@ export default function App() {
                           </div>
                           <div className="space-y-2">
                             <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
-                              Certification
+                              Certification Pathways
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              Accredited third-party certification audits conducted through FoodChain ID across international quality, food safety, and agricultural standards.
+                              Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>BRCGS, FSSC 22000 &amp; ISO standards</span>
+                              <span>Guidance on suitable certification routes</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>GLOBALG.A.P. &amp; Non-GMO audits</span>
+                              <span>GLOBALG.A.P., Non-GMO &amp; organic pathways</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Recognised across Southern Africa</span>
+                              <span>BRCGS, FSSC 22000 &amp; ISO readiness reviews</span>
                             </li>
                           </ul>
                         </div>
@@ -1299,7 +1299,7 @@ export default function App() {
                             onClick={() => navigateTo('certifications')}
                             className="text-xs font-bold uppercase tracking-wider text-[#023625] hover:text-[#B68A35] inline-flex items-center gap-2 transition-colors cursor-pointer"
                           >
-                            <span>Explore Schemes</span>
+                            <span>Explore Pathways</span>
                             <ArrowRight size={14} />
                           </button>
                         </div>
@@ -2423,29 +2423,41 @@ export default function App() {
               <div className="max-w-4xl space-y-4 sm:space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider max-w-full">
                   <Award size={14} className="text-[#B68A35] shrink-0" />
-                  <span className="truncate sm:whitespace-normal">Accredited Schemes &amp; Global Partnerships</span>
+                  <span className="truncate sm:whitespace-normal">FoodChain ID Partner &amp; Advisory Route</span>
                 </div>
                 <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-[56px] leading-tight md:leading-[62px] tracking-tight text-primary font-bold">
-                  Internationally Recognised Certification
+                  Certification Pathways
                 </h1>
                 <p className="font-sans text-xs sm:text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl">
-                  Through our official partnership with <strong className="text-primary font-bold">FoodChain ID</strong>, Yitzak connects organizations to accredited third-party certification pathways and courses across international food safety, quality, and agricultural standards across Southern Africa.
+                  Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.
                 </p>
+
+                {/* Explicit Accreditation Boundary Notice */}
+                <div className="bg-[#FAF7F0] border border-[#B68A35]/30 rounded-xl p-4 sm:p-5 flex items-start gap-3.5 text-xs text-charcoal shadow-2xs">
+                  <ShieldCheck size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <span className="font-bold text-xs uppercase tracking-wider text-[#023625] block font-mono">How Certification Works</span>
+                    <p className="leading-relaxed text-on-surface-variant">
+                      Certification is issued by the relevant accredited certification body, not Yitzak. Yitzak acts as a FoodChain ID partner providing pre-audit advisory, gap assessments, technical training, and pathway navigation to help your facility prepare for formal evaluation.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 pt-2 no-print">
                   <button
-                    onClick={() => handleOpenBooking('compliance', 'Inquiry: Accredited Certification Audit')}
+                    onClick={() => handleOpenBooking('compliance', 'Inquiry: Request Certification Information')}
                     className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2 w-full sm:w-auto"
                   >
-                    <span>Inquire Certification Audit</span>
+                    <span>Request Certification Information</span>
                     <ArrowRight size={14} />
                   </button>
                   <button
                     onClick={() => exportCapabilitySheetPDF('certification_portfolio')}
                     className="bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2 w-full sm:w-auto"
-                    title="Print or Download certification schemes catalog for physical record-keeping"
+                    title="Print or Download certification pathways catalog for physical record-keeping"
                   >
                     <Printer size={14} className="text-[#DFC181]" />
-                    <span>Print Certification Portfolio</span>
+                    <span>Print Pathways Overview</span>
                   </button>
                   <a
                     href="https://www.foodchainid.com/"
@@ -2469,21 +2481,24 @@ export default function App() {
                   <div className="flex justify-between items-end">
                     <div>
                       <YitzakLogo size={30} className="mb-2" />
-                      <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Accredited Certification Schemes &amp; Standards Directory</p>
-                      <p className="text-[10px] text-gray-500 mt-1">Official FoodChain ID Partner</p>
+                      <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Certification Pathways &amp; Standards Directory</p>
+                      <p className="text-[10px] text-gray-500 mt-1">FoodChain ID Partner &amp; Advisory Route (Certification issued by accredited certification bodies)</p>
                     </div>
                     <div className="text-right text-[10px] font-mono text-gray-500">
                       <p>Issued: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                      <p>Document Ref: YITZ-CERT-2026-DIR</p>
+                      <p>Document Ref: YITZ-PATHWAYS-2026</p>
                     </div>
                   </div>
                 </div>
                 <ScrollReveal direction="up" delay={0.05}>
                   <div className="text-center space-y-3">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Comprehensive Scheme Catalog</span>
-                    <h2 className="font-serif text-3xl md:text-[42px] text-primary font-bold">Accredited Schemes &amp; Standards</h2>
+                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Selected Certification Pathways</span>
+                    <h2 className="font-serif text-3xl md:text-[42px] text-primary font-bold">Certification Pathways &amp; Schemes</h2>
                     <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                      Explore our official FoodChain ID accredited certification routes, covering on-site third-party audits, standards evaluation, and internationally recognized certificate issuance.
+                      Explore selected FoodChain ID certification schemes across food safety, product integrity, and agriculture. Yitzak assists your team in evaluating requirements and preparing for the appropriate audit pathway.
+                    </p>
+                    <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
+                      Scheme availability and audit delivery are subject to facility scope, sector criteria, and accredited partner scheduling across Southern Africa.
                     </p>
                     <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
                   </div>
@@ -2510,12 +2525,12 @@ export default function App() {
                           </div>
                           <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1 self-start mt-0.5">
                             <ShieldCheck size={12} className="text-emerald-600 shrink-0" />
-                            <span>Accredited</span>
+                            <span>FoodChain ID Scheme</span>
                           </span>
                         </div>
 
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Official FoodChain ID certification audits for product claims that hold up to global market and regulatory scrutiny, including organic, Non-GMO Project Verification, and Gluten-Free.
+                          Preparation and advisory for FoodChain ID certification schemes covering product claims that hold up to global market and regulatory scrutiny, including Non-GMO Project Verification, Organic, Identity Preserved, and Gluten-Free.
                         </p>
 
                         <div className="pt-2">
@@ -2541,10 +2556,10 @@ export default function App() {
                           <span>↗</span>
                         </a>
                         <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Product & Label Certification Audit')}
+                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Ask About Product & Label Certification Scheme')}
                           className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Inquire Audit</span>
+                          <span>Ask About This Scheme</span>
                           <ArrowRight size={12} />
                         </button>
                       </div>
@@ -2576,7 +2591,7 @@ export default function App() {
                         </div>
 
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Accredited good agricultural practice certification audits covering food safety, traceability, and worker welfare. GFSI-benchmarked and recognised by major international retailers.
+                          Advisory and readiness support for good agricultural practice certification pathways covering food safety, traceability, and worker welfare under GFSI-benchmarked standards recognised by major international retailers.
                         </p>
 
                         <div className="pt-2">
@@ -2602,10 +2617,10 @@ export default function App() {
                           <span>↗</span>
                         </a>
                         <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: GLOBALG.A.P. Certification Audit')}
+                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Ask About GLOBALG.A.P. Scheme')}
                           className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Inquire Audit</span>
+                          <span>Ask About This Scheme</span>
                           <ArrowRight size={12} />
                         </button>
                       </div>
@@ -2637,7 +2652,7 @@ export default function App() {
                         </div>
 
                         <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Globally recognised food safety certification audits across manufacturing, packaging, storage, and distribution, conducted through FoodChain ID's accredited audit body.
+                          Comprehensive preparation and advisory for globally recognised food safety certification pathways across manufacturing, packaging, storage, and distribution through FoodChain ID.
                         </p>
 
                         <div className="pt-2">
@@ -2663,10 +2678,10 @@ export default function App() {
                           <span>↗</span>
                         </a>
                         <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: BRCGS Certification Audit')}
+                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Ask About BRCGS Scheme')}
                           className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Inquire Audit</span>
+                          <span>Ask About This Scheme</span>
                           <ArrowRight size={12} />
                         </button>
                       </div>
@@ -2681,16 +2696,16 @@ export default function App() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
                           <ShieldCheck size={12} className="text-emerald-600" />
-                          <span>Accredited</span>
+                          <span>FoodChain ID Route</span>
                         </span>
                         <span className="bg-purple-50 text-purple-800 border border-purple-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
                           <Sparkles size={12} className="text-purple-600" />
-                          <span>GFSI &amp; ISO Standards</span>
+                          <span>GFSI &amp; ISO Schemes</span>
                         </span>
                       </div>
                       <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">FSSC 22000 &amp; Integrated ISO Management Systems</h3>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Official FoodChain ID certification audits for FSSC 22000 (Version 6), ISO 22000 / 22001 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), ISO 45001 (Occupational Health &amp; Safety), ISO 27001 (Information Security), and ISO 50001 (Energy Management). Full third-party auditing that meets international buyer and retail requirements.
+                        Advisory, gap reviews, and preparation for FSSC 22000 (Version 6), ISO 22000 / 22001 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), ISO 45001 (Occupational Health &amp; Safety), ISO 27001 (Information Security), and ISO 50001 (Energy Management) certification routes.
                       </p>
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {['FSSC 22000 v6', 'ISO 22000 / 22001', 'ISO 9001', 'ISO 14001', 'ISO 45001', 'ISO 27001', 'ISO 50001'].map((iso, idx) => (
@@ -2701,23 +2716,23 @@ export default function App() {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleOpenBooking('compliance', 'Inquiry: FSSC 22000 / ISO Certification Audit')}
+                      onClick={() => handleOpenBooking('compliance', 'Inquiry: Ask About ISO & FSSC 22000 Schemes')}
                       className="bg-primary hover:bg-[#1f4d3a] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-md transition-all cursor-pointer shrink-0 inline-flex items-center justify-center gap-2 shadow-2xs active:scale-[0.98] w-full sm:w-auto"
                     >
-                      <span>Inquire ISO &amp; FSSC Audit</span>
+                      <span>Ask About This Scheme</span>
                       <ArrowRight size={14} />
                     </button>
                   </div>
                 </ScrollReveal>
 
-                {/* FoodChain ID Banner Quote */}
+                {/* FoodChain ID Partner Panel */}
                 <ScrollReveal direction="up" delay={0.1}>
                   <div className="bg-[#023625] text-white p-8 md:p-10 rounded-2xl relative overflow-hidden shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="space-y-2 max-w-2xl">
-                      <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold block">Exclusive Technical Partnership</span>
+                      <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold block">Partnership &amp; Advisory Route</span>
                       <h3 className="font-serif text-xl md:text-2xl font-bold">FoodChain ID &amp; Yitzak Consulting</h3>
-                      <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        As an Official FoodChain ID Partner, Yitzak gives clients access to selected FoodChain ID Academy courses, with certification delivered through FoodChain ID and its accredited certification bodies.
+                      <p className="font-sans text-xs md:text-sm text-white/85 leading-relaxed">
+                        As a FoodChain ID partner, Yitzak helps organisations access selected FoodChain ID services and understand the certification pathway most relevant to their operation.
                       </p>
                     </div>
                     <a

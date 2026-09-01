@@ -40,7 +40,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
           <span className="text-ash/60 shrink-0">/</span>
           <span className="font-semibold text-[#023625] truncate">
             {currentView === 'training' && 'Professional Training'}
-            {currentView === 'certifications' && 'Certification'}
+            {currentView === 'certifications' && 'Certification Pathways'}
             {currentView === 'consulting' && 'Consulting & Advisory'}
             {currentView === 'process_implementation' && 'Process Implementation'}
             {currentView === 'calendar' && 'Course Availability'}
@@ -95,8 +95,8 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
             </>
           )}
 
-          {/* Training & Certifications branch under Capability Building */}
-          {['training', 'certifications'].includes(currentView) && (
+          {/* Training branch under Capability Building */}
+          {['training'].includes(currentView) && (
             <>
               <li className="flex items-center">
                 <ChevronRight size={13} className="text-ash/50 shrink-0" />
@@ -154,7 +154,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
               <li>
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
                   <Award size={13} className="text-[#B68A35]" />
-                  <span>Certification</span>
+                  <span>Certification Pathways</span>
                 </span>
               </li>
             </>
