@@ -25,12 +25,12 @@ export default function FloatingChatWidget({ onOpenBooking, showBackToTop, onScr
   };
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-40 font-sans pointer-events-none">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 xl:right-8 z-40 font-sans pointer-events-none">
       {/* Floating Action Cluster (Quiet stack) */}
       <AnimatePresence>
         {!isOpen && (
           <div className="flex flex-col items-end gap-2.5 pointer-events-auto">
-            {/* Back to Top Button (Quiet 40px circle, shown only after scroll, stays directly above chat) */}
+            {/* Back to Top Button (Quiet 40px circle, shown only on desktop/tablet after scroll, stays directly above chat) */}
             {showBackToTop && (
               <motion.button
                 key="back-to-top-btn"
@@ -40,7 +40,7 @@ export default function FloatingChatWidget({ onOpenBooking, showBackToTop, onScr
                 onClick={onScrollToTop}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-10 h-10 rounded-full bg-white hover:bg-stone-50 text-stone-700 hover:text-[#023625] border border-stone-200 shadow-md hover:shadow-lg transition-all flex items-center justify-center cursor-pointer relative group shrink-0"
+                className="hidden sm:flex w-10 h-10 rounded-full bg-white hover:bg-stone-50 text-stone-700 hover:text-[#023625] border border-stone-200 shadow-md hover:shadow-lg transition-all items-center justify-center cursor-pointer relative group shrink-0"
                 aria-label="Back to top"
                 title="Back to top"
               >

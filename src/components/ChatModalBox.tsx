@@ -12,7 +12,9 @@ import {
   Sparkles,
   Phone,
   ShieldCheck,
-  Calendar
+  Calendar,
+  Copy,
+  Check
 } from 'lucide-react';
 import { db, auth, getAccessToken } from '../lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -39,8 +41,17 @@ export default function ChatModalBox({ onClose, onOpenBooking }: ChatModalBoxPro
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [successData, setSuccessData] = useState<{ id: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleCopyRef = () => {
+    if (successData?.id) {
+      navigator.clipboard.writeText(successData.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const handleSelectTopic = (topic: string) => {
     setSelectedTopic(topic);
@@ -120,6 +131,7 @@ export default function ChatModalBox({ onClose, onOpenBooking }: ChatModalBoxPro
     setSelectedTopic('');
     setMessage('');
     setSuccessData(null);
+    setCopied(false);
     setError(null);
   };
 
@@ -129,7 +141,7 @@ export default function ChatModalBox({ onClose, onOpenBooking }: ChatModalBoxPro
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: 20 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className="pointer-events-auto w-[calc(100vw-32px)] sm:w-[380px] max-h-[calc(100vh-5rem)] max-h-[calc(100dvh-5rem)] sm:max-h-[540px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
+      className="pointer-events-auto w-[calc(100vw-32px)] sm:w-[380px] max-h-[calc(100vh-5.5rem)] max-h-[calc(100dvh-5.5rem)] sm:max-h-[min(500px,calc(100vh-6rem))] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
       style={{ boxShadow: '0 20px 40px -15px rgba(2, 54, 37, 0.3), 0 0 1px 1px rgba(0,0,0,0.05)' }}
     >
       {/* Chat Header - Always visible shrink-0 */}
@@ -316,19 +328,31 @@ export default function ChatModalBox({ onClose, onOpenBooking }: ChatModalBoxPro
 
             <div>
               <h4 className="font-serif font-bold text-sm text-[#023625]">
-                Inquiry Dispatched
+                Enquiry Sent
               </h4>
               <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
                 Your message has been sent directly to <strong className="text-[#023625]">info@yitzak.co.za</strong>.
               </p>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 p-2 rounded-lg text-xs font-mono text-gray-600">
-              Ref: <span className="font-bold text-[#023625]">{successData.id}</span>
+            <div className="bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-xs flex items-center justify-between gap-2">
+              <span className="text-gray-500 font-sans text-[11px]">Reference number:</span>
+              <div className="flex items-center gap-1.5 font-mono">
+                <span className="font-bold text-[#023625] selection:bg-amber-100">{successData.id}</span>
+                <button
+                  type="button"
+                  onClick={handleCopyRef}
+                  className="p-1 text-gray-400 hover:text-[#023625] rounded transition-colors cursor-pointer"
+                  title="Copy reference number"
+                  aria-label="Copy reference number"
+                >
+                  {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                </button>
+              </div>
             </div>
 
             <p className="text-xs text-gray-500 leading-relaxed">
-              Our lead advisors will review your requirements and respond promptly.
+              We will review your enquiry and respond as soon as possible.
             </p>
 
             <div className="pt-1 flex flex-col gap-2">
@@ -342,7 +366,7 @@ export default function ChatModalBox({ onClose, onOpenBooking }: ChatModalBoxPro
                   className="w-full bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-wider py-2 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   <Calendar size={13} />
-                  <span>Book 1-on-1 Consultation</span>
+                  <span>Book a Consultation</span>
                 </button>
               )}
 

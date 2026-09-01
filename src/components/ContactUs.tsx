@@ -128,7 +128,7 @@ export default function ContactUs({ onSuccess, onOpenPrivacy }: ContactUsProps) 
               Let's build competence and compliance together.
             </h3>
             <p className="text-sm text-slate-200/90 leading-relaxed max-w-sm">
-              Developing Competence. Enabling Compliance. Reach out to our head office in Randburg, South Africa, or connect with our advisors delivering across Southern Africa and global markets.
+              Developing Competence. Enabling Compliance. Reach out to our head office in Randburg, South Africa, or connect with our advisors delivering across Southern Africa.
             </p>
           </div>
 
@@ -145,7 +145,7 @@ export default function ContactUs({ onSuccess, onOpenPrivacy }: ContactUsProps) 
                   359 Surrey Avenue, Randburg
                 </p>
                 <p className="text-xs text-slate-300">
-                  South Africa · Delivering across Southern Africa &amp; Global Markets
+                  South Africa · Delivering across Southern Africa
                 </p>
               </div>
             </div>

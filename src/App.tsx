@@ -865,7 +865,6 @@ export default function App() {
                   <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 bg-[#001D13]">
                     <div className="flex flex-col">
                       <YitzakLogo lightMode size={36} />
-                      <span className="text-[10px] uppercase font-mono tracking-widest text-[#B68A35] mt-1.5">Institutional Advisory</span>
                     </div>
                     <button
                       onClick={() => setMobileMenuOpen(false)}
@@ -1456,7 +1455,7 @@ export default function App() {
                       Accredited Management System Certifications &amp; Official FoodChain ID Academy Curricula
                     </p>
                     <p className="text-xs text-white/70 font-sans">
-                      ISO 9001 &bull; ISO 14001 &bull; ISO 45001 &bull; ISO 22000 &bull; BRCGS &bull; FSSC 22000 &bull; GLOBALG.A.P. &bull; Non-GMO
+                      ISO 9001 &bull; ISO 14001 &bull; ISO 45001 &bull; ISO 27001 &bull; ISO 22000 &bull; BRCGS &bull; FSSC 22000 &bull; GLOBALG.A.P. &bull; Non-GMO
                     </p>
                   </div>
                 </div>
@@ -1578,7 +1577,7 @@ export default function App() {
                       fullSubtitle: "Gap Analysis & Compliance Review",
                       icon: FileText,
                       summary: "Checking your current systems against target international standards.",
-                      description: "Our lead auditors review your processes clause-by-clause against the standards you need (ISO 9001, ISO 22000, FSSC 22000, BRCGS, GLOBALG.A.P., or HACCP). We pinpoint non-conformances before external auditors arrive.",
+                      description: "Our lead auditors review your processes clause-by-clause against the standards you need (ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 22000, FSSC 22000, BRCGS, GLOBALG.A.P., or HACCP). We pinpoint non-conformances before external auditors arrive.",
                       deliverables: [
                         "Detailed gap analysis report against the target standard",
                         "HACCP plan review and hazard verification",
@@ -1970,8 +1969,8 @@ export default function App() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
                     {[
-                      { title: 'Gap assessments & readiness reviews', pillar: 'compliance', desc: 'Pre-audit diagnostic reviews against ISO 9001, ISO 14001, ISO 45001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP.' },
-                      { title: 'Management system development', pillar: 'advisory', desc: 'Custom policy, SOP, and Management Systems Manual formulation built around your team (covering ISO 9001, ISO 14001, ISO 45001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP).' },
+                      { title: 'Gap assessments & readiness reviews', pillar: 'compliance', desc: 'Pre-audit diagnostic reviews against ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP.' },
+                      { title: 'Management system development', pillar: 'advisory', desc: 'Custom policy, SOP, and Management Systems Manual formulation built around your team (covering ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP).' },
                       { title: 'Documentation & records support', pillar: 'training', desc: 'Streamlined verification logs, traceability registers, and cloud compliance archives.' },
                       { title: 'Internal audits & process reviews', pillar: 'compliance', desc: 'Independent expert auditing to satisfy annual accredited scheme mandates.' }
                     ].map((item, idx) => (
@@ -2051,16 +2050,16 @@ export default function App() {
             className="bg-white min-h-screen text-on-surface"
           >
             {/* Hero Section */}
-            <section className="relative pt-12 md:pt-24 pb-16 px-4 md:px-16 max-w-[1280px] mx-auto overflow-hidden">
+            <section className="relative pt-6 md:pt-10 pb-4 md:pb-6 px-4 sm:px-6 md:px-12 lg:px-16 max-w-[1180px] mx-auto overflow-hidden">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 <div className="lg:col-span-6 z-10">
-                  <h1 className="font-serif text-[40px] md:text-[64px] leading-[48px] md:leading-[72px] tracking-tight text-primary mb-6 font-bold">
+                  <h1 className="font-serif text-[40px] md:text-[56px] leading-[46px] md:leading-[64px] tracking-tight text-primary mb-5 font-bold">
                     Training that builds real competence
                   </h1>
                   <p className="font-sans text-sm md:text-base text-on-surface-variant mb-4 leading-relaxed opacity-90">
-                    Practical, instructor-led training across the management-system disciplines. Delivered by industry veterans to ensure rigorous capability development. In proud partnership with FoodChain ID Academy.
+                    Practical, instructor-led training for quality, food safety, environmental, and management systems. Delivered through Yitzak programmes and selected FoodChain ID Academy courses, with options tailored to your workplace.
                   </p>
-                  <p className="font-sans text-xs md:text-sm text-outline mb-8 border-l-2 border-antique-gold pl-4">
+                  <p className="font-sans text-xs md:text-sm text-outline mb-6 border-l-2 border-antique-gold pl-4">
                     Featuring YITZAK professional programmes, with access to selected FoodChain ID Academy courses.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
@@ -2082,7 +2081,7 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <div className="lg:col-span-6 mt-12 lg:mt-0 relative">
+                <div className="lg:col-span-6 mt-6 lg:mt-0 relative">
                   <div className="rounded-2xl overflow-hidden shadow-ambient relative z-10 aspect-[4/3] border border-[#E5E5E5]">
                     <img
                       className="w-full h-full object-cover"
@@ -2101,24 +2100,27 @@ export default function App() {
               </div>
             </section>
 
-            {/* The Three Streams Section */}
-            <section id="streams" className="bg-[#F9F9F9] pt-24 pb-16 sm:pt-24 sm:pb-20 md:pt-24 md:pb-20 px-4 md:px-16 border-t border-[#E5E5E5] scroll-mt-[150px]">
-              <div className="max-w-[1280px] mx-auto">
-                <div className="text-center mb-12">
-                  <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold mb-4">The Three Streams</h2>
-                  <div className="w-24 h-1 bg-[#B68A35] mx-auto"></div>
+            {/* Training Options Section */}
+            <section id="streams" className="bg-[#F9F9F9] py-6 md:py-8 px-4 sm:px-6 md:px-12 lg:px-16 border-t border-[#E5E5E5] scroll-mt-[80px]">
+              <div className="max-w-[1180px] mx-auto">
+                <div className="text-center mb-6">
+                  <h2 className="font-serif text-3xl md:text-[36px] text-primary font-bold mb-2">Training Options</h2>
+                  <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-xl mx-auto mb-3">
+                    Choose the delivery pathway that aligns with your operational requirements and team goals.
+                  </p>
+                  <div className="w-20 h-1 bg-[#B68A35] mx-auto"></div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Stream 1 */}
+                  {/* Option 1 */}
                   <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 md:p-8 hover:shadow-ambient hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
                     <div className="space-y-4 mb-6">
                       <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center">
                         <GraduationCap className="text-forest-green" size={24} />
                       </div>
-                      <h3 className="font-serif text-xl text-primary font-bold">YITZAK Curricula</h3>
+                      <h3 className="font-serif text-xl text-primary font-bold">YITZAK Programmes</h3>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Proprietary training modules focused on specialized compliance, strategy implementation, and advanced internal auditing techniques.
+                        Practical training modules focused on compliance implementation, management systems, and internal auditor competence.
                       </p>
                     </div>
                     <button
@@ -2134,7 +2136,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* Stream 2 */}
+                  {/* Option 2 */}
                   <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 md:p-8 hover:shadow-ambient hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
                     <div className="space-y-4 mb-6">
                       <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center">
@@ -2142,7 +2144,7 @@ export default function App() {
                       </div>
                       <h3 className="font-serif text-xl text-primary font-bold">FoodChain ID Academy</h3>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Internationally recognized certification courses delivered through our exclusive partnership, ensuring global standard compliance.
+                        Accredited certification and auditor training courses delivered through our official partnership.
                       </p>
                     </div>
                     <button
@@ -2154,7 +2156,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* Stream 3 */}
+                  {/* Option 3 */}
                   <div className="bg-white border border-[#E5E5E5] rounded-2xl p-6 md:p-8 hover:shadow-ambient hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
                     <div className="space-y-4 mb-6">
                       <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center">
@@ -2162,7 +2164,7 @@ export default function App() {
                       </div>
                       <h3 className="font-serif text-xl text-primary font-bold">In-House Solutions</h3>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Bespoke, on-site training programs tailored to your organization's specific operational realities and cultural context.
+                        On-site training programmes tailored to your organization's specific operational processes and facility requirements.
                       </p>
                     </div>
                     <button
@@ -2177,29 +2179,29 @@ export default function App() {
               </div>
             </section>
 
-            {/* FoodChain ID Partnership & Certification Support Banner on Training Page */}
-            <section className="py-12 bg-mist border-y border-border">
-              <div className="max-w-[1280px] mx-auto px-4 md:px-16">
+            {/* FoodChain ID Partnership Banner */}
+            <section className="py-8 md:py-10 bg-mist border-y border-border">
+              <div className="max-w-[1180px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16">
                 <ScrollReveal direction="up" delay={0.05}>
-                  <div className="bg-[#023625] text-white p-6 sm:p-8 md:p-10 rounded-2xl relative overflow-hidden shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="space-y-3 max-w-2xl">
+                  <div className="bg-[#023625] text-white p-6 sm:p-8 rounded-2xl relative overflow-hidden shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2.5 max-w-2xl">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="bg-[#B68A35]/20 text-[#DFC181] border border-[#B68A35]/40 px-3 py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap">
-                          Exclusive Technical Partnership
+                          Official Partner
                         </span>
                         <span className="text-white/70 text-xs font-mono">FoodChain ID Academy</span>
                       </div>
                       <h3 className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-white">
-                        Accredited Schemes &amp; Global Certification
+                        FoodChain ID Academy Courses &amp; Certification Pathways
                       </h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        As an official FoodChain ID Partner, Yitzak delivers accredited certification audits and professional training across GFSI, GLOBALG.A.P., Non-GMO, and BRCGS standards.
+                        Access selected FoodChain ID Academy training courses and certification pathways across GFSI, GLOBALG.A.P., Non-GMO, and BRCGS standards through our official partnership.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
                       <button
                         onClick={() => navigateTo('certifications')}
-                        className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-xl transition-all cursor-pointer shadow-sm inline-flex items-center justify-center gap-2 active:scale-95 w-full sm:w-auto"
+                        className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest font-bold py-3 px-5 rounded-xl transition-all cursor-pointer shadow-sm inline-flex items-center justify-center gap-2 active:scale-95 w-full sm:w-auto"
                       >
                         <span>Certification</span>
                         <ArrowRight size={14} />
@@ -2208,7 +2210,7 @@ export default function App() {
                         href="https://www.foodchainid.com/academy/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="border border-white/30 hover:border-white hover:bg-white/5 text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto text-center"
+                        className="border border-white/30 hover:border-white hover:bg-white/5 text-white font-sans text-xs uppercase tracking-widest font-bold py-3 px-5 rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto text-center"
                       >
                         <span>Global Academy</span>
                         <span>↗</span>
@@ -2220,85 +2222,50 @@ export default function App() {
             </section>
 
             {/* Training Portfolio Section */}
-            <section id="portfolio" className="pt-24 pb-16 sm:pt-24 sm:pb-20 md:pt-24 md:pb-20 px-4 md:px-16 bg-white scroll-mt-[150px]">
-              <div className="max-w-[1280px] mx-auto">
+            <section id="portfolio" className="py-10 md:py-14 px-4 sm:px-6 md:px-12 lg:px-16 bg-white scroll-mt-[100px]">
+              <div className="max-w-[1180px] mx-auto">
                 
-                {/* Print Letterhead Header (Visible only during printing) */}
-                <div className="hidden print:block mb-8 border-b-2 border-[#B68A35] pb-4">
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <YitzakLogo size={30} className="mb-2" />
-                      <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Official Training Portfolio &amp; Syllabus Record</p>
-                      <p className="text-[10px] text-gray-500 mt-1">Official FoodChain ID Partner</p>
-                    </div>
-                    <div className="text-right text-[10px] font-mono text-gray-500">
-                      <p>Issued: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                      <p>Document Ref: YITZ-TRN-2026-REC</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8 md:mb-12 border-b border-[#E5E5E5] pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 border-b border-[#E5E5E5] pb-5">
                   <div>
-                    <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold mb-2">Training Portfolio</h2>
-                    <div className="w-24 h-1 bg-[#B68A35]"></div>
+                    <h2 className="font-serif text-3xl md:text-[36px] text-primary font-bold mb-2">Training Portfolio</h2>
+                    <div className="w-20 h-1 bg-[#B68A35]"></div>
                   </div>
                   
-                  {/* Portfolio Download & Print buttons */}
-                  <div className="flex flex-wrap items-center gap-3 no-print lg:justify-end">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#737373] font-mono shrink-0">
-                      Export Syllabus:
-                    </span>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => {
-                          exportPortfolioToPDF(portfolioCategories);
-                          triggerSmartPrint();
-                        }}
-                        className="bg-[#B68A35] hover:bg-[#a37a2e] text-white font-mono text-[11px] font-bold uppercase tracking-wider py-2 px-3.5 transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs active:scale-[0.98] rounded-md"
-                        title="Print full training syllabus & portfolio for physical record-keeping"
-                      >
-                        <Printer size={13} />
-                        <span className="whitespace-nowrap">Print / PDF Record</span>
-                      </button>
-                      <button
-                        onClick={() => exportPortfolioToPDF(portfolioCategories)}
-                        className="bg-primary hover:bg-[#1f4d3a] text-white font-mono text-[11px] font-bold uppercase tracking-wider py-2 px-3.5 transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs active:scale-[0.98] rounded-md"
-                        title="Download full portfolio syllabus as a high-quality PDF document"
-                      >
-                        <FileText size={13} />
-                        <span className="whitespace-nowrap">Download PDF</span>
-                      </button>
-                      <button
-                        onClick={() => exportPortfolioToCSV(portfolioCategories)}
-                        className="border border-[#E5E5E5] hover:bg-[#F9F9F9] text-[#2B2B2B] font-mono text-[11px] font-bold uppercase tracking-wider py-2 px-3.5 transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] rounded-md"
-                        title="Download full portfolio courses list in Excel-compatible CSV spreadsheet format"
-                      >
-                        <Download size={13} className="text-[#B68A35]" />
-                        <span className="whitespace-nowrap">Download CSV</span>
-                      </button>
-                    </div>
+                  {/* Single Course Guide PDF Button */}
+                  <div className="no-print">
+                    <button
+                      onClick={() => exportPortfolioToPDF(portfolioCategories)}
+                      className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-mono text-xs font-bold uppercase tracking-wider py-2.5 px-4 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98] rounded-lg"
+                      title="Download the full course guide syllabus as a PDF document"
+                    >
+                      <FileText size={14} />
+                      <span className="whitespace-nowrap">Download Course Guide</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Mobile horizontal scrollable categories tab bar */}
-                <div className="md:hidden flex flex-row overflow-x-auto gap-2 pb-3 mb-6 border-b border-[#E5E5E5] no-scrollbar">
-                  {portfolioCategories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setActiveSidebarSection(cat.id)}
-                      className={`whitespace-nowrap px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-all shrink-0 ${
-                        activeSidebarSection === cat.id
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'bg-[#F4F4F4] text-on-surface-variant hover:bg-[#EAEAEA]'
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
+                {/* Mobile horizontal scrollable categories tab bar with swipe affordance & hidden scrollbar */}
+                <div className="md:hidden relative mb-6">
+                  <div className="flex flex-row overflow-x-auto gap-2 pb-2.5 border-b border-[#E5E5E5] scrollbar-none no-scrollbar -mx-4 px-4 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    {portfolioCategories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setActiveSidebarSection(cat.id)}
+                        className={`whitespace-nowrap px-3.5 py-2 rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer transition-all shrink-0 active:scale-95 ${
+                          activeSidebarSection === cat.id
+                            ? 'bg-primary text-white shadow-xs'
+                            : 'bg-[#F4F4F4] text-on-surface-variant hover:bg-[#EAEAEA]'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Subtle right fade affordance indicating more scrollable tabs */}
+                  <div className="absolute right-0 top-0 bottom-2.5 w-6 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none -mr-4" />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10">
                   {/* Left Sidebar Menu (Desktop) */}
                   <div className="hidden md:block md:col-span-3">
                     <div className="flex flex-col space-y-1 border-l-2 border-[#E5E5E5] pl-0">
@@ -2306,7 +2273,7 @@ export default function App() {
                         <button
                           key={cat.id}
                           onClick={() => setActiveSidebarSection(cat.id)}
-                          className={`text-left py-3 px-4 transition-all text-xs uppercase tracking-wider font-bold cursor-pointer border-l-2 -ml-[2px] rounded-r-md ${
+                          className={`text-left py-2.5 px-3.5 transition-all text-xs uppercase tracking-wider font-bold cursor-pointer border-l-2 -ml-[2px] rounded-r-md ${
                             activeSidebarSection === cat.id
                               ? 'border-[#B68A35] text-primary bg-[#F2F4F3] font-extrabold shadow-2xs'
                               : 'border-transparent text-on-surface-variant hover:text-primary hover:bg-[#F9FBF9] hover:border-[#D0D0D0]'
@@ -2328,11 +2295,11 @@ export default function App() {
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -10 }}
                           transition={{ duration: 0.3 }}
-                          className="space-y-6"
+                          className="space-y-5"
                         >
                           {/* Category Header */}
-                          <div className="border-b border-[#E5E5E5] pb-4 mb-6 space-y-2">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                          <div className="border-b border-[#E5E5E5] pb-3 mb-4 space-y-1.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">
                                 {cat.title}
                               </h3>
@@ -2348,17 +2315,17 @@ export default function App() {
                           </div>
 
                           {/* Courses List */}
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             {cat.courses.map((course, idx) => (
                               <div
                                 key={idx}
-                                className="border border-[#E5E5E5] p-4 sm:p-5 md:p-6 hover:shadow-ambient transition-all duration-300 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 rounded-xl"
+                                className="border border-[#E5E5E5] p-4 sm:p-5 hover:shadow-ambient transition-all duration-300 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl"
                               >
                                 <div className="flex-1 min-w-0 pr-0 sm:pr-2">
-                                  <h4 className="font-sans text-sm md:text-base font-bold text-primary mb-1 leading-snug">
+                                  <h4 className="font-sans text-[15px] sm:text-base font-bold text-primary mb-1.5 leading-snug">
                                     {course.title}
                                   </h4>
-                                  <p className="font-sans text-xs text-on-surface-variant leading-relaxed opacity-85">
+                                  <p className="font-sans text-[13px] sm:text-sm text-on-surface-variant leading-relaxed opacity-90">
                                     {course.description}
                                   </p>
                                 </div>
@@ -2367,7 +2334,7 @@ export default function App() {
                                   {course.tags.map((tag, tagIdx) => (
                                     <span
                                       key={tagIdx}
-                                      className="inline-flex items-center justify-center text-center text-[10px] font-mono uppercase tracking-wider bg-forest-green/10 text-forest-green px-2.5 py-0.5 font-bold rounded-md border border-forest-green/15 whitespace-nowrap max-w-full"
+                                      className="inline-flex items-center justify-center text-center text-[11px] font-mono uppercase tracking-wider bg-forest-green/10 text-forest-green px-2.5 py-1 font-semibold rounded-md border border-forest-green/15 whitespace-nowrap max-w-full"
                                     >
                                       {tag}
                                     </span>
@@ -2384,76 +2351,53 @@ export default function App() {
               </div>
             </section>
 
-            {/* Demonstrate Your Competence Section */}
-            <section className="py-8 px-4 md:px-16 bg-white">
-              <div className="max-w-[1280px] mx-auto">
+            {/* Certificates and Records Section */}
+            <section className="py-6 px-4 sm:px-6 md:px-12 lg:px-16 bg-white">
+              <div className="max-w-[1180px] mx-auto">
                 <div className="bg-[#F9F9F9] border border-[#E5E5E5] rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
-                  <div className="w-16 h-16 rounded-full bg-forest-green/10 flex items-center justify-center shrink-0">
-                    <Award className="text-forest-green" size={32} />
+                  <div className="w-14 h-14 rounded-full bg-forest-green/10 flex items-center justify-center shrink-0">
+                    <Award className="text-forest-green" size={28} />
                   </div>
                   <div>
-                    <h3 className="font-serif text-lg md:text-xl text-primary font-bold mb-2">Demonstrate Your Competence</h3>
+                    <h3 className="font-serif text-lg md:text-xl text-primary font-bold mb-2">Certificates and Records</h3>
                     <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed opacity-90">
-                      On successful completion, participants receive a formal YITZAK Certificate of Completion. For partnered modules, official accreditation certificates are issued directly by the governing bodies, serving as verifiable proof of your rigorous capability development.
+                      On successful completion of Yitzak courses, participants receive a formal Yitzak Certificate of Completion and attendance record. For FoodChain ID Academy courses, official certificates are issued directly by FoodChain ID following their accredited assessment requirements.
                     </p>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* Flexible Delivery Formats Section */}
-            <section className="bg-primary text-white py-16 md:py-20 px-4 md:px-16">
-              <div className="max-w-[1280px] mx-auto text-center">
-                <h2 className="font-serif text-3xl md:text-[40px] font-bold mb-3">Flexible Delivery Formats</h2>
-                <p className="font-sans text-xs md:text-sm text-white/80 max-w-2xl mx-auto mb-12 leading-relaxed">
-                  Tailored to fit your organizational constraints and learning preferences.
+            {/* Delivery Formats Section */}
+            <section className="bg-primary text-white py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-16">
+              <div className="max-w-[1180px] mx-auto text-center">
+                <h2 className="font-serif text-2xl md:text-3xl font-bold mb-2">On-Site &amp; Workplace Delivery</h2>
+                <p className="font-sans text-xs md:text-sm text-white/80 max-w-2xl mx-auto mb-6 leading-relaxed">
+                  Tailored to fit your facility schedule and operational team requirements.
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                  {/* Format 1 */}
-                  <div className="border border-white/10 rounded-2xl p-8 bg-white/5 backdrop-blur-sm flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
-                      <Building2 className="text-antique-gold" size={24} />
+                <div className="max-w-2xl mx-auto mb-6">
+                  <div className="border border-white/10 rounded-2xl p-5 sm:p-6 bg-white/5 backdrop-blur-sm flex flex-col items-center text-center">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-3">
+                      <Building2 className="text-antique-gold" size={20} />
                     </div>
-                    <h3 className="font-serif text-lg font-bold mb-3">On-Site &amp; In-House</h3>
-                    <p className="font-sans text-xs text-white/70 leading-relaxed">
-                      Delivered at your facility, minimizing travel disruption and maximizing contextual relevance.
-                    </p>
-                  </div>
-
-                  {/* Format 2 */}
-                  <div className="border border-white/10 rounded-2xl p-8 bg-white/5 backdrop-blur-sm flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
-                      <Laptop className="text-antique-gold" size={24} />
-                    </div>
-                    <h3 className="font-serif text-lg font-bold mb-3">Virtual Instructor-Led</h3>
-                    <p className="font-sans text-xs text-white/70 leading-relaxed">
-                      Live, interactive digital classrooms ensuring global accessibility without compromising rigor.
-                    </p>
-                  </div>
-
-                  {/* Format 3 */}
-                  <div className="border border-white/10 rounded-2xl p-8 bg-white/5 backdrop-blur-sm flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
-                      <RefreshCw className="text-antique-gold" size={24} />
-                    </div>
-                    <h3 className="font-serif text-lg font-bold mb-3">Blended Learning</h3>
-                    <p className="font-sans text-xs text-white/70 leading-relaxed">
-                      A strategic mix of self-paced digital modules and intensive live workshops.
+                    <h3 className="font-serif text-base sm:text-lg font-bold mb-1.5 text-white">Workplace &amp; Facility Training</h3>
+                    <p className="font-sans text-xs sm:text-sm text-white/70 leading-relaxed max-w-lg">
+                      Delivered directly at your production plant, packhouse, or offices. We use your operational processes and documentation as practical examples to build capability where it counts.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
                     onClick={() => navigateTo('calendar')}
-                    className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 focus:outline-none"
+                    className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-2.5 px-5 rounded cursor-pointer transition-all active:scale-95 focus:outline-none"
                   >
-                    View Course Calendar
+                    View Course Availability
                   </button>
                   <button
                     onClick={() => handleOpenBooking('training')}
-                    className="border border-white/30 hover:border-white text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 focus:outline-none"
+                    className="border border-white/30 hover:border-white text-white font-sans font-bold text-xs uppercase tracking-widest py-2.5 px-5 rounded cursor-pointer transition-all active:scale-95 focus:outline-none"
                   >
                     Request In-House Training
                   </button>
@@ -2485,7 +2429,7 @@ export default function App() {
                   Internationally Recognised Certification
                 </h1>
                 <p className="font-sans text-xs sm:text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl">
-                  As an Official <strong className="text-primary font-bold">FoodChain ID</strong> Partner, Yitzak conducts accredited third-party certification audits across international food safety, quality, and agricultural standards, delivering valid certificates across Southern Africa and global markets.
+                  Through our official partnership with <strong className="text-primary font-bold">FoodChain ID</strong>, Yitzak connects organizations to accredited third-party certification pathways and courses across international food safety, quality, and agricultural standards across Southern Africa.
                 </p>
                 <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 pt-2 no-print">
                   <button
@@ -2746,10 +2690,10 @@ export default function App() {
                       </div>
                       <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">FSSC 22000 &amp; Integrated ISO Management Systems</h3>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Official FoodChain ID certification audits for FSSC 22000 (Version 6), ISO 22000 / 22001 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), ISO 45001 (Occupational Health &amp; Safety), and ISO 50001 (Energy Management). Full third-party auditing that meets international buyer and retail requirements.
+                        Official FoodChain ID certification audits for FSSC 22000 (Version 6), ISO 22000 / 22001 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), ISO 45001 (Occupational Health &amp; Safety), ISO 27001 (Information Security), and ISO 50001 (Energy Management). Full third-party auditing that meets international buyer and retail requirements.
                       </p>
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        {['FSSC 22000 v6', 'ISO 22000 / 22001', 'ISO 9001', 'ISO 14001', 'ISO 45001', 'ISO 50001'].map((iso, idx) => (
+                        {['FSSC 22000 v6', 'ISO 22000 / 22001', 'ISO 9001', 'ISO 14001', 'ISO 45001', 'ISO 27001', 'ISO 50001'].map((iso, idx) => (
                           <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-3 py-1 rounded-md font-mono font-bold">
                             {iso}
                           </span>
@@ -3500,12 +3444,9 @@ export default function App() {
             {/* Column 3: Follow Us */}
             <div className="space-y-4">
               <h3 className="text-[#B68A35] font-serif font-bold text-base tracking-wider uppercase">
-                Follow Us
+                Connect
               </h3>
-              <p className="font-sans text-xs text-white/70 leading-relaxed">
-                Connect with Yitzak Consulting for monthly industry digests, compliance insights, and accredited training announcements.
-              </p>
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3 pt-1">
                 <a
                   href="https://www.linkedin.com"
                   target="_blank"

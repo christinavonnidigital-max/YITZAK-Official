@@ -457,7 +457,7 @@ export default function BookingModal({
                         rows={3}
                         value={directForm.message}
                         onChange={(e) => setDirectForm({ ...directForm, message: e.target.value })}
-                        placeholder="Detail standard targets (e.g. ISO 22000, FSSC 22000, BRCGS, HACCP) or specific requirements..."
+                        placeholder="Detail standard targets (e.g. ISO 9001, ISO 27001, ISO 22000, FSSC 22000, BRCGS, HACCP) or specific requirements..."
                         className="w-full px-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors resize-none"
                       />
                     </div>

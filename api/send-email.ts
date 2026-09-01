@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const resendApiKey = process.env.RESEND_API_KEY;
     if (resendApiKey) {
       try {
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'YITZAK Institutional <onboarding@resend.dev>';
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'YITZAK Advisory <onboarding@resend.dev>';
         const resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {

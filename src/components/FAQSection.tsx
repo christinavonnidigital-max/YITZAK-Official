@@ -23,43 +23,29 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
       id: 'faq-streams',
       category: 'Curriculum & Standards',
       iconName: 'school',
-      question: 'What is the difference between YITZAK Curricula and FoodChain ID courses?',
-      answer: 'YITZAK Curricula consists of proprietary, custom-engineered training modules designed by our senior consultants to target specific high-complexity operations, internal audits, and regional leadership goals. FoodChain ID courses are internationally recognized, standardized certification programs delivered through our exclusive official partnership, leading to accredited regulatory compliance certificates (e.g., FSSC 22000, BRCGS, SQF) directly recognized by global retail and audit consortia.'
+      question: 'What is the difference between YITZAK Programmes and FoodChain ID courses?',
+      answer: 'YITZAK Programmes are practical training courses developed by our consultants to support compliance implementation, internal auditing skills, and management system maintenance. FoodChain ID courses are standardized auditor and scheme certification programs delivered through our official partnership, leading to accredited certificates (such as FSSC 22000, BRCGS, and ISO schemes).'
     },
     {
       id: 'faq-customization',
       category: 'In-House Solutions',
       iconName: 'groups',
-      question: 'Can the training programs be customized for our specific facility and sector?',
-      answer: 'Yes. Under our "In-House Solutions" stream, we routinely perform pre-training consultations to adapt our syllabi to your unique plant layout, machinery types, products, and historic compliance challenges. We can incorporate your internal Standard Operating Procedures (SOPs) into case studies and deliver instruction in both classroom and practical on-site environments.'
+      question: 'Can training programs be delivered on-site at our facility?',
+      answer: 'Yes. Through our In-House Solutions, we tailor course delivery to your specific operational processes, site layout, and industry sector. Training can be conducted directly at your facility using your team\'s operational workflows and documentation for practical exercises.'
     },
     {
       id: 'faq-accreditation',
-      category: 'Certification & Validity',
+      category: 'Certificates & Verification',
       iconName: 'verified',
-      question: 'Are the certificates internationally valid, and how is competence verified?',
-      answer: 'Absolutely. For partnered GFSI and ISO programs, official certificates are issued directly by governing bodies like FoodChain ID or relevant certification authorities. For independent YITZAK modules, candidates undergo structured written and practical evaluations. Upon successful completion, they receive a formal YITZAK Certificate of Competency, complete with uniquely registered tracking numbers and CEU credits verifiable by key industry stakeholders.'
-    },
-    {
-      id: 'faq-consulting',
-      category: 'Audit & Consulting',
-      iconName: 'shield_with_heart',
-      question: 'Does YITZAK provide real-time assistance during a live third-party audit?',
-      answer: 'While regulatory guidelines prohibit training institutions from acting as active auditees, YITZAK provides extensive "Pre-Audit Verification" and "Mock Audit" services. We prepare your staff through simulated audit pressure, perform comprehensive gap analyses, and help organize documentation. If requested, our senior advisors can remain on-site in a passive advisory observer role to help interpret auditor technical findings.'
-    },
-    {
-      id: 'faq-calculator',
-      category: 'ROI & Tools',
-      iconName: 'calculate',
-      question: 'How accurate is the Compliance & ROI Calculator, and how should we use its results?',
-      answer: 'Our proprietary calculator uses a multivariable algorithm based on standard industrial lead times, site scaling factors, and statistical audit failure rates. It serves as an excellent executive planning tool to gauge baseline resource allocation. However, we highly recommend scheduling a 1-on-1 expert validation session to convert these mathematical estimations into a fully customized, audit-proof project execution plan.'
+      question: 'What certificates are issued upon course completion?',
+      answer: 'Participants completing Yitzak courses receive an official Yitzak Certificate of Completion and attendance record. For FoodChain ID Academy courses, official accredited certificates are issued directly by FoodChain ID following their standard evaluation and examination procedures.'
     },
     {
       id: 'faq-calendar-booking',
       category: 'Schedules & Registration',
       iconName: 'calendar_month',
-      question: 'What happens if we miss a scheduled training day or virtual session?',
-      answer: 'For our Virtual Instructor-Led and Blended learning formats, we provide secure access to high-definition session recordings, shared resource centers, and offline tutor support for up to 30 days post-course. If an attendee misses a significant portion of an accredited syllabus, they can be rescheduled into the next active monthly cohort free of charge, subject to seat availability.'
+      question: 'How do we register for scheduled courses or book an in-house cohort?',
+      answer: 'You can check course availability directly online or submit a consultation request for on-site team training. Our team will provide schedule confirmation, venue details, and invoice requirements prior to course commencement.'
     }
   ];
 
@@ -68,35 +54,35 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
   };
 
   return (
-    <section id="faq-homepage-section" className="pt-24 pb-16 sm:pt-24 sm:pb-20 md:pt-24 md:pb-24 bg-white border-t border-b border-[#E5E5E5] scroll-mt-[150px]">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-16">
+    <section id="faq-homepage-section" className="py-6 md:py-8 bg-white border-t border-b border-[#E5E5E5] scroll-mt-[80px]">
+      <div className="max-w-[1180px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16">
         
         {/* FAQ Header Block */}
-        <div className="text-center mb-12 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-stone-100 border border-stone-200 rounded-full mb-4">
+        <div className="text-center mb-6 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-stone-100 border border-stone-200 rounded-full mb-3">
             <AppIcon name="help" size={16} color="#B68A35" />
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#1f1f1f]">Knowledge Base</span>
           </div>
-          <h2 className="font-serif text-3xl md:text-[40px] text-primary font-bold mb-4">
+          <h2 className="font-serif text-3xl md:text-[36px] text-primary font-bold mb-3">
             Frequently Asked Questions
           </h2>
           <p className="font-sans text-xs md:text-sm text-ash leading-relaxed">
-            Quick, detailed answers regarding our accreditation standards, customized delivery formats, certification validity, and corporate evaluation frameworks.
+            Key information regarding course pathways, on-site delivery, certificate issuance, and registration.
           </p>
-          <div className="w-16 h-1 bg-[#B68A35] mx-auto mt-6"></div>
+          <div className="w-16 h-1 bg-[#B68A35] mx-auto mt-4"></div>
         </div>
 
         {/* Minimalist Accordion Container */}
-        <div id="faq-accordion-container" className="max-w-3xl mx-auto space-y-4">
+        <div id="faq-accordion-container" className="max-w-3xl mx-auto space-y-3">
           {faqs.map((faq, index) => {
             const isExpanded = expandedIndex === index;
             return (
               <div
                 id={`faq-item-card-${faq.id}`}
                 key={faq.id}
-                className={`border rounded-2xl transition-all duration-300 overflow-hidden ${
+                className={`border rounded-xl transition-all duration-300 overflow-hidden ${
                   isExpanded 
-                    ? 'border-[#B68A35] bg-stone-50/70 shadow-xs' 
+                    ? 'border-[#B68A35] bg-stone-50/70 shadow-2xs' 
                     : 'border-[#E5E5E5] hover:border-[#B68A35]/50 bg-white'
                 }`}
               >
@@ -104,11 +90,11 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
                 <button
                   id={`faq-trigger-${faq.id}`}
                   onClick={() => handleToggle(index)}
-                  className="w-full py-4.5 px-6 flex items-center justify-between text-left focus:outline-none cursor-pointer"
+                  className="w-full py-3.5 px-5 flex items-center justify-between text-left focus:outline-none cursor-pointer"
                 >
-                  <div className="flex items-center gap-3.5 pr-4">
-                    <div className="w-10 h-10 rounded-xl bg-stone-100/90 border border-stone-200 flex items-center justify-center shrink-0 text-[#1f1f1f]">
-                      <AppIcon name={faq.iconName} size={22} color="#1f1f1f" />
+                  <div className="flex items-center gap-3 pr-4">
+                    <div className="w-9 h-9 rounded-lg bg-stone-100/90 border border-stone-200 flex items-center justify-center shrink-0 text-[#1f1f1f]">
+                      <AppIcon name={faq.iconName} size={20} color="#1f1f1f" />
                     </div>
                     <span className="font-serif text-xs md:text-sm font-bold text-primary hover:text-[#B68A35] transition-colors leading-snug">
                       {faq.question}
@@ -134,7 +120,7 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-5 pt-1 border-t border-[#E5E5E5]/40 space-y-3">
+                      <div className="px-5 pb-4 pt-1 border-t border-[#E5E5E5]/40 space-y-2">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-[#7d5800] bg-[#B68A35]/10 px-2.5 py-0.5 rounded-full border border-[#B68A35]/20">
                             {faq.category}
@@ -153,9 +139,9 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
         </div>
 
         {/* Dynamic CTA inside FAQ Section */}
-        <div id="faq-cta-prompt" className="text-center mt-12 bg-[#F9F9F9] border border-[#E5E5E5] rounded-2xl p-6 max-w-xl mx-auto text-xs space-y-4">
+        <div id="faq-cta-prompt" className="text-center mt-8 bg-[#F9F9F9] border border-[#E5E5E5] rounded-xl p-5 max-w-xl mx-auto text-xs space-y-3">
           <p className="font-sans text-ash leading-relaxed">
-            Have a highly specialized question about ISO standards or local audit requirements not covered here?
+            Have questions about course schedules, prerequisites, or corporate team bookings?
           </p>
           <button
             id="faq-contact-redirect-btn"
@@ -171,7 +157,7 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
             }}
             className="inline-flex items-center gap-1.5 text-xs text-[#B68A35] hover:text-primary font-bold transition-colors cursor-pointer underline decoration-dotted underline-offset-4 focus:outline-none"
           >
-            <span>Speak directly with our Academic Registrar</span>
+            <span>Speak with a Training Advisor</span>
             <span>→</span>
           </button>
         </div>

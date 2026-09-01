@@ -494,6 +494,46 @@ const UPCOMING_COURSES: TrainingCourse[] = [
         outcomes: ['Deconstruct global product recall case studies', 'Formulate corporate compliance dashboards and board-level reporting protocols']
       }
     ]
+  },
+  {
+    id: 'course-13',
+    no: 13,
+    name: 'ISO/IEC 27001:2022 Information Security Management (ISMS) Lead Implementer & Auditor',
+    category: 'ISO approved',
+    standardCategory: 'ISO',
+    difficulty: 'Advanced',
+    vertical: 'Manufacturing',
+    duration: '3 Days',
+    month: 'September',
+    dates: '28, 29, 30 Sept 2026',
+    daysList: [28, 29, 30],
+    time: '9:00 AM to 5:00 PM SAST',
+    mode: 'Online & Virtual Live',
+    instructor: 'David Khumalo, Lead ISMS & Cybersecurity Auditor',
+    price: 'R 7,200 ZAR / $395 USD',
+    description: 'Master the principles of planning, implementing, maintaining, and auditing an Information Security Management System (ISMS) against ISO/IEC 27001:2022, Annex A controls, and data protection regulations.',
+    seatsTotal: 15,
+    seatsLeft: 6,
+    syllabus: [
+      {
+        title: 'Module 1: ISO/IEC 27001:2022 Framework & Information Risk',
+        hours: '8 Hours',
+        accreditations: 'ISO 27001 Certified',
+        outcomes: ['Understand ISO 27001:2022 structure and Annex A control categories', 'Conduct comprehensive information security risk assessments']
+      },
+      {
+        title: 'Module 2: ISMS Implementation, Policies & Statement of Applicability',
+        hours: '8 Hours',
+        accreditations: 'ISMS Lead Implementer',
+        outcomes: ['Develop robust access control, cryptography, and asset management policies', 'Formulate and maintain the Statement of Applicability (SoA)']
+      },
+      {
+        title: 'Module 3: Internal Auditing & POPIA/GDPR Privacy Governance',
+        hours: '8 Hours',
+        accreditations: 'ISO 19011 Aligned',
+        outcomes: ['Execute professional ISMS internal audits and log non-conformances', 'Integrate POPIA, GDPR, and ISO 27701 data protection workflows']
+      }
+    ]
   }
 ];
 

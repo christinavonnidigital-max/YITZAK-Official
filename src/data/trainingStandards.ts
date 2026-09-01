@@ -19,11 +19,12 @@ export interface TrainingCategory {
  * 1. ISO 9001 (Quality Management)
  * 2. ISO 14001 (Environmental Management)
  * 3. ISO 45001 (Occupational Health & Safety)
- * 4. ISO 22000 & FSSC 22000 (Food Safety Management Systems)
- * 5. BRCGS (Global Standard for Food Safety & Packaging)
- * 6. GLOBALG.A.P. (Good Agricultural Practice)
- * 7. HACCP & GMP (Core Hazard Analysis & Prerequisite Programmes)
- * 8. Integrated Management Systems (IMS)
+ * 4. ISO/IEC 27001 (Information Security Management)
+ * 5. ISO 22000 & FSSC 22000 (Food Safety Management Systems)
+ * 6. BRCGS (Global Standard for Food Safety & Packaging)
+ * 7. GLOBALG.A.P. (Good Agricultural Practice)
+ * 8. HACCP & GMP (Core Hazard Analysis & Prerequisite Programmes)
+ * 9. Integrated Management Systems (IMS)
  */
 export const PORTFOLIO_CATEGORIES: TrainingCategory[] = [
   {
@@ -202,10 +203,44 @@ export const PORTFOLIO_CATEGORIES: TrainingCategory[] = [
     ]
   },
   {
+    id: 'information-security',
+    label: 'ISO 27001 (InfoSec)',
+    title: 'ISO/IEC 27001 Information Security Management',
+    badge: 'ISO/IEC 27001:2022',
+    description: 'Systematic frameworks to protect digital assets, manage cyber vulnerabilities, safeguard client data, and achieve ISO/IEC 27001 compliance.',
+    courses: [
+      {
+        title: 'ISO/IEC 27001:2022 ISMS Implementation & Governance',
+        description: 'Step-by-step roadmap to architect, document, and deploy an Information Security Management System aligned with the updated 2022 standard.',
+        tags: ['ISO 27001', 'ISMS', 'Cybersecurity', 'Implementation']
+      },
+      {
+        title: 'ISO/IEC 27001:2022 Internal Auditor & Compliance Review (ISO 19011)',
+        description: 'Competence building for internal auditors to assess Annex A security controls, information asset registers, and management review protocols.',
+        tags: ['ISO 27001', 'Internal Auditor', 'ISO 19011', 'Governance']
+      },
+      {
+        title: 'Information Security Risk Assessment & Statement of Applicability (SoA)',
+        description: 'Methodologies to identify information assets, evaluate cyber vulnerabilities, perform threat risk assessments, and formulate the SoA.',
+        tags: ['Risk Assessment', 'Annex A Controls', 'SoA']
+      },
+      {
+        title: 'Data Privacy, POPIA & GDPR Alignment with ISO/IEC 27701',
+        description: 'Integrating South African POPIA and international GDPR privacy mandates into operational information security and data handling protocols.',
+        tags: ['Data Privacy', 'POPIA', 'GDPR', 'ISO 27701']
+      },
+      {
+        title: 'Cyber Incident Response, Business Continuity & Disaster Recovery',
+        description: 'Operational frameworks for security incident containment, digital forensics readiness, business continuity planning, and disaster recovery.',
+        tags: ['Incident Response', 'Business Continuity', 'Resilience']
+      }
+    ]
+  },
+  {
     id: 'ims',
     label: 'Integrated Systems (IMS)',
     title: 'Integrated Management Systems (IMS)',
-    badge: 'ISO 9001 + ISO 14001 + ISO 45001 + ISO 50001 + ISO 22000/22001',
+    badge: 'ISO 9001 + ISO 14001 + ISO 45001 + ISO 27001 + ISO 50001 + ISO 22000',
     description: 'Unified management frameworks consolidating Quality, Environmental, OHS, Energy Management, and Food Safety into a single streamlined system.',
     courses: [
       {

@@ -445,7 +445,7 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(9.5);
     doc.setTextColor(65, 73, 68);
-    const introText = 'Yitzak is a specialized compliance, audit, and capability consulting practice delivering across Southern Africa and global markets. As an Official FoodChain ID Partner, we deliver accredited certification audits, professional training, and institutional advisory services that empower agricultural, manufacturing, and commercial enterprises.';
+    const introText = 'Yitzak is a specialized compliance, audit, and capability consulting practice delivering across Southern Africa. Through our official partnership with FoodChain ID, we provide access to selected FoodChain ID Academy training courses and accredited certification pathways, alongside practical management system advisory.';
     const introLines = doc.splitTextToSize(introText, contentWidth);
     doc.text(introLines, marginX, y);
 

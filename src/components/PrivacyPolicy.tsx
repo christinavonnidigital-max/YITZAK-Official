@@ -84,7 +84,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
             <ul className="list-disc pl-5 space-y-1 text-xs">
               <li>Your name, job title, and organization name</li>
               <li>Business email address and telephone number</li>
-              <li>Details related to your standard of interest (e.g. ISO 9001, ISO 22000, FSSC 22000, BRCGS) and facility scope</li>
+              <li>Details related to your standard of interest (e.g. ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 22000, FSSC 22000, BRCGS) and facility scope</li>
             </ul>
             <p className="pt-1">
               Where secure client access is provided by invitation, we process the business email address and account identifiers needed to manage access and protect the service.

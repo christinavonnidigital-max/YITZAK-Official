@@ -25,12 +25,34 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
   return (
     <nav 
       aria-label="Breadcrumb navigation path"
-      className="bg-[#023625]/[0.03] border-b border-border/70 py-2.5 px-4 sm:px-8 lg:px-12 transition-all"
+      className="bg-[#023625]/[0.03] border-b border-border/70 py-2 sm:py-2.5 px-4 sm:px-8 lg:px-12 transition-all"
     >
       <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4 flex-wrap text-xs font-sans text-ash">
         
-        {/* Main Breadcrumb Trail */}
-        <ol className="flex items-center flex-wrap gap-1.5 sm:gap-2">
+        {/* Mobile Compact Single-Line Breadcrumb: Services / [Sub-page] */}
+        <div className="sm:hidden flex items-center gap-1.5 text-[11.5px] font-sans">
+          <button
+            onClick={() => navigateTo('consulting')}
+            className="text-charcoal hover:text-[#B68A35] font-medium transition-colors cursor-pointer shrink-0"
+          >
+            Services
+          </button>
+          <span className="text-ash/60 shrink-0">/</span>
+          <span className="font-semibold text-[#023625] truncate">
+            {currentView === 'training' && 'Professional Training'}
+            {currentView === 'certifications' && 'Certification'}
+            {currentView === 'consulting' && 'Consulting & Advisory'}
+            {currentView === 'process_implementation' && 'Process Implementation'}
+            {currentView === 'calendar' && 'Course Availability'}
+            {currentView === 'knowledge' && 'Knowledge Centre'}
+            {currentView === 'contact' && 'Contact & Advisory Desk'}
+            {currentView === 'privacy' && 'Privacy Notice'}
+            {currentView === 'home' && 'Institutional Overview'}
+          </span>
+        </div>
+
+        {/* Desktop Full Breadcrumb Trail */}
+        <ol className="hidden sm:flex items-center flex-wrap gap-1.5 sm:gap-2">
           {/* Home Node */}
           <li>
             <button
