@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow } from 'lucide-react';
+import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow, ExternalLink, Info } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
 import ContactUs from './components/ContactUs';
+import { AdvisoryEnquiryForm } from './components/AdvisoryEnquiryForm';
 import ComplianceCalculator from './components/ComplianceCalculator';
 import FAQSection from './components/FAQSection';
 import ProcessImplementationRoadmap from './components/ProcessImplementationRoadmap';
 import FloatingChatWidget from './components/FloatingChatWidget';
+import SchemeDetailsModal from './components/SchemeDetailsModal';
 import { checkEmailWhitelist, preRegisterGuest } from './lib/whitelist';
 import { exportPortfolioToCSV, exportPortfolioToPDF, triggerSmartPrint, exportCapabilitySheetPDF } from './utils/portfolioExport';
 import { getViewFromLocation, updateBrowserUrl, AppView } from './lib/routes';
@@ -17,6 +19,7 @@ import YitzakLogo, { YitzakShieldIcon } from './components/YitzakLogo';
 import AppIcon from './components/AppIcon';
 import { PILLARS } from './data';
 import { PORTFOLIO_CATEGORIES, TrainingCategory } from './data/trainingStandards';
+import { CERTIFICATION_SCHEMES, SchemeItem } from './data/schemes';
 
 // Lazy load non-initial heavy views and modals to keep the landing page load instantaneous
 const BookingModal = lazy(() => import('./components/BookingModal'));
@@ -63,6 +66,18 @@ export default function App() {
   const [portalShowGuestForm, setPortalShowGuestForm] = useState(false);
   const [verifyingWhitelist, setVerifyingWhitelist] = useState(false);
   const [showWhitelistModal, setShowWhitelistModal] = useState(false);
+  const [advisoryPrefilledNeed, setAdvisoryPrefilledNeed] = useState<string>('');
+  const [selectedSchemeForDetails, setSelectedSchemeForDetails] = useState<SchemeItem | null>(null);
+
+  const handleScrollToAdvisoryForm = (needTopic?: string) => {
+    if (needTopic) {
+      setAdvisoryPrefilledNeed(needTopic);
+    }
+    const el = document.getElementById('request-advisory');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   // Portal Authentication Flow State
   const [portalMode, setPortalMode] = useState<'work_email' | 'guest'>('work_email');
@@ -76,16 +91,25 @@ export default function App() {
   const [portalGuestWorkEmail, setPortalGuestWorkEmail] = useState('');
   const [activeApproachPhase, setActiveApproachPhase] = useState<number>(0);
   const phaseTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const phaseContainerRef = useRef<HTMLDivElement | null>(null);
+  const isInitialApproachMount = useRef(true);
   const phaseTouchStartX = useRef<number | null>(null);
 
-  // Auto-scroll the active phase tab into center view whenever the active phase changes
+  // Auto-scroll the active phase tab horizontally within its container when changed by user
   useEffect(() => {
+    if (isInitialApproachMount.current) {
+      isInitialApproachMount.current = false;
+      return;
+    }
     const activeTabEl = phaseTabRefs.current[activeApproachPhase];
-    if (activeTabEl) {
-      activeTabEl.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center'
+    const container = phaseContainerRef.current;
+    if (activeTabEl && container) {
+      const tabLeft = activeTabEl.offsetLeft;
+      const tabWidth = activeTabEl.offsetWidth;
+      const containerWidth = container.offsetWidth;
+      container.scrollTo({
+        left: tabLeft - (containerWidth / 2) + (tabWidth / 2),
+        behavior: 'smooth'
       });
     }
   }, [activeApproachPhase]);
@@ -295,7 +319,7 @@ export default function App() {
     const loc = getViewFromLocation();
     setCurrentView(loc.view);
     if (loc.view === 'home') {
-      if (loc.elementId === 'why-us' || loc.elementId === 'about-section' || (typeof window !== 'undefined' && window.location.pathname === '/about')) {
+      if (loc.elementId === 'why-us' || loc.elementId === 'about-section') {
         setActiveHomeSection('about');
       } else {
         setActiveHomeSection('home');
@@ -316,7 +340,7 @@ export default function App() {
       const updated = getViewFromLocation();
       setCurrentView(updated.view);
       if (updated.view === 'home') {
-        if (updated.elementId === 'why-us' || updated.elementId === 'about-section' || (typeof window !== 'undefined' && window.location.pathname === '/about')) {
+        if (updated.elementId === 'why-us' || updated.elementId === 'about-section') {
           setActiveHomeSection('about');
         } else {
           setActiveHomeSection('home');
@@ -753,7 +777,7 @@ export default function App() {
                         </div>
                         <div>
                           <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Professional Training</div>
-                          <div className="text-[11px] text-ash">Accredited curricula &amp; workforce capability</div>
+                          <div className="text-[11px] text-ash">Industry curricula &amp; workforce capability</div>
                         </div>
                       </button>
 
@@ -765,7 +789,7 @@ export default function App() {
                           <Award size={17} className="text-[#B68A35] group-hover:text-white transition-colors" />
                         </div>
                         <div>
-                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Certification Pathways</div>
+                          <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Certification Preparation</div>
                           <div className="text-[11px] text-ash">FoodChain ID partner &amp; advisory route</div>
                         </div>
                       </button>
@@ -779,7 +803,7 @@ export default function App() {
                         </div>
                         <div>
                           <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Consulting &amp; Advisory</div>
-                          <div className="text-[11px] text-ash">Gap analysis, FSMS/QMS formulation &amp; audits</div>
+                          <div className="text-[11px] text-ash">Specialist guidance, gap reviews &amp; audit readiness</div>
                         </div>
                       </button>
 
@@ -792,7 +816,7 @@ export default function App() {
                         </div>
                         <div>
                           <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Business Process Implementation</div>
-                          <div className="text-[11px] text-ash">Phase 1/2 mapping, HR &amp; accounting setup</div>
+                          <div className="text-[11px] text-ash">Process mapping, SOPs &amp; operational build-out</div>
                         </div>
                       </button>
                     </motion.div>
@@ -1005,7 +1029,7 @@ export default function App() {
                               }`}
                             >
                               <Award size={15} className={currentView === 'certifications' ? 'text-[#E6CA85]' : 'text-white/40'} />
-                              <span>Certification Pathways</span>
+                              <span>Certification Preparation</span>
                             </button>
 
                             <button
@@ -1106,7 +1130,7 @@ export default function App() {
                   <div className="inline-flex items-center gap-2 bg-[#023625]/8 border border-[#023625]/15 px-3.5 py-1.5 rounded-full">
                     <span className="w-2 h-2 rounded-full bg-[#B68A35]"></span>
                     <span className="text-[#023625] font-sans text-xs uppercase tracking-wider font-bold">
-                      Official FoodChain ID Partner
+                      FoodChain ID Partner
                     </span>
                   </div>
                 </ScrollReveal>
@@ -1114,13 +1138,13 @@ export default function App() {
                 {/* What Yitzak Does */}
                 <ScrollReveal direction="up" delay={0.1}>
                   <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold text-primary tracking-tight leading-[1.12]">
-                    Professional Training, Consulting &amp; Certification
+                    Professional Training, Advisory &amp; Certification Preparation
                   </h1>
                 </ScrollReveal>
 
                 <ScrollReveal direction="up" delay={0.15}>
                   <p className="font-sans text-base sm:text-lg md:text-xl text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                    We help manufacturers, producers, and businesses across Southern Africa meet international standards, train their teams, and achieve accredited certification.
+                    We help organisations across Southern Africa strengthen systems, train teams, and prepare for suitable certification routes.
                   </p>
                 </ScrollReveal>
 
@@ -1160,7 +1184,7 @@ export default function App() {
                     <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Our Core Services</span>
                     <h2 className="font-serif text-3xl md:text-5xl text-primary font-bold">What We Do</h2>
                     <p className="font-sans text-sm md:text-base text-on-surface-variant leading-relaxed">
-                      Practical training, consulting, and accredited certification audits for quality, food safety, environmental, and business management systems.
+                      Practical training, consulting, and certification preparation for quality, food safety, environmental, and business management systems.
                     </p>
                     <div className="w-16 h-0.5 bg-[#B68A35] mx-auto mt-4"></div>
                   </div>
@@ -1210,10 +1234,10 @@ export default function App() {
                             </span>
                           </div>
                           <div className="space-y-2">
-                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug min-h-[56px] flex items-center">
                               Professional Training
                             </h3>
-                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed min-h-[48px]">
                               Instructor-led programmes that build competence across management systems and industry disciplines.
                             </p>
                           </div>
@@ -1272,21 +1296,21 @@ export default function App() {
                             </span>
                           </div>
                           <div className="space-y-2">
-                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
-                              Certification Pathways
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug min-h-[56px] flex items-center">
+                              Certification Preparation
                             </h3>
-                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed min-h-[48px]">
                               Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Guidance on suitable certification routes</span>
+                              <span>Coordination for suitable certification routes</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>GLOBALG.A.P., Non-GMO &amp; organic pathways</span>
+                              <span>GLOBALG.A.P., Non-GMO &amp; organic preparation</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
@@ -1299,7 +1323,7 @@ export default function App() {
                             onClick={() => navigateTo('certifications')}
                             className="text-xs font-bold uppercase tracking-wider text-[#023625] hover:text-[#B68A35] inline-flex items-center gap-2 transition-colors cursor-pointer"
                           >
-                            <span>Explore Pathways</span>
+                            <span>Explore Certification Preparation</span>
                             <ArrowRight size={14} />
                           </button>
                         </div>
@@ -1334,25 +1358,25 @@ export default function App() {
                             </span>
                           </div>
                           <div className="space-y-2">
-                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug min-h-[56px] flex items-center">
                               Consulting &amp; Advisory
                             </h3>
-                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              Expert guidance to prepare your team, update procedures, and pass upcoming compliance audits.
+                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed min-h-[48px]">
+                              Specialist guidance, gap reviews, and audit readiness planning to prepare your organisation for compliance assessment.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Gap analysis and pre-audits</span>
+                              <span>Gap assessments &amp; diagnostic reviews</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Quality manual &amp; SOP writing</span>
+                              <span>Readiness planning &amp; specialist guidance</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Corrective action (CAPA) support</span>
+                              <span>Internal audit preparation &amp; process reviews</span>
                             </li>
                           </ul>
                         </div>
@@ -1396,31 +1420,31 @@ export default function App() {
                             </span>
                           </div>
                           <div className="space-y-2">
-                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug">
+                            <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug min-h-[56px] flex items-center">
                               Business Process Implementation
                             </h3>
-                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
-                              Setting up essential workflows, process mapping, and HR and accounting systems for growing enterprises.
+                            <p className="font-sans text-xs text-on-surface-variant leading-relaxed min-h-[48px]">
+                              Structured operational foundations: end-to-end process mapping, SOP formulation, governance controls, and workflow handover.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Process mapping and roles</span>
+                              <span>Process mapping &amp; SOP formulation</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>HR and staff governance</span>
+                              <span>Governance &amp; RACI control frameworks</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>Accounting and operational controls</span>
+                              <span>Operational rollout &amp; team handover</span>
                             </li>
                           </ul>
                         </div>
                         <div className="pt-5 mt-5 border-t border-border/80">
                           <button
-                            onClick={() => handleOpenBooking('process_implementation', 'Interested in Business Process Implementation (Phase 1/2 mapping, HR & Accounting systems setup)')}
+                            onClick={() => handleOpenBooking('process_implementation', 'Interested in Business Process Implementation (Process mapping, SOP formulation, governance & handover)')}
                             className="text-xs font-bold uppercase tracking-wider text-[#023625] hover:text-[#B68A35] inline-flex items-center gap-2 transition-colors cursor-pointer"
                           >
                             <span>Request Consultation</span>
@@ -1435,7 +1459,7 @@ export default function App() {
             </section>
 
             {/* 3. Compact High-Value Credibility Banner (FoodChain ID Partnership) */}
-            <section className="bg-[#023625] text-white py-8 sm:py-10 px-4 sm:px-8 md:px-12 border-y border-[#B68A35]/30 relative overflow-hidden">
+            <section id="foodchain-partner-banner" className="bg-[#023625] text-white py-8 sm:py-10 px-4 sm:px-8 md:px-12 border-y border-[#B68A35]/30 relative overflow-hidden scroll-mt-[100px]">
               <div className="max-w-[1280px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
                 <div className="flex items-start sm:items-center gap-4 text-left">
                   <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-[#DFC181] shrink-0">
@@ -1444,18 +1468,14 @@ export default function App() {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#DFC181] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
-                        Official Technical Partner
-                      </span>
-                      <span className="text-white/60 text-xs hidden sm:inline">&bull;</span>
-                      <span className="text-xs text-white/80 font-sans font-medium">
-                        FoodChain ID Southern Africa
+                        FOODCHAIN ID PARTNERSHIP
                       </span>
                     </div>
                     <p className="font-serif text-base sm:text-lg text-white font-bold">
-                      Accredited Management System Certifications &amp; Official FoodChain ID Academy Curricula
+                      Selected FoodChain ID Academy Courses &amp; Certification Preparation
                     </p>
-                    <p className="text-xs text-white/70 font-sans">
-                      ISO 9001 &bull; ISO 14001 &bull; ISO 45001 &bull; ISO 27001 &bull; ISO 22000 &bull; BRCGS &bull; FSSC 22000 &bull; GLOBALG.A.P. &bull; Non-GMO
+                    <p className="text-xs text-white/80 font-sans leading-relaxed max-w-2xl">
+                      Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.
                     </p>
                   </div>
                 </div>
@@ -1465,7 +1485,7 @@ export default function App() {
                     onClick={() => navigateTo('certifications')}
                     className="w-full sm:w-auto bg-[#B68A35] hover:bg-[#a0772d] text-white font-sans font-bold text-xs uppercase tracking-wider py-3 px-6 rounded-lg cursor-pointer transition-all flex items-center justify-center gap-2 shadow-xs"
                   >
-                    <span>View Certification Schemes</span>
+                    <span>View Certification Preparation</span>
                     <ArrowRight size={14} />
                   </button>
                 </div>
@@ -1473,7 +1493,7 @@ export default function App() {
             </section>
 
             {/* 4. What Guides Our Work - Core Principles */}
-            <section id="why-us" className="pt-24 pb-16 sm:pt-24 sm:pb-20 px-4 sm:px-8 md:px-12 bg-[#F6F8F6] border-b border-border/80 scroll-mt-[150px]">
+            <section id="why-us" className="pt-28 pb-16 sm:pt-32 sm:pb-20 px-4 sm:px-8 md:px-12 bg-[#F6F8F6] border-b border-border/80 scroll-mt-[120px]">
               <div className="max-w-[1280px] mx-auto space-y-10 sm:space-y-12">
                 <ScrollReveal direction="up" delay={0.05}>
                   <div className="text-center max-w-3xl mx-auto space-y-2.5">
@@ -1504,7 +1524,7 @@ export default function App() {
                     {
                       icon: ShieldCheck,
                       title: "Lasting readiness",
-                      desc: "We carry out regular reviews, standard updates, and continual-improvement work to keep your facility audit-ready throughout the year."
+                      desc: "We help organisations plan regular reviews, standard updates, and continual-improvement work to keep your facility audit-ready throughout the year."
                     }
                   ].map((pillar, pIdx) => {
                     const PillarIcon = pillar.icon;
@@ -1541,11 +1561,11 @@ export default function App() {
                     </div>
                     <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-white">Our 5-Step Process</h2>
                     <p className="text-white/80 font-sans text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
-                      A clear, step-by-step pathway from your initial review through to accredited certification and ongoing compliance.
+                      A clear, step-by-step pathway from your initial review through implementation, workforce enablement, and ongoing readiness support.
                     </p>
                     <div className="pt-1 flex items-center justify-center gap-2 text-xs font-sans text-[#DFC181]">
                       <ShieldCheck size={14} />
-                      <span className="font-medium tracking-wide">Aligned to applicable GFSI and ISO requirements</span>
+                      <span className="font-medium tracking-wide">Aligned to applicable ISO standards and relevant scheme requirements</span>
                     </div>
                     <div className="w-16 sm:w-20 h-0.5 bg-[#B68A35] mx-auto mt-2"></div>
                   </div>
@@ -1577,13 +1597,13 @@ export default function App() {
                       fullSubtitle: "Gap Analysis & Compliance Review",
                       icon: FileText,
                       summary: "Checking your current systems against target international standards.",
-                      description: "Our lead auditors review your processes clause-by-clause against the standards you need (ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 22000, FSSC 22000, BRCGS, GLOBALG.A.P., or HACCP). We pinpoint non-conformances before external auditors arrive.",
+                      description: "Our advisory team identifies priority gaps before formal external assessment against the standards you need (ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 22000, FSSC 22000, BRCGS, GLOBALG.A.P., or HACCP). We help your team address operational and procedural gaps in advance.",
                       deliverables: [
                         "Detailed gap analysis report against the target standard",
                         "HACCP plan review and hazard verification",
                         "Prioritised action list with clear responsibilities"
                       ],
-                      outcome: "Exact clarity on what needs fixing to pass your target certification audit.",
+                      outcome: "Clear, prioritised actions to support readiness for formal assessment.",
                       benefitTag: "Audit Readiness"
                     },
                     {
@@ -1611,28 +1631,28 @@ export default function App() {
                       summary: "Hands-on staff training and internal audit practice.",
                       description: "A procedure only works if people know how to follow it. Through FoodChain ID Academy materials and practical training sessions, we train your operators, supervisors, and internal auditors so they run the system with confidence.",
                       deliverables: [
-                        "Accredited course delivery for team leaders and auditors",
+                        "Instructor-led training and access to selected FoodChain ID Academy courses",
                         "Practical mock audit drills on the factory floor",
-                        "Management review and readiness check before certification"
+                        "Management review and readiness check before formal external assessment"
                       ],
-                      outcome: "Confident, well-trained staff ready to explain and run procedures during real audits.",
+                      outcome: "Confident, well-trained staff equipped to follow and explain procedures during external assessments.",
                       benefitTag: "Capable Team"
                     },
                     {
                       num: "05",
                       phase: "Improve",
-                      subtitle: "Continual improvement",
-                      fullSubtitle: "Continual Improvement & Recertification",
+                      subtitle: "Readiness & review",
+                      fullSubtitle: "Ongoing Readiness & Review Support",
                       icon: TrendingUp,
-                      summary: "Regular surveillance audits and continual system refinement.",
-                      description: "Staying compliant and competitive requires ongoing refinement. We provide regular surveillance audits, review standard updates, and help your team execute continual improvement initiatives, annual renewals, and unannounced customer visits.",
+                      summary: "Periodic internal reviews and ongoing system refinement.",
+                      description: "Maintaining standards requires ongoing refinement and vigilance. We provide periodic internal reviews, track standard updates, and help your team prepare for surveillance audits, renewals, and customer evaluations.",
                       deliverables: [
-                        "Periodic internal audits and system check-ins",
+                        "Periodic internal reviews and system check-ins",
                         "Continual improvement reviews and standard updates",
                         "Support ahead of annual surveillance and renewal audits"
                       ],
                       outcome: "Long-term compliance and continual process optimization all year round.",
-                      benefitTag: "Continual Compliance"
+                      benefitTag: "Ongoing Readiness"
                     }
                   ];
 
@@ -1652,7 +1672,7 @@ export default function App() {
                             <div className="sm:hidden absolute top-2 right-2 bottom-2 w-8 bg-gradient-to-l from-[#023625] to-transparent pointer-events-none z-10 rounded-r-xl opacity-90 transition-opacity" />
                           )}
 
-                          <div className="flex sm:grid sm:grid-cols-5 gap-2 relative overflow-x-auto pb-1 sm:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory px-1 sm:px-0">
+                          <div ref={phaseContainerRef} className="flex sm:grid sm:grid-cols-5 gap-2 relative overflow-x-auto pb-1 sm:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory px-1 sm:px-0">
                             {approachPhasesData.map((step, idx) => {
                               const isActive = activeApproachPhase === idx;
 
@@ -1845,53 +1865,41 @@ export default function App() {
               <div className="flex justify-between items-end">
                 <div>
                   <YitzakLogo size={32} className="mb-2" />
-                  <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Consulting &amp; Systems Design Capabilities Statement</p>
+                  <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Consulting &amp; Advisory Capabilities Statement</p>
                   <p className="text-[10px] text-gray-500 mt-1">Official Institutional Document · Ref #YITZ-CONS-2026-CAP</p>
                 </div>
                 <div className="text-right text-[10px] font-mono text-gray-500">
                   <p>Issued: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                  <p>Page 05 / 05</p>
+                  <p>Official Capabilities Document</p>
                 </div>
-              </div>
-            </div>
-
-            {/* Top Breadcrumb & Document Indicator */}
-            <div className="pt-10 pb-4 px-4 md:px-16 max-w-[1280px] mx-auto">
-              <div className="flex justify-between items-center text-xs font-mono text-ash border-b border-border/60 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#B68A35] font-bold">YITZAK</span>
-                  <span>·</span>
-                  <span>COMPANY PROFILE</span>
-                </div>
-                <div className="font-bold text-primary font-mono text-sm">05</div>
               </div>
             </div>
 
             {/* Hero Banner Section */}
-            <section className="pt-6 pb-12 px-4 md:px-16 max-w-[1280px] mx-auto">
+            <section className="pt-8 pb-12 px-4 md:px-16 max-w-[1280px] mx-auto">
               <div className="max-w-4xl space-y-6">
                 <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold block">
                   CONSULTING &amp; ADVISORY
                 </span>
                 <h1 className="font-serif text-[36px] md:text-[56px] leading-[44px] md:leading-[64px] text-primary font-bold tracking-tight">
-                  Turning learning into working systems
+                  Specialist guidance, gap reviews &amp; audit readiness
                 </h1>
                 <p className="font-sans text-sm md:text-lg text-on-surface-variant leading-relaxed max-w-3xl">
-                  Practical guidance that helps organisations apply what they learn, strengthening the systems, processes, and controls that carry performance day to day.
+                  Diagnostic gap evaluations, specialist technical guidance, and structured audit readiness planning to prepare your organisation for external assessment and continual compliance.
                 </p>
 
                 {/* Quick Action Bar */}
                 <div className="flex flex-wrap items-center gap-4 pt-2 no-print">
                   <button
                     onClick={() => handleOpenBooking('compliance', 'Inquiry: Systems Analysis & Gap Assessment')}
-                    className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center gap-2"
+                    className="bg-[#B68A35] hover:opacity-95 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center gap-2"
                   >
-                    <span>Schedule Direct Consultation</span>
+                    <span>Schedule a Consultation</span>
                     <ArrowRight size={14} />
                   </button>
                   <button
                     onClick={() => exportCapabilitySheetPDF('consulting_statement')}
-                    className="bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center gap-2"
+                    className="bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center gap-2"
                     title="Print or Download Consulting & Advisory Capabilities Statement"
                   >
                     <Printer size={14} className="text-[#DFC181]" />
@@ -1901,35 +1909,35 @@ export default function App() {
               </div>
             </section>
 
-            {/* Systems Analysis & Design + Also Available Section */}
+            {/* Systems Diagnostic & Readiness Pathway + Also Available Section */}
             <section className="py-14 bg-mist/60 border-y border-border px-4 md:px-16">
               <div className="max-w-[1280px] mx-auto space-y-16">
                 
-                {/* Systems Analysis & Design Grid */}
+                {/* Diagnostic & Readiness Grid */}
                 <div className="space-y-8">
                   <div className="border-b border-border/80 pb-3 flex justify-between items-center">
                     <h2 className="text-xs font-mono uppercase tracking-widest text-[#B68A35] font-bold">
-                      SYSTEMS ANALYSIS &amp; DESIGN
+                      SYSTEMS DIAGNOSTIC &amp; READINESS PATHWAY
                     </h2>
-                    <span className="text-[10px] font-mono text-ash uppercase">Structured Implementation Pathway</span>
+                    <span className="text-[10px] font-mono text-ash uppercase">Structured Advisory Pathway</span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
                     {[
                       {
                         num: '01',
-                        title: 'Analyse business processes',
-                        desc: 'We map how your operation actually runs, establishing a clear, shared picture of the processes that drive quality, safety, and compliance.'
+                        title: 'Analyse business processes & risks',
+                        desc: 'We conduct diagnostic reviews of your operational baseline, establishing a clear picture of processes, statutory requirements, and compliance exposures.'
                       },
                       {
                         num: '02',
                         title: 'Review & evaluate controls',
-                        desc: 'We assess existing control procedures and processes against your objectives and applicable standards, identifying gaps, duplication, and risk.'
+                        desc: 'We assess existing control mechanisms against target standards, identifying gaps, duplication, and compliance risk.'
                       },
                       {
                         num: '03',
-                        title: 'Design & implement improvements',
-                        desc: 'We design practical, cost-efficient control processes that streamline operations, uncover time-saving wins, and support continual improvement and sustainable success.'
+                        title: 'Readiness planning & guidance',
+                        desc: 'We deliver prioritised action roadmaps, corrective action guidance (CAPA), and readiness plans to prepare leadership and operational teams for external assessment.'
                       }
                     ].map((step, idx) => (
                       <div key={idx} className="bg-white p-8 rounded-2xl border border-border shadow-xs hover:border-[#B68A35]/50 transition-all flex flex-col justify-between space-y-6">
@@ -1946,10 +1954,10 @@ export default function App() {
                         </div>
                         <div className="pt-4 border-t border-border/40 no-print">
                           <button
-                            onClick={() => handleOpenBooking('compliance', `Inquiry on Step ${step.num}: ${step.title}`)}
+                            onClick={() => handleScrollToAdvisoryForm(`Step ${step.num}: ${step.title}`)}
                             className="text-xs font-bold text-primary hover:text-secondary uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                           >
-                            <span>Inquire Implementation</span>
+                            <span>Request Advisory</span>
                             <ArrowRight size={12} />
                           </button>
                         </div>
@@ -1962,17 +1970,17 @@ export default function App() {
                 <div className="space-y-8">
                   <div className="border-b border-border/80 pb-3 flex justify-between items-center">
                     <h2 className="text-xs font-mono uppercase tracking-widest text-[#B68A35] font-bold">
-                      ALSO AVAILABLE
+                      SPECIALIST ADVISORY MODULES
                     </h2>
-                    <span className="text-[10px] font-mono text-ash uppercase">Complementary Advisory Modules</span>
+                    <span className="text-[10px] font-mono text-ash uppercase">Assessments &amp; Readiness</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
                     {[
                       { title: 'Gap assessments & readiness reviews', pillar: 'compliance', desc: 'Pre-audit diagnostic reviews against ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP.' },
-                      { title: 'Management system development', pillar: 'advisory', desc: 'Custom policy, SOP, and Management Systems Manual formulation built around your team (covering ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 50001, ISO 22000/22001, FSSC 22000, BRCGS, and HACCP).' },
-                      { title: 'Documentation & records support', pillar: 'training', desc: 'Streamlined verification logs, traceability registers, and cloud compliance archives.' },
-                      { title: 'Internal audits & process reviews', pillar: 'compliance', desc: 'Independent expert auditing to satisfy annual accredited scheme mandates.' }
+                      { title: 'Specialist advisory & compliance roadmaps', pillar: 'advisory', desc: 'Expert technical guidance on compliance frameworks, standard transitions, and structured readiness roadmaps.' },
+                      { title: 'Compliance documentation & records review', pillar: 'training', desc: 'Verification reviews of quality manuals, traceability registers, verification logs, and compliance records for audit readiness.' },
+                      { title: 'Internal audits & process reviews', pillar: 'compliance', desc: 'Internal audit preparation and process reviews to support readiness for external assessment.' }
                     ].map((item, idx) => (
                       <div key={idx} className="bg-white p-5 sm:p-6 rounded-xl border border-stone-200 shadow-2xs hover:shadow-sm hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full space-y-4">
                         <div className="space-y-2.5">
@@ -1986,10 +1994,10 @@ export default function App() {
                         </div>
                         <div className="pt-3 border-t border-stone-100 pl-5 no-print">
                           <button
-                            onClick={() => handleOpenBooking(item.pillar, `Inquiry: ${item.title}`)}
+                            onClick={() => handleScrollToAdvisoryForm(item.title)}
                             className="text-xs font-bold uppercase tracking-wider text-[#7d5800] hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1.5"
                           >
-                            <span>Book Review</span>
+                            <span>Book a Review</span>
                             <ArrowRight size={12} />
                           </button>
                         </div>
@@ -2004,38 +2012,34 @@ export default function App() {
             {/* Bottom Callout Banner */}
             <section className="py-12 sm:py-16 bg-[#132B22] text-white px-4 sm:px-8 md:px-16 border-t border-b border-[#1E4235]">
               <div className="max-w-[1280px] mx-auto text-center space-y-5 sm:space-y-6">
-                <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">Ready to turn learning into working systems?</h2>
+                <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">Ready to prepare your organisation for compliance?</h2>
                 <p className="font-sans text-xs sm:text-sm md:text-base text-white/80 max-w-2xl mx-auto leading-relaxed">
-                  Connect directly with Yitzak's principal advisors to schedule a gap assessment, system analysis, or custom corporate workshop.
+                  Connect with our team to schedule a diagnostic review, gap assessment, or readiness planning session.
                 </p>
                 <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 no-print w-full sm:w-auto">
                   <button
-                    onClick={() => handleOpenBooking('compliance', 'Inquiry: Gap Assessment & Systems Design')}
+                    onClick={() => handleOpenBooking('compliance', 'Inquiry: Gap Assessment & Advisory Services')}
                     className="w-full sm:w-auto bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-8 rounded-xl cursor-pointer transition-all active:scale-95 shadow-md text-center"
                   >
-                    Schedule Direct Consultation
+                    Schedule a Consultation
                   </button>
                   <button
-                    onClick={() => {
-                      const el = document.getElementById('home-contact-section');
-                      if (el) {
-                        el.scrollIntoView({ behavior: 'smooth' });
-                      } else {
-                        navigateTo('contact');
-                      }
-                    }}
+                    onClick={() => handleScrollToAdvisoryForm()}
                     className="w-full sm:w-auto border border-white/30 hover:border-white hover:bg-white/5 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-8 rounded-xl cursor-pointer transition-all active:scale-95 text-center"
                   >
-                    Talk to Our Advisory Team
+                    Send an Enquiry
                   </button>
                 </div>
               </div>
             </section>
 
-            {/* Embedded Contact Us Section at Bottom of Home Page */}
-            <section id="home-contact-section" className="pt-24 pb-16 md:pt-24 md:pb-20 bg-[#F9F9F9] text-[#2D3142] px-4 md:px-16 border-t border-border scroll-mt-[150px]">
+            {/* Single Service-Specific Advisory Enquiry Route */}
+            <section className="py-14 sm:py-20 bg-[#F9F9F9] text-[#2D3142] px-4 md:px-16 border-t border-border">
               <div className="max-w-[1280px] mx-auto">
-                <ContactUs onOpenPrivacy={() => navigateTo('privacy')} />
+                <AdvisoryEnquiryForm 
+                  prefilledNeed={advisoryPrefilledNeed}
+                  onOpenPrivacy={() => navigateTo('privacy')} 
+                />
               </div>
             </section>
           </motion.div>
@@ -2144,14 +2148,14 @@ export default function App() {
                       </div>
                       <h3 className="font-serif text-xl text-primary font-bold">FoodChain ID Academy</h3>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Accredited certification and auditor training courses delivered through our official partnership.
+                        Specialized auditor and scheme training courses available through our partnership.
                       </p>
                     </div>
                     <button
                       onClick={() => navigateTo('certifications')}
                       className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-secondary transition-colors flex items-center gap-2 self-start cursor-pointer mt-auto"
                     >
-                      <span>Explore Accredited Schemes</span>
+                      <span>Explore Suitable Schemes</span>
                       <ArrowRight size={14} />
                     </button>
                   </div>
@@ -2187,15 +2191,15 @@ export default function App() {
                     <div className="space-y-2.5 max-w-2xl">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="bg-[#B68A35]/20 text-[#DFC181] border border-[#B68A35]/40 px-3 py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap">
-                          Official Partner
+                          FoodChain ID Partner
                         </span>
                         <span className="text-white/70 text-xs font-mono">FoodChain ID Academy</span>
                       </div>
                       <h3 className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-white">
-                        FoodChain ID Academy Courses &amp; Certification Pathways
+                        FoodChain ID Academy Courses &amp; Certification Preparation
                       </h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        Access selected FoodChain ID Academy training courses and certification pathways across GFSI, GLOBALG.A.P., Non-GMO, and BRCGS standards through our official partnership.
+                        Access selected FoodChain ID Academy training courses and certification preparation across GLOBALG.A.P., Non-GMO, BRCGS, and ISO standards through our partnership.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
@@ -2203,7 +2207,7 @@ export default function App() {
                         onClick={() => navigateTo('certifications')}
                         className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest font-bold py-3 px-5 rounded-xl transition-all cursor-pointer shadow-sm inline-flex items-center justify-center gap-2 active:scale-95 w-full sm:w-auto"
                       >
-                        <span>Certification</span>
+                        <span>Certification Preparation</span>
                         <ArrowRight size={14} />
                       </button>
                       <a
@@ -2426,7 +2430,7 @@ export default function App() {
                   <span className="truncate sm:whitespace-normal">FoodChain ID Partner &amp; Advisory Route</span>
                 </div>
                 <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-[56px] leading-tight md:leading-[62px] tracking-tight text-primary font-bold">
-                  Certification Pathways
+                  Certification Preparation
                 </h1>
                 <p className="font-sans text-xs sm:text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl">
                   Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.
@@ -2438,7 +2442,7 @@ export default function App() {
                   <div className="space-y-1">
                     <span className="font-bold text-xs uppercase tracking-wider text-[#023625] block font-mono">How Certification Works</span>
                     <p className="leading-relaxed text-on-surface-variant">
-                      Certification is issued by the relevant accredited certification body, not Yitzak. Yitzak acts as a FoodChain ID partner providing pre-audit advisory, gap assessments, technical training, and pathway navigation to help your facility prepare for formal evaluation.
+                      Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.
                     </p>
                   </div>
                 </div>
@@ -2454,19 +2458,21 @@ export default function App() {
                   <button
                     onClick={() => exportCapabilitySheetPDF('certification_portfolio')}
                     className="bg-primary hover:bg-[#1f4d3a] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm inline-flex items-center justify-center gap-2 w-full sm:w-auto"
-                    title="Print or Download certification pathways catalog for physical record-keeping"
+                    title="Print or Download certification preparation overview for physical record-keeping"
                   >
                     <Printer size={14} className="text-[#DFC181]" />
-                    <span>Print Pathways Overview</span>
+                    <span>Print Overview</span>
                   </button>
+                  {/* Single clearly labelled optional external partner link on the Certification Preparation page */}
                   <a
                     href="https://www.foodchainid.com/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="border border-primary/40 text-primary hover:bg-primary hover:text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+                    title="Visit FoodChain ID global portal (opens in a new tab)"
                   >
-                    <span>FoodChain ID Global Portal</span>
-                    <Globe size={14} />
+                    <span>Visit FoodChain ID</span>
+                    <ExternalLink size={14} className="text-[#B68A35] shrink-0" />
                   </a>
                 </div>
               </div>
@@ -2481,7 +2487,7 @@ export default function App() {
                   <div className="flex justify-between items-end">
                     <div>
                       <YitzakLogo size={30} className="mb-2" />
-                      <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Certification Pathways &amp; Standards Directory</p>
+                      <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Certification Preparation Directory</p>
                       <p className="text-[10px] text-gray-500 mt-1">FoodChain ID Partner &amp; Advisory Route (Certification issued by accredited certification bodies)</p>
                     </div>
                     <div className="text-right text-[10px] font-mono text-gray-500">
@@ -2492,8 +2498,8 @@ export default function App() {
                 </div>
                 <ScrollReveal direction="up" delay={0.05}>
                   <div className="text-center space-y-3">
-                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Selected Certification Pathways</span>
-                    <h2 className="font-serif text-3xl md:text-[42px] text-primary font-bold">Certification Pathways &amp; Schemes</h2>
+                    <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Selected Certification Schemes</span>
+                    <h2 className="font-serif text-3xl md:text-[42px] text-primary font-bold">Certification Preparation Schemes</h2>
                     <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
                       Explore selected FoodChain ID certification schemes across food safety, product integrity, and agriculture. Yitzak assists your team in evaluating requirements and preparing for the appropriate audit pathway.
                     </p>
@@ -2505,245 +2511,142 @@ export default function App() {
                 </ScrollReveal>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                  {/* Scheme 1: Product & Label Certification */}
-                  <ScrollReveal direction="up" delay={0.1}>
-                    <div className="bg-white border border-[#E5E5E5] p-5 sm:p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full overflow-hidden">
-                      <div className="space-y-5">
-                        <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-[#F0F0F0] pb-4">
-                          <div className="flex items-center gap-3 min-w-0 max-w-full">
-                            <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
-                              P
+                  {CERTIFICATION_SCHEMES.slice(0, 3).map((scheme, idx) => (
+                    <ScrollReveal key={scheme.id} direction="up" delay={0.1 * (idx + 1)}>
+                      <div className="bg-white border border-[#E5E5E5] p-5 sm:p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full overflow-hidden">
+                        <div className="space-y-5">
+                          <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-[#F0F0F0] pb-4">
+                            <div className="flex items-center gap-3 min-w-0 max-w-full">
+                              <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
+                                {scheme.initial}
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
+                                  {scheme.title}
+                                </h3>
+                                <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block truncate">
+                                  {scheme.category}
+                                </span>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
-                                Product &amp; Label
-                              </h3>
-                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block truncate">
-                                Products &amp; Claims
-                              </span>
-                            </div>
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1 self-start mt-0.5 ${
+                              scheme.badgeType === 'emerald' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80' :
+                              scheme.badgeType === 'sky' ? 'bg-sky-50 text-sky-800 border border-sky-200/80' :
+                              'bg-indigo-50 text-indigo-800 border border-indigo-200/80'
+                            }`}>
+                              <ShieldCheck size={12} className={scheme.badgeType === 'emerald' ? 'text-emerald-600' : scheme.badgeType === 'sky' ? 'text-sky-600' : 'text-indigo-600'} />
+                              <span>{scheme.badge}</span>
+                            </span>
                           </div>
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1 self-start mt-0.5">
-                            <ShieldCheck size={12} className="text-emerald-600 shrink-0" />
-                            <span>FoodChain ID Scheme</span>
-                          </span>
-                        </div>
 
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Preparation and advisory for FoodChain ID certification schemes covering product claims that hold up to global market and regulatory scrutiny, including Non-GMO Project Verification, Organic, Identity Preserved, and Gluten-Free.
-                        </p>
+                          <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
+                            {scheme.shortDescription}
+                          </p>
 
-                        <div className="pt-2">
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Key Schemes:</span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {['Non-GMO', 'Organic', 'Identity Preserved', 'Gluten-Free'].map((item, idx) => (
-                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium max-w-full truncate">
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-6 pt-4 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
-                        <a
-                          href="https://www.foodchainid.com/product-and-label-certification/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Scheme details</span>
-                          <span>↗</span>
-                        </a>
-                        <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Ask About Product & Label Certification Scheme')}
-                          className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Ask About This Scheme</span>
-                          <ArrowRight size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </ScrollReveal>
-
-                  {/* Scheme 2: GLOBALG.A.P. */}
-                  <ScrollReveal direction="up" delay={0.2}>
-                    <div className="bg-white border border-[#E5E5E5] p-5 sm:p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full overflow-hidden">
-                      <div className="space-y-5">
-                        <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-[#F0F0F0] pb-4">
-                          <div className="flex items-center gap-3 min-w-0 max-w-full">
-                            <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
-                              G
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
-                                GLOBALG.A.P.
-                              </h3>
-                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block truncate">
-                                Farm Assurance
-                              </span>
+                          <div className="pt-2">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Key Schemes &amp; Focus:</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {scheme.keyPoints.map((item, pIdx) => (
+                                <span key={pIdx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium max-w-full truncate">
+                                  {item}
+                                </span>
+                              ))}
                             </div>
                           </div>
-                          <span className="bg-sky-50 text-sky-800 border border-sky-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1 self-start mt-0.5">
-                            <Globe size={12} className="text-sky-600 shrink-0" />
-                            <span>GFSI Benchmarked</span>
-                          </span>
                         </div>
 
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Advisory and readiness support for good agricultural practice certification pathways covering food safety, traceability, and worker welfare under GFSI-benchmarked standards recognised by major international retailers.
-                        </p>
-
-                        <div className="pt-2">
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Covered Modules:</span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {['Good Ag Practice', 'Chain of Custody', 'GRASP', 'Produce Handling'].map((item, idx) => (
-                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium max-w-full truncate">
-                                {item}
-                              </span>
-                            ))}
-                          </div>
+                        <div className="mt-6 pt-4 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSchemeForDetails(scheme)}
+                            className="text-[#B68A35] hover:text-[#023625] font-sans text-xs uppercase tracking-wider font-bold transition-colors inline-flex items-center gap-1 cursor-pointer py-1.5 px-2 rounded-lg hover:bg-[#FAF7F0]"
+                            title="View Yitzak's advisory scope and preparation pathway for this scheme"
+                          >
+                            <Info size={14} className="shrink-0 text-[#B68A35]" />
+                            <span>Scheme details</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenBooking('compliance', scheme.inquiryNote)}
+                            className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer py-1.5 px-2 rounded-lg hover:bg-mist"
+                          >
+                            <span>Ask About This Scheme</span>
+                            <ArrowRight size={12} />
+                          </button>
                         </div>
                       </div>
-
-                      <div className="mt-6 pt-4 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
-                        <a
-                          href="https://www.foodchainid.com/globalg-a-p/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Scheme details</span>
-                          <span>↗</span>
-                        </a>
-                        <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Ask About GLOBALG.A.P. Scheme')}
-                          className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Ask About This Scheme</span>
-                          <ArrowRight size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </ScrollReveal>
-
-                  {/* Scheme 3: BRCGS Certifications */}
-                  <ScrollReveal direction="up" delay={0.3}>
-                    <div className="bg-white border border-[#E5E5E5] p-5 sm:p-6 md:p-8 rounded-2xl flex flex-col justify-between shadow-2xs hover:shadow-md hover:border-[#B68A35]/50 transition-all group duration-300 h-full overflow-hidden">
-                      <div className="space-y-5">
-                        <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-[#F0F0F0] pb-4">
-                          <div className="flex items-center gap-3 min-w-0 max-w-full">
-                            <div className="w-10 h-10 rounded-xl bg-[#023625] text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
-                              B
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="font-serif text-lg md:text-xl text-primary font-bold group-hover:text-[#B68A35] transition-colors leading-snug">
-                                BRCGS Standard
-                              </h3>
-                              <span className="text-[11px] font-mono uppercase tracking-wider text-[#737373] block truncate">
-                                Food Safety &amp; Quality
-                              </span>
-                            </div>
-                          </div>
-                          <span className="bg-indigo-50 text-indigo-800 border border-indigo-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 inline-flex items-center gap-1 self-start mt-0.5">
-                            <Award size={12} className="text-indigo-600 shrink-0" />
-                            <span>Global Standard</span>
-                          </span>
-                        </div>
-
-                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                          Comprehensive preparation and advisory for globally recognised food safety certification pathways across manufacturing, packaging, storage, and distribution through FoodChain ID.
-                        </p>
-
-                        <div className="pt-2">
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8A8A] font-bold block mb-2">Scope Standards:</span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {['Food Safety Issue 9', 'Packaging', 'Storage & Dist.', 'Agents & Brokers'].map((item, idx) => (
-                              <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-2.5 py-1 rounded-md font-medium max-w-full truncate">
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-6 pt-4 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
-                        <a
-                          href="https://www.foodchainid.com/brcgs-certifications/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#B68A35] font-sans text-xs uppercase tracking-wider font-bold hover:text-primary transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Scheme details</span>
-                          <span>↗</span>
-                        </a>
-                        <button
-                          onClick={() => handleOpenBooking('compliance', 'Inquiry: Ask About BRCGS Scheme')}
-                          className="text-primary font-sans text-xs uppercase tracking-wider font-bold hover:text-[#B68A35] transition-colors inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Ask About This Scheme</span>
-                          <ArrowRight size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </ScrollReveal>
+                    </ScrollReveal>
+                  ))}
                 </div>
 
                 {/* Scheme 4: FSSC 22000 & ISO Systems */}
-                <ScrollReveal direction="up" delay={0.1}>
-                  <div className="bg-white border border-[#E5E5E5] p-6 md:p-8 rounded-2xl flex flex-col lg:flex-row justify-between lg:items-center gap-6 shadow-2xs hover:border-[#B68A35]/50 transition-all">
-                    <div className="space-y-3 max-w-3xl">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                          <ShieldCheck size={12} className="text-emerald-600" />
-                          <span>FoodChain ID Route</span>
-                        </span>
-                        <span className="bg-purple-50 text-purple-800 border border-purple-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
-                          <Sparkles size={12} className="text-purple-600" />
-                          <span>GFSI &amp; ISO Schemes</span>
-                        </span>
-                      </div>
-                      <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">FSSC 22000 &amp; Integrated ISO Management Systems</h3>
-                      <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Advisory, gap reviews, and preparation for FSSC 22000 (Version 6), ISO 22000 / 22001 (Food Safety), ISO 9001 (Quality), ISO 14001 (Environmental), ISO 45001 (Occupational Health &amp; Safety), ISO 27001 (Information Security), and ISO 50001 (Energy Management) certification routes.
-                      </p>
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {['FSSC 22000 v6', 'ISO 22000 / 22001', 'ISO 9001', 'ISO 14001', 'ISO 45001', 'ISO 27001', 'ISO 50001'].map((iso, idx) => (
-                          <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-3 py-1 rounded-md font-mono font-bold">
-                            {iso}
+                {CERTIFICATION_SCHEMES[3] && (
+                  <ScrollReveal direction="up" delay={0.1}>
+                    <div className="bg-white border border-[#E5E5E5] p-6 md:p-8 rounded-2xl flex flex-col lg:flex-row justify-between lg:items-center gap-6 shadow-2xs hover:border-[#B68A35]/50 transition-all">
+                      <div className="space-y-3 max-w-3xl">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
+                            <ShieldCheck size={12} className="text-emerald-600" />
+                            <span>FoodChain ID Route</span>
                           </span>
-                        ))}
+                          <span className="bg-purple-50 text-purple-800 border border-purple-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
+                            <Sparkles size={12} className="text-purple-600" />
+                            <span>ISO Standards &amp; Schemes</span>
+                          </span>
+                        </div>
+                        <h3 className="font-serif text-xl md:text-2xl text-primary font-bold">FSSC 22000 &amp; Integrated ISO Management Systems</h3>
+                        <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
+                          {CERTIFICATION_SCHEMES[3].shortDescription}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {CERTIFICATION_SCHEMES[3].keyPoints.map((iso, idx) => (
+                            <span key={idx} className="text-[11px] bg-[#F7F7F7] text-primary border border-[#E8E8E8] px-3 py-1 rounded-md font-mono font-bold">
+                              {iso}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch gap-2.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSchemeForDetails(CERTIFICATION_SCHEMES[3])}
+                          className="border border-[#B68A35]/40 text-[#7a5a1f] hover:bg-[#FAF7F0] font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-5 rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-2 text-center"
+                        >
+                          <Info size={14} className="shrink-0 text-[#B68A35]" />
+                          <span>Scheme Details</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenBooking('compliance', CERTIFICATION_SCHEMES[3].inquiryNote)}
+                          className="bg-primary hover:bg-[#1f4d3a] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-2 shadow-2xs active:scale-[0.98] text-center"
+                        >
+                          <span>Ask About This Scheme</span>
+                          <ArrowRight size={14} />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleOpenBooking('compliance', 'Inquiry: Ask About ISO & FSSC 22000 Schemes')}
-                      className="bg-primary hover:bg-[#1f4d3a] text-white font-sans text-xs uppercase tracking-widest font-bold py-3.5 px-6 rounded-md transition-all cursor-pointer shrink-0 inline-flex items-center justify-center gap-2 shadow-2xs active:scale-[0.98] w-full sm:w-auto"
-                    >
-                      <span>Ask About This Scheme</span>
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </ScrollReveal>
+                  </ScrollReveal>
+                )}
 
-                {/* FoodChain ID Partner Panel */}
+                {/* FoodChain ID Partner Panel (Direct internal conversion) */}
                 <ScrollReveal direction="up" delay={0.1}>
                   <div className="bg-[#023625] text-white p-8 md:p-10 rounded-2xl relative overflow-hidden shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="space-y-2 max-w-2xl">
                       <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold block">Partnership &amp; Advisory Route</span>
                       <h3 className="font-serif text-xl md:text-2xl font-bold">FoodChain ID &amp; Yitzak Consulting</h3>
                       <p className="font-sans text-xs md:text-sm text-white/85 leading-relaxed">
-                        As a FoodChain ID partner, Yitzak helps organisations access selected FoodChain ID services and understand the certification pathway most relevant to their operation.
+                        Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.
                       </p>
                     </div>
-                    <a
-                      href="https://www.foodchainid.com/academy/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest py-3.5 px-6 rounded transition-all cursor-pointer shrink-0 inline-flex items-center gap-2 font-bold"
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBooking('compliance', 'Inquiry: FoodChain ID Partnership & Certification Advisory')}
+                      className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl transition-all cursor-pointer shrink-0 inline-flex items-center justify-center gap-2 font-bold shadow-sm active:scale-95 w-full sm:w-auto text-center"
                     >
-                      <span>Explore Global Academy</span>
-                      <span>↗</span>
-                    </a>
+                      <span>Request Advisory Scoping</span>
+                      <ArrowRight size={14} />
+                    </button>
                   </div>
                 </ScrollReveal>
               </div>
@@ -2765,23 +2668,23 @@ export default function App() {
                 <div className="lg:col-span-7 z-10 space-y-5 sm:space-y-6">
                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-xs font-mono font-bold uppercase tracking-wider">
                     <AppIcon name="schema" size={14} color="#B68A35" />
-                    <span>Operational Pillar 04</span>
+                    <span>Business Process Implementation</span>
                   </div>
                   <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[54px] leading-tight md:leading-[60px] tracking-tight text-primary font-bold">
                     Business Process Implementation
                   </h1>
                   <p className="font-sans text-xs sm:text-sm md:text-base text-on-surface-variant leading-relaxed">
-                    Helping organisations build solid operational foundations from zero. From process mapping and risk controls to setting up HR, accounting, and core workflow systems, Yitzak transforms strategic objectives into measurable, scalable execution.
+                    Helping organisations build solid operational foundations. From process mapping and SOP formulation to governance controls, workflow rollout, and team handover, Yitzak helps structure and standardise operations for scalable execution.
                   </p>
                   <p className="font-sans text-xs sm:text-sm text-outline border-l-2 border-[#B68A35] pl-4">
-                    Bridge the gap between strategy and operational reality with tailored process governance and automated control frameworks.
+                    Bridge the gap between operational requirements and daily practice with tailored SOPs, structured RACI governance, and practical control checkpoints.
                   </p>
                   <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 pt-2">
                     <button
                       onClick={() => handleOpenBooking('process_implementation', 'Inquiry: Business Process Implementation Services')}
                       className="bg-[#B68A35] hover:bg-[#a3792b] text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto"
                     >
-                      <span>Request Implementation Plan</span>
+                      <span>Request Implementation Scope</span>
                       <ArrowRight size={14} />
                     </button>
                     <button
@@ -2796,23 +2699,23 @@ export default function App() {
                 </div>
                 <div className="lg:col-span-5 relative w-full">
                   <div className="bg-[#023625] text-white p-6 sm:p-8 rounded-2xl border border-white/10 shadow-xl space-y-5">
-                    <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#DFC181]">Core Capabilities</h3>
+                    <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#DFC181]">Core Focus Areas</h3>
                     <ul className="space-y-3.5 font-sans text-xs sm:text-sm text-white/90">
                       <li className="flex items-start gap-3">
                         <CheckCircle2 size={17} className="text-[#B68A35] shrink-0 mt-0.5" />
-                        <span><strong>Process Mapping &amp; SOP Formulation:</strong> Standardising workflows for error reduction and clarity.</span>
+                        <span><strong>Process Mapping &amp; SOP Formulation:</strong> Formulating clear, step-by-step operating procedures tailored to each business function.</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <CheckCircle2 size={17} className="text-[#B68A35] shrink-0 mt-0.5" />
-                        <span><strong>Governance &amp; Risk Controls:</strong> Establishing internal control checkpoints and risk mitigation protocols.</span>
+                        <span><strong>Governance &amp; RACI Frameworks:</strong> Defining ownership, accountability, review gates, and escalation thresholds across workflows.</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <CheckCircle2 size={17} className="text-[#B68A35] shrink-0 mt-0.5" />
-                        <span><strong>HR &amp; Accounting Setup:</strong> Operationalizing foundational HR policies, payroll rules, and financial reporting workflows.</span>
+                        <span><strong>Operational Rollout &amp; Workflows:</strong> Structuring administrative checklists, document repositories, and operational controls.</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <CheckCircle2 size={17} className="text-[#B68A35] shrink-0 mt-0.5" />
-                        <span><strong>Lean Audits &amp; Efficiency:</strong> Streamlining repetitive tasks and removing operational bottlenecks.</span>
+                        <span><strong>Workforce Enablement &amp; Handover:</strong> Facilitating practical staff walkthroughs, operational reviews, and transition to process owners.</span>
                       </li>
                     </ul>
                   </div>
@@ -2831,7 +2734,7 @@ export default function App() {
                   <div className="space-y-2 max-w-2xl text-center md:text-left">
                     <h3 className="font-serif text-xl sm:text-2xl font-bold">Ready to standardise and scale your operations?</h3>
                     <p className="font-sans text-xs sm:text-sm text-white/80">
-                      Speak with a principal consultant to structure an implementation roadmap tailored to your company's sector and size.
+                      Speak with our team to structure an implementation roadmap tailored to your company's sector and size.
                     </p>
                   </div>
                   <button
@@ -2890,9 +2793,9 @@ export default function App() {
           >
             <div className="max-w-[1280px] mx-auto mb-10 text-center space-y-3">
               <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Get in touch</span>
-              <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary">Talk to Our Advisory Team</h1>
+              <h1 className="font-serif text-3xl md:text-4xl font-bold text-primary">Send an Enquiry</h1>
               <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                Tell us what you need and we’ll connect you with the right Yitzak advisor.
+                Tell us what you need and we’ll connect you with the right Yitzak specialist.
               </p>
             </div>
             <ContactUs onOpenPrivacy={() => navigateTo('privacy')} />
@@ -3217,10 +3120,10 @@ export default function App() {
                     {/* Right Column: Institutional Benefits & Trust Signals */}
                     <div className="lg:col-span-5 bg-[#023625] text-white p-6 sm:p-8 rounded-xl shadow-xs flex flex-col justify-between space-y-6">
                       <div className="space-y-5">
-                        {/* Verified Partner Badge */}
+                        {/* Partner Badge */}
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[#B68A35] font-serif font-bold text-xs">
                           <ShieldCheck size={16} />
-                          <span>Verified Partner | FoodChain ID</span>
+                          <span>Partner | FoodChain ID</span>
                         </div>
 
                         <div>
@@ -3234,15 +3137,15 @@ export default function App() {
                           <li className="flex items-start gap-3">
                             <Shield className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
                             <div>
-                              <span className="font-bold text-white block">Secure Audit Records</span>
+                              <span className="font-bold text-white block">Secure Advisory Records</span>
                               <span className="text-[11px] text-white/60">Encrypted repository for institutional gap analyses and FSMS reports.</span>
                             </div>
                           </li>
                           <li className="flex items-start gap-3">
                             <CheckCircle2 className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
                             <div>
-                              <span className="font-bold text-white block">Verified Certifications</span>
-                              <span className="text-[11px] text-white/60">Real-time status tracking for accredited FoodChain ID schemes.</span>
+                              <span className="font-bold text-white block">Readiness Tracking</span>
+                              <span className="text-[11px] text-white/60">Status tracking for selected FoodChain ID certification preparation routes.</span>
                             </div>
                           </li>
                           <li className="flex items-start gap-3">
@@ -3419,7 +3322,7 @@ export default function App() {
                       • Professional Training
                     </button>
                     <button onClick={() => navigateTo('certifications')} className="text-left text-xs text-white/60 hover:text-white transition-colors cursor-pointer">
-                      • Certification
+                      • Certification Preparation
                     </button>
                     <button onClick={() => navigateTo('consulting')} className="text-left text-xs text-white/60 hover:text-white transition-colors cursor-pointer">
                       • Consulting &amp; Advisory
@@ -3527,6 +3430,17 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Scheme Details Modal */}
+      <SchemeDetailsModal
+        scheme={selectedSchemeForDetails}
+        isOpen={!!selectedSchemeForDetails}
+        onClose={() => setSelectedSchemeForDetails(null)}
+        onAskAboutScheme={(inquiryNote) => {
+          setSelectedSchemeForDetails(null);
+          handleOpenBooking('compliance', inquiryNote);
+        }}
+      />
 
       {/* Global Booking Modal Component */}
       {isBookingOpen && (

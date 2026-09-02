@@ -31,18 +31,38 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
         
         {/* Mobile Compact Single-Line Breadcrumb: Services / [Sub-page] */}
         <div className="sm:hidden flex items-center gap-1.5 text-[11.5px] font-sans">
-          <button
-            onClick={() => navigateTo('consulting')}
-            className="text-charcoal hover:text-[#B68A35] font-medium transition-colors cursor-pointer shrink-0"
-          >
-            Services
-          </button>
-          <span className="text-ash/60 shrink-0">/</span>
+          {['consulting', 'process_implementation', 'training', 'certifications'].includes(currentView) ? (
+            <>
+              <button
+                onClick={() => {
+                  navigateTo('home');
+                  setTimeout(() => {
+                    const el = document.getElementById('services');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 50);
+                }}
+                className="text-charcoal hover:text-[#B68A35] font-medium transition-colors cursor-pointer shrink-0"
+              >
+                Services
+              </button>
+              <span className="text-ash/60 shrink-0">/</span>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => navigateTo('home')}
+                className="text-charcoal hover:text-[#B68A35] font-medium transition-colors cursor-pointer shrink-0"
+              >
+                Home
+              </button>
+              <span className="text-ash/60 shrink-0">/</span>
+            </>
+          )}
           <span className="font-semibold text-[#023625] truncate">
             {currentView === 'training' && 'Professional Training'}
-            {currentView === 'certifications' && 'Certification Pathways'}
+            {currentView === 'certifications' && 'Certification Preparation'}
             {currentView === 'consulting' && 'Consulting & Advisory'}
-            {currentView === 'process_implementation' && 'Process Implementation'}
+            {currentView === 'process_implementation' && 'Business Process Implementation'}
             {currentView === 'calendar' && 'Course Availability'}
             {currentView === 'knowledge' && 'Knowledge Centre'}
             {currentView === 'contact' && 'Contact & Advisory Desk'}
@@ -86,46 +106,16 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
               </li>
               <li>
                 <button
-                  onClick={() => navigateTo('consulting')}
+                  onClick={() => {
+                    navigateTo('home');
+                    setTimeout(() => {
+                      const el = document.getElementById('services');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }, 50);
+                  }}
                   className="hover:text-[#B68A35] transition-colors font-medium cursor-pointer text-charcoal"
                 >
                   Services
-                </button>
-              </li>
-            </>
-          )}
-
-          {/* Training branch under Capability Building */}
-          {['training'].includes(currentView) && (
-            <>
-              <li className="flex items-center">
-                <ChevronRight size={13} className="text-ash/50 shrink-0" />
-              </li>
-              <li>
-                <button
-                  onClick={() => navigateTo('training')}
-                  className="hover:text-[#B68A35] transition-colors font-medium cursor-pointer text-charcoal flex items-center gap-1"
-                >
-                  <GraduationCap size={13} className="text-[#B68A35] shrink-0" />
-                  <span>Capability Building</span>
-                </button>
-              </li>
-            </>
-          )}
-
-          {/* Consulting & Process Implementation branch under Advisory */}
-          {['consulting', 'process_implementation'].includes(currentView) && (
-            <>
-              <li className="flex items-center">
-                <ChevronRight size={13} className="text-ash/50 shrink-0" />
-              </li>
-              <li>
-                <button
-                  onClick={() => navigateTo('consulting')}
-                  className="hover:text-[#B68A35] transition-colors font-medium cursor-pointer text-charcoal flex items-center gap-1"
-                >
-                  <ShieldCheck size={13} className="text-[#B68A35] shrink-0" />
-                  <span>Advisory</span>
                 </button>
               </li>
             </>
@@ -154,7 +144,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
               <li>
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
                   <Award size={13} className="text-[#B68A35]" />
-                  <span>Certification Pathways</span>
+                  <span>Certification Preparation</span>
                 </span>
               </li>
             </>

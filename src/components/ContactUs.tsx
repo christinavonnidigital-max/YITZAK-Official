@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Mail, 
   User, 
@@ -9,6 +9,8 @@ import {
   CheckCircle, 
   AlertCircle, 
   Loader2,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import AppIcon from './AppIcon';
 import { db, auth, getAccessToken } from '../lib/firebase';
@@ -30,14 +32,31 @@ export default function ContactUs({ onSuccess, onOpenPrivacy }: ContactUsProps) 
   const [error, setError] = useState<string | null>(null);
   const [inquiryId, setInquiryId] = useState('');
   const [emailStatus, setEmailStatus] = useState<'pending' | 'sent' | 'skipped' | 'failed'>('pending');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const subjects = [
     'Professional Training',
-    'Certification',
+    'Certification Preparation',
     'Consulting & Advisory',
     'Business Process Implementation',
-    'Other'
+    'General Enquiry'
   ];
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,26 +297,82 @@ export default function ContactUs({ onSuccess, onOpenPrivacy }: ContactUsProps) 
                 </div>
               </div>
 
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-[#737373] block mb-1.5 font-mono">
+              {/* Accessible Custom Listbox Dropdown for How can we help? */}
+              <div ref={dropdownRef} className="relative">
+                <label 
+                  id="service-dropdown-label"
+                  className="text-[10px] font-bold uppercase tracking-widest text-[#737373] block mb-1.5 font-mono"
+                >
                   How can we help? <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ash" size={16} />
-                  <select
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    className="w-full bg-[#F9F9F9] border border-border py-2.5 pl-10 pr-4 text-sm text-charcoal focus:bg-white focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all appearance-none cursor-pointer rounded-lg"
+                  <button
+                    type="button"
+                    aria-labelledby="service-dropdown-label"
+                    aria-haspopup="listbox"
+                    aria-expanded={isDropdownOpen}
+                    onClick={() => setIsDropdownOpen(prev => !prev)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setIsDropdownOpen(false);
+                      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (!isDropdownOpen) setIsDropdownOpen(true);
+                      }
+                    }}
+                    className={`w-full bg-[#F9F9F9] border py-2.5 pl-10 pr-10 text-left text-sm font-medium transition-all rounded-lg cursor-pointer flex items-center justify-between ${
+                      isDropdownOpen 
+                        ? 'bg-white border-[#B68A35] ring-2 ring-[#B68A35]/20 text-primary' 
+                        : 'border-border text-charcoal hover:bg-white hover:border-[#B68A35]/50'
+                    }`}
                   >
-                    {subjects.map((subj) => (
-                      <option key={subj} value={subj}>
-                        {subj}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-ash">
-                    ▼
-                  </div>
+                    <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ash pointer-events-none" size={16} />
+                    <span className="truncate">{subject}</span>
+                    <ChevronDown 
+                      size={16} 
+                      className={`text-ash transition-transform duration-200 pointer-events-none ${isDropdownOpen ? 'rotate-180 text-[#B68A35]' : ''}`} 
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {isDropdownOpen && (
+                      <motion.div
+                        role="listbox"
+                        aria-labelledby="service-dropdown-label"
+                        initial={{ opacity: 0, y: 4, scale: 0.99 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 4, scale: 0.99 }}
+                        transition={{ duration: 0.12 }}
+                        className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-border/90 rounded-xl shadow-xl z-50 py-1.5 max-h-60 overflow-auto"
+                      >
+                        {subjects.map((subj) => {
+                          const isSelected = subject === subj;
+                          return (
+                            <button
+                              key={subj}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              onClick={() => {
+                                setSubject(subj);
+                                setIsDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-2.5 text-xs font-sans flex items-center justify-between transition-colors cursor-pointer ${
+                                isSelected 
+                                  ? 'bg-[#023625]/10 text-[#023625] font-bold' 
+                                  : 'text-charcoal hover:bg-[#F9F9F9] hover:text-primary font-medium'
+                              }`}
+                            >
+                              <span>{subj}</span>
+                              {isSelected && (
+                                <Check size={14} className="text-[#023625]" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 

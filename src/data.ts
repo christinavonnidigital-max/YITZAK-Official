@@ -17,24 +17,24 @@ export const PILLARS: Pillar[] = [
     id: 'consulting',
     title: 'Consulting & Advisory',
     icon: 'support_agent',
-    description: 'Practical guidance to implement learning, improve systems, and strengthen overall organisational performance.',
+    description: 'Specialist guidance, diagnostic reviews, gap analyses, and internal audit preparation to prepare your organisation for compliance assessment.',
     details: [
-      'Gap assessments & readiness reviews',
-      'Management system development',
-      'Documentation & records support',
-      'Internal audits & process reviews'
+      'Gap assessments & diagnostic reviews',
+      'Specialist guidance & readiness planning',
+      'Compliance documentation & records review',
+      'Internal audit preparation & process reviews'
     ]
   },
   {
     id: 'certification',
-    title: 'Certification Pathways',
+    title: 'Certification Preparation',
     icon: 'verified',
     description: 'Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.',
     details: [
       'Guidance on suitable certification routes',
       'FoodChain ID scheme preparation & advisory',
-      'GFSI, BRCGS, FSSC 22000 & ISO readiness reviews',
-      'GLOBALG.A.P. & Non-GMO pathway support',
+      'BRCGS, FSSC 22000 & ISO readiness reviews',
+      'GLOBALG.A.P. & Non-GMO preparation support',
       'Independent certification issued by accredited certification bodies'
     ]
   },
@@ -42,12 +42,12 @@ export const PILLARS: Pillar[] = [
     id: 'process_implementation',
     title: 'Business Process Implementation',
     icon: 'schema',
-    description: 'Helping organisations build operational foundations from zero, spanning process mapping, governance, and extension into HR, Accounting, and operational systems.',
+    description: 'Structured operational foundations: end-to-end process mapping, SOP formulation, governance controls, workflow rollout, and team handover.',
     details: [
-      'Phase 1: Process Mapping & Risk Controls',
-      'Phase 1: ISO/FSSC System Readiness',
-      'Phase 2: Operational Efficiency & Lean Audits',
-      'HR, Accounting & Operational Systems Integration'
+      'Process mapping & workflow design',
+      'Standard Operating Procedure (SOP) formulation',
+      'Governance, RACI & operational control setup',
+      'Operational rollout & team handover'
     ]
   }
 ];

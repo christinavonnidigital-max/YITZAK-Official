@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  CheckCircle2, 
-  Circle, 
   ArrowRight, 
   ArrowLeft, 
   Search, 
@@ -13,10 +11,9 @@ import {
   Award, 
   Clock, 
   Sparkles, 
-  ChevronRight,
-  Check,
-  CalendarCheck,
-  ListTodo
+  AlertCircle,
+  ListTodo,
+  Workflow
 } from 'lucide-react';
 import AppIcon from './AppIcon';
 
@@ -43,18 +40,18 @@ export const IMPLEMENTATION_PHASES: ImplementationPhase[] = [
   {
     id: 'discovery',
     phaseNumber: '01',
-    title: 'Phase 1: Discovery & Gap Assessment',
-    shortTitle: 'Discovery & Gap Audit',
-    subtitle: 'Baseline Audit & Context Analysis',
-    timeline: 'Weeks 1–2',
+    title: 'Phase 1: Discovery & Baseline Assessment',
+    shortTitle: 'Discovery & Assessment',
+    subtitle: 'Baseline Review & Scope Definition',
+    timeline: 'Weeks 1–2 (Indicative)',
     icon: Search,
-    summary: 'Comprehensive audit of existing operating procedures, organizational bottlenecks, and regulatory or compliance gaps across all operating departments.',
-    deliverables: ['Operational Gap Assessment Report', 'Process Inventory & Hierarchy', 'Risk & Compliance Register'],
+    summary: 'Systematic review of existing operational processes, documentation baselines, workflow bottlenecks, and governance requirements across targeted operational departments.',
+    deliverables: ['Operational Baseline Assessment Report', 'Process Hierarchy & Scope Register', 'Governance & Risk Register'],
     tasks: [
-      { id: 'p1-t1', title: 'Stakeholder Interviews & Context Audit', description: 'Engage department leads to map current operational pain points, expectations, and reporting lines.' },
-      { id: 'p1-t2', title: 'As-Is Process Mapping', description: 'Document existing end-to-end operational workflows and identify friction points or redundant loops.' },
-      { id: 'p1-t3', title: 'HR & Financial Controls Evaluation', description: 'Review baseline HR policies, payroll controls, approval matrix, and accounting oversight.' },
-      { id: 'p1-t4', title: 'KPI & Scope Definition', description: 'Establish project scope boundaries, baseline metrics, and target compliance indicators.' },
+      { id: 'p1-t1', title: 'Stakeholder Interviews & Context Review', description: 'Engage department leads to map current operational pain points, expectations, and reporting lines.' },
+      { id: 'p1-t2', title: 'As-Is Process Identification', description: 'Document existing end-to-end operational workflows and identify friction points, redundancies, and information gaps.' },
+      { id: 'p1-t3', title: 'Operational & Administrative Controls Evaluation', description: 'Review existing departmental oversight rules, internal approval thresholds, and operational recordkeeping mechanisms.' },
+      { id: 'p1-t4', title: 'Scope & Milestone Definition', description: 'Establish project scope boundaries, core objectives, and target operational indicators.' },
     ]
   },
   {
@@ -63,66 +60,66 @@ export const IMPLEMENTATION_PHASES: ImplementationPhase[] = [
     title: 'Phase 2: Process Design & SOP Mapping',
     shortTitle: 'Process Design & SOPs',
     subtitle: 'Blueprinting & Governance Framework',
-    timeline: 'Weeks 3–5',
+    timeline: 'Weeks 3–5 (Indicative)',
     icon: FileText,
-    summary: 'Standardising operational workflows through formal SOP drafting, governance frameworks, and RACI matrices tailored to your team.',
-    deliverables: ['Standardised SOP Playbook', 'RACI Matrix & Approval Gates', 'Governance Control Plan'],
+    summary: 'Standardising operational workflows through formal SOP drafting, clear governance frameworks, and practical RACI matrices tailored to your team.',
+    deliverables: ['Standardised SOP Playbook', 'RACI Matrix & Approval Gates', 'Governance & Operational Control Plan'],
     tasks: [
-      { id: 'p2-t1', title: 'Standard Operating Procedure (SOP) Drafting', description: 'Formulate clear, step-by-step SOP documents tailored to each business function.' },
-      { id: 'p2-t2', title: 'RACI & Governance Matrix Formulation', description: 'Define Responsible, Accountable, Consulted, and Informed roles for every critical workflow.' },
-      { id: 'p2-t3', title: 'Internal Quality Control Checkpoints', description: 'Integrate verification checkpoints, sign-off thresholds, and error prevention gates.' },
-      { id: 'p2-t4', title: 'Regulatory Standard Alignment', description: 'Align internal procedures with ISO standards, FoodChain ID requirements, and local labor laws.' },
+      { id: 'p2-t1', title: 'Standard Operating Procedure (SOP) Formulation', description: 'Formulate clear, structured step-by-step SOP documents tailored to each defined operational function.' },
+      { id: 'p2-t2', title: 'RACI & Operational Governance Formulation', description: 'Define Responsible, Accountable, Consulted, and Informed roles for every critical workflow.' },
+      { id: 'p2-t3', title: 'Internal Quality Control Checkpoints', description: 'Integrate practical verification checkpoints, sign-off thresholds, and error prevention gates.' },
+      { id: 'p2-t4', title: 'Applicable Standards & Compliance Alignment', description: 'Align internal procedures with relevant ISO standards, applicable regulatory and scheme requirements, and local statutory obligations.' },
     ]
   },
   {
     id: 'systems',
     phaseNumber: '03',
-    title: 'Phase 3: Systems Integration & Infrastructure',
-    shortTitle: 'Systems Integration',
-    subtitle: 'HR, Accounting & Tooling Deployment',
-    timeline: 'Weeks 6–8',
+    title: 'Phase 3: Systems, Workflows & Operational Controls',
+    shortTitle: 'Systems & Controls',
+    subtitle: 'Workflow Enablement & Tooling Alignment',
+    timeline: 'Weeks 6–8 (Indicative)',
     icon: Layers,
-    summary: 'Deploying robust operational infrastructure including HR management tools, accounting systems, and reporting workflows.',
-    deliverables: ['HR & Payroll Management Framework', 'Financial Oversight & Invoicing Controls', 'System Test & Validation Logs'],
+    summary: 'Establishing structured operational workflows, documentation repositories, and foundational controls to support daily execution.',
+    deliverables: ['Operational Workflow Protocols', 'Authorisation & Control Checklists', 'System Readiness & Validation Notes'],
     tasks: [
-      { id: 'p3-t1', title: 'HR & Onboarding Workflow Deployment', description: 'Implement standardized recruitment, onboarding checklists, leave management, and employee record structures.' },
-      { id: 'p3-t2', title: 'Accounting & Financial Control Setup', description: 'Configure purchase order approvals, invoice verification, expense tracking, and monthly reconciliation workflows.' },
-      { id: 'p3-t3', title: 'Digital Process Automation & Tracking', description: 'Set up digital tools or shared repositories for automated tracking and real-time visibility.' },
-      { id: 'p3-t4', title: 'Pilot Testing & Stress Testing', description: 'Run simulated operations to identify bottlenecks before full organization-wide rollout.' },
+      { id: 'p3-t1', title: 'Standardised Administrative & Onboarding Workflows', description: 'Implement structured operational checklists, departmental onboarding guides, and procedural record templates.' },
+      { id: 'p3-t2', title: 'Approval Gates & Operational Oversight Controls', description: 'Configure purchase approval paths, operational verification gates, and recurring reconciliation workflows.' },
+      { id: 'p3-t3', title: 'Workflow Documentation & Digital Repository Setup', description: 'Organise central document repositories and shared tracking tools for procedural transparency.' },
+      { id: 'p3-t4', title: 'Pilot Review & Procedural Walkthroughs', description: 'Run walkthrough sessions across selected operational teams to validate usability before broader rollout.' },
     ]
   },
   {
     id: 'execution',
     phaseNumber: '04',
-    title: 'Phase 4: Workforce Onboarding & Lean Audit',
-    shortTitle: 'Onboarding & Lean Audit',
-    subtitle: 'Capacity Enablement & Waste Reduction',
-    timeline: 'Weeks 9–11',
+    title: 'Phase 4: Workforce Enablement & Operational Review',
+    shortTitle: 'Enablement & Review',
+    subtitle: 'Capacity Building & Process Verification',
+    timeline: 'Weeks 9–11 (Indicative)',
     icon: CheckSquare,
-    summary: 'Training process owners, conducting lean audits, and refining workflows based on real-world execution metrics.',
-    deliverables: ['Staff Competence Training Certificates', 'Lean Time & Motion Audit Report', 'Audit Readiness Signoff'],
+    summary: 'Guiding process owners, facilitating practical workforce enablement on updated procedures, and conducting operational reviews.',
+    deliverables: ['Training Records and Certificates of Completion', 'Operational Review & Efficiency Findings', 'Readiness Review Summary'],
     tasks: [
-      { id: 'p4-t1', title: 'Role-Based Workforce Training', description: 'Conduct interactive, hands-on workshops for staff and supervisors on updated SOPs and tools.' },
-      { id: 'p4-t2', title: 'Lean Time & Motion Audits', description: 'Perform operational audits to identify idle time, excessive handoffs, or resource waste.' },
-      { id: 'p4-t3', title: 'Mock Compliance & Audit Trial', description: 'Simulate an internal audit to verify team adherence to new governance and documentation rules.' },
-      { id: 'p4-t4', title: 'Continuous SOP Refinement', description: 'Update documentation based on practical feedback from frontline team members.' },
+      { id: 'p4-t1', title: 'Role-Based Workforce Enablement', description: 'Conduct structured, hands-on briefing sessions for staff and supervisors on updated SOPs and operational tools.' },
+      { id: 'p4-t2', title: 'Operational Flow & Handoff Reviews', description: 'Assess workflow execution in real-world settings to identify practical bottlenecks or unneeded complexity.' },
+      { id: 'p4-t3', title: 'Internal Readiness & Adherence Review', description: 'Perform an internal compliance walkthrough to evaluate procedural adherence and document consistency.' },
+      { id: 'p4-t4', title: 'SOP Refinement & Practical Adjustments', description: 'Refine documentation based on direct feedback and operational observations from frontline personnel.' },
     ]
   },
   {
     id: 'governance',
     phaseNumber: '05',
-    title: 'Phase 5: Continuous Oversight & Handover',
+    title: 'Phase 5: Governance Handover & Sustained Review',
     shortTitle: 'Governance & Handover',
-    subtitle: 'Executive Dashboards & Long-term Scaling',
-    timeline: 'Week 12+',
+    subtitle: 'Ownership Transfer & Long-term Stability',
+    timeline: 'Week 12+ (Indicative)',
     icon: ShieldCheck,
-    summary: 'Establishing real-time executive dashboards, handing over management ownership, and scheduling quarterly reviews.',
-    deliverables: ['Executive Control Dashboard', 'Operational Handover Protocol', 'Quarterly Recertification Schedule'],
+    summary: 'Transferring operational ownership to internal process champions, establishing leadership KPI monitoring, and defining periodic review cadence.',
+    deliverables: ['Management Oversight KPI Framework', 'Operational Handover Protocol', 'Review and Renewal Planning'],
     tasks: [
-      { id: 'p5-t1', title: 'Executive Control Dashboard Setup', description: 'Deploy KPI monitoring dashboards for leadership to track compliance, efficiency, and error rates.' },
-      { id: 'p5-t2', title: 'Management Ownership Handover', description: 'Formally transfer governance ownership to internal process champions with clear escalation paths.' },
-      { id: 'p5-t3', title: 'Quarterly Audit & Health Checks Schedule', description: 'Establish recurring quarterly health checks to ensure sustained compliance and procedural rigor.' },
-      { id: 'p5-t4', title: 'Final Implementation Signoff', description: 'Deliver complete operational documentation repository and project completion certification.' },
+      { id: 'p5-t1', title: 'Management Oversight KPI Framework', description: 'Deploy core KPI indicators and oversight checklists for leadership to monitor compliance, accuracy, and operational cadence.' },
+      { id: 'p5-t2', title: 'Management Ownership Handover', description: 'Formally transition procedural oversight to designated internal process owners with established escalation rules.' },
+      { id: 'p5-t3', title: 'Periodic Audit & Review Planning', description: 'Establish a structured schedule for internal audits, management reviews, and procedural updates.' },
+      { id: 'p5-t4', title: 'Client Handover & Completion Summary', description: 'Provide the finalised operational documentation repository, implementation roadmap wrap-up, and formal handover summary.' },
     ]
   }
 ];
@@ -133,23 +130,8 @@ interface ProcessImplementationRoadmapProps {
 
 export default function ProcessImplementationRoadmap({ onInquirePhase }: ProcessImplementationRoadmapProps) {
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
-  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
 
   const activePhase = IMPLEMENTATION_PHASES[activePhaseIndex];
-
-  const toggleTask = (taskId: string) => {
-    setCompletedTasks(prev => ({
-      ...prev,
-      [taskId]: !prev[taskId]
-    }));
-  };
-
-  // Calculate overall interactive progress
-  const totalTasks = IMPLEMENTATION_PHASES.reduce((acc, phase) => acc + phase.tasks.length, 0);
-  const totalCompleted = Object.values(completedTasks).filter(Boolean).length;
-  const progressPercentage = Math.round((totalCompleted / totalTasks) * 100);
-
-  const activePhaseCompletedCount = activePhase.tasks.filter(t => completedTasks[t.id]).length;
 
   return (
     <div className="bg-white border border-stone-200 rounded-2xl sm:rounded-3xl shadow-xs overflow-hidden">
@@ -159,36 +141,27 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#023625]/5 text-[#023625] rounded-full text-[11px] font-mono font-bold uppercase tracking-wider border border-[#023625]/10">
               <AppIcon name="alt_route" size={13} color="#B68A35" />
-              <span>Implementation Roadmap</span>
+              <span>Implementation Methodology</span>
             </div>
             <h3 className="font-serif text-2xl sm:text-3xl font-bold text-primary tracking-tight">
               5-Phase Implementation Methodology
             </h3>
             <p className="font-sans text-xs sm:text-sm text-on-surface-variant leading-relaxed">
-              From baseline gap diagnostics to executive governance handover. Select any phase below to examine deliverables and simulate task readiness.
+              From baseline diagnostics and SOP formulation to workforce enablement and governance handover. Select any phase below to review structured deliverables and core activities.
             </p>
           </div>
 
-          {/* Integrated Horizontal Progress Bar */}
-          <div className="bg-white border border-stone-200 rounded-xl p-3.5 sm:p-4 shadow-2xs w-full lg:w-80 shrink-0 space-y-2">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-[#7a5a1f] font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                <CalendarCheck size={13} className="text-[#B68A35]" />
-                Readiness Progress
-              </span>
-              <span className="font-bold text-primary text-xs">{totalCompleted} / {totalTasks} Tasks ({progressPercentage}%)</span>
+          {/* Indicative Timing Banner */}
+          <div className="bg-stone-50 border border-stone-200 rounded-xl p-3.5 sm:p-4 w-full lg:w-80 shrink-0 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-mono text-[#7a5a1f] font-bold uppercase tracking-wider">
+              <Clock size={13} className="text-[#B68A35]" />
+              <span>Structured Engagement</span>
             </div>
-            <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
-              <motion.div 
-                className="h-full bg-linear-to-r from-[#B68A35] to-[#DFC181] rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${progressPercentage}%` }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
-              />
-            </div>
-            <div className="flex justify-between items-center text-[10px] font-mono text-ash pt-0.5">
-              <span>Phase {activePhaseIndex + 1} of 5</span>
-              <span className="text-[#7a5a1f] font-medium">{activePhaseCompletedCount}/{activePhase.tasks.length} Phase Tasks Done</span>
+            <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+              Typical timing varies by scope, site readiness, and delivery model.
+            </p>
+            <div className="text-[10px] font-mono text-ash pt-0.5">
+              Phase {activePhaseIndex + 1} of 5 Active
             </div>
           </div>
         </div>
@@ -199,17 +172,15 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
         <div className="flex items-center justify-between text-xs font-mono text-ash">
           <span className="uppercase tracking-wider font-bold text-[11px] text-[#023625] flex items-center gap-1.5">
             <ListTodo size={13} className="text-[#B68A35]" />
-            Select Implementation Phase
+            Implementation Phases
           </span>
-          <span className="text-[11px] hidden sm:inline">Click any phase to inspect</span>
+          <span className="text-[11px] hidden sm:inline">Select a phase to view detail</span>
         </div>
 
         {/* 5 Phase Grid Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
           {IMPLEMENTATION_PHASES.map((phase, idx) => {
             const isActive = idx === activePhaseIndex;
-            const isDone = phase.tasks.every(t => completedTasks[t.id]);
-            const phaseDoneCount = phase.tasks.filter(t => completedTasks[t.id]).length;
             const PhaseIcon = phase.icon;
 
             return (
@@ -233,13 +204,7 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
                     PHASE {phase.phaseNumber}
                   </span>
 
-                  {isDone ? (
-                    <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center">
-                      <Check size={11} className="stroke-[3]" />
-                    </span>
-                  ) : (
-                    <PhaseIcon size={15} className={isActive ? 'text-[#DFC181]' : 'text-stone-400'} />
-                  )}
+                  <PhaseIcon size={15} className={isActive ? 'text-[#DFC181]' : 'text-stone-400'} />
                 </div>
 
                 {/* Body: Title with fixed 2-line height for aligned baseline */}
@@ -256,9 +221,6 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
                     <span className="flex items-center gap-1 font-mono text-[10px]">
                       <Clock size={10} className="shrink-0 text-[#B68A35]" />
                       {phase.timeline}
-                    </span>
-                    <span className="font-mono text-[10px] font-bold">
-                      {phaseDoneCount}/{phase.tasks.length}
                     </span>
                   </div>
                 </div>
@@ -287,7 +249,7 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
                   <span className="text-stone-300 hidden sm:inline">•</span>
                   <span className="text-xs font-mono text-ash font-medium flex items-center gap-1">
                     <Clock size={12} className="text-[#B68A35]" />
-                    Duration: <strong className="text-stone-800">{activePhase.timeline}</strong>
+                    Estimated Window: <strong className="text-stone-800">{activePhase.timeline}</strong>
                   </span>
                 </div>
                 <h4 className="font-serif text-xl sm:text-2xl font-bold text-primary">
@@ -328,78 +290,58 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
               </div>
             </div>
 
-            {/* Grid Layout: Tasks Checklist & Key Deliverables */}
+            {/* Grid Layout: Core Scope Activities & Deliverables */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-              {/* Left Column: Sub-Tasks Checklist */}
+              {/* Left Column: Core Activities */}
               <div className="lg:col-span-7 space-y-3.5">
                 <div className="flex items-center justify-between">
                   <h5 className="font-serif text-sm sm:text-base font-bold text-primary flex items-center gap-2">
-                    <CheckSquare size={16} className="text-[#B68A35]" />
-                    <span>Action Items &amp; Readiness Checklist</span>
+                    <Workflow size={16} className="text-[#B68A35]" />
+                    <span>Methodology &amp; Key Activities</span>
                   </h5>
                   <span className="text-[11px] font-mono text-ash bg-white border border-stone-200 px-2 py-0.5 rounded-md">
-                    {activePhaseCompletedCount} of {activePhase.tasks.length} Verified
+                    {activePhase.tasks.length} Focus Areas
                   </span>
                 </div>
 
                 <div className="space-y-2.5">
-                  {activePhase.tasks.map((task, tIdx) => {
-                    const isChecked = !!completedTasks[task.id];
-
-                    return (
-                      <div
-                        key={task.id}
-                        onClick={() => toggleTask(task.id)}
-                        className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
-                          isChecked
-                            ? 'bg-emerald-50/70 border-emerald-300/80 shadow-2xs'
-                            : 'bg-white border-stone-200 hover:border-[#B68A35]/50 hover:shadow-2xs'
-                        }`}
-                      >
-                        <button 
-                          type="button" 
-                          className="mt-0.5 shrink-0 cursor-pointer focus:outline-none"
-                          aria-label={`Toggle task ${task.title}`}
-                        >
-                          {isChecked ? (
-                            <CheckCircle2 size={18} className="text-emerald-600 fill-emerald-100" />
-                          ) : (
-                            <Circle size={18} className="text-stone-300 hover:text-[#B68A35]" />
-                          )}
-                        </button>
-
-                        <div className="space-y-0.5 flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <h6 className={`font-serif text-xs sm:text-sm font-bold leading-snug ${
-                              isChecked ? 'text-emerald-950 font-semibold' : 'text-primary'
-                            }`}>
-                              {activePhase.phaseNumber}.{tIdx + 1} {task.title}
-                            </h6>
-                            {isChecked && (
-                              <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
-                                Done
-                              </span>
-                            )}
-                          </div>
-                          <p className={`font-sans text-xs leading-relaxed ${
-                            isChecked ? 'text-emerald-900/90' : 'text-on-surface-variant'
-                          }`}>
-                            {task.description}
-                          </p>
-                        </div>
+                  {activePhase.tasks.map((task, tIdx) => (
+                    <div
+                      key={task.id}
+                      className="p-3.5 sm:p-4 rounded-xl border border-stone-200 bg-white flex items-start gap-3 shadow-2xs"
+                    >
+                      <div className="w-6 h-6 rounded-lg bg-stone-100 text-[#023625] font-mono font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 border border-stone-200/80">
+                        {tIdx + 1}
                       </div>
-                    );
-                  })}
+
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <h6 className="font-serif text-xs sm:text-sm font-bold leading-snug text-primary">
+                          {task.title}
+                        </h6>
+                        <p className="font-sans text-xs text-on-surface-variant leading-relaxed">
+                          {task.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Methodology Note */}
+                <div className="flex items-start gap-2 text-xs font-sans text-stone-500 bg-stone-100/70 p-3 rounded-lg border border-stone-200/60">
+                  <AlertCircle size={14} className="text-stone-400 shrink-0 mt-0.5" />
+                  <span>
+                    Each engagement is scoped around the organisation's requirements. Typical timing varies by scope, site readiness, and delivery model.
+                  </span>
                 </div>
               </div>
 
-              {/* Right Column: Key Deliverables & Action Callout */}
+              {/* Right Column: Key Deliverables & Engagement Callout */}
               <div className="lg:col-span-5 space-y-4">
                 {/* Deliverables Card */}
                 <div className="bg-white border border-stone-200 rounded-xl p-4 sm:p-5 shadow-2xs space-y-3.5">
                   <h5 className="font-serif text-sm font-bold text-primary flex items-center gap-2 border-b border-stone-100 pb-2.5">
                     <Award size={16} className="text-[#B68A35]" />
-                    <span>Phase Deliverables</span>
+                    <span>Typical Phase Outputs</span>
                   </h5>
 
                   <ul className="space-y-2 font-sans text-xs text-on-surface-variant">
@@ -412,17 +354,17 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
                   </ul>
                 </div>
 
-                {/* Inquiry & Next Steps CTA */}
+                {/* Inquiry & Engagement CTA */}
                 <div className="bg-[#023625] text-white rounded-xl p-4 sm:p-5 space-y-3.5 border border-white/10 shadow-md">
                   <div className="space-y-1">
                     <div className="text-[10px] font-mono text-[#DFC181] font-bold uppercase tracking-wider">
-                      Bespoke Advisory
+                      Advisory &amp; Implementation
                     </div>
                     <h5 className="font-serif text-sm sm:text-base font-bold text-white leading-snug">
-                      Schedule Phase {activePhase.phaseNumber} Implementation
+                      Plan Phase {activePhase.phaseNumber} for Your Organisation
                     </h5>
                     <p className="font-sans text-xs text-white/80 leading-relaxed">
-                      Our principal consultants adapt each sub-task to your organization's specific sector, HR structure, and regulatory environment.
+                      Each engagement is scoped around the organisation's requirements, operational priorities, and compliance roadmap.
                     </p>
                   </div>
 
@@ -443,3 +385,4 @@ export default function ProcessImplementationRoadmap({ onInquirePhase }: Process
     </div>
   );
 }
+

@@ -27,13 +27,13 @@ export const ROUTES: Record<AppView, RouteMeta> = {
   training: {
     view: 'training',
     path: '/services/training',
-    title: 'Accredited Training & Courses | Yitzak Consulting',
-    description: 'Explore accredited food safety, ISO management, and lead auditor training programs.'
+    title: 'Professional Training & Courses | Yitzak Consulting',
+    description: 'Explore food safety, ISO management, and auditor training programs.'
   },
   certifications: {
     view: 'certifications',
     path: '/services/certifications',
-    title: 'Certification Pathways | Yitzak Consulting',
+    title: 'Certification Preparation | Yitzak Consulting',
     description: 'Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.'
   },
   consulting: {
@@ -80,6 +80,19 @@ export const ROUTES: Record<AppView, RouteMeta> = {
   }
 };
 
+export const VALID_VIEWS: AppView[] = [
+  'home',
+  'consulting',
+  'training',
+  'certifications',
+  'calendar',
+  'contact',
+  'process_implementation',
+  'knowledge',
+  'portal',
+  'privacy'
+];
+
 /**
  * Resolves current window path and hash to an AppView
  */
@@ -91,21 +104,8 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   const rawPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
   const hash = window.location.hash.replace(/^#/, '').toLowerCase();
 
-  // Hash-based quick matches (e.g. /#contact, /#about, /#training, /#privacy)
-  if (hash === 'contact' || hash === 'advisory-desk') return { view: 'contact', elementId: 'contact' };
-  if (hash === 'about' || hash === 'about-section' || hash === 'why-us') return { view: 'home', elementId: 'why-us' };
-  if (hash === 'training') return { view: 'training' };
-  if (hash === 'certifications' || hash === 'schemes') return { view: 'certifications' };
-  if (hash === 'consulting' || hash === 'advisory') return { view: 'consulting' };
-  if (hash === 'process' || hash === 'implementation') return { view: 'process_implementation' };
-  if (hash === 'knowledge' || hash === 'whitepapers') return { view: 'knowledge' };
-  if (hash === 'calendar' || hash === 'schedule') return { view: 'calendar' };
-  if (hash === 'portal' || hash === 'login') return { view: 'portal' };
-  if (hash === 'privacy' || hash === 'privacy-policy' || hash === 'popia') return { view: 'privacy' };
-
-  // Path-based matches
-  if (rawPath === '/about') return { view: 'home', elementId: 'why-us' };
-  if (rawPath === '/privacy-policy' || rawPath === '/privacy' || rawPath === '/popia' || rawPath === '/popia-notice' || rawPath === '/legal/privacy') {
+  // 1. Path-based exact matches
+  if (rawPath === '/privacy-policy' || rawPath === '/privacy' || rawPath === '/popia' || rawPath === '/popia-notice' || rawPath === '/legal/privacy' || rawPath === '/privacy-notice') {
     return { view: 'privacy' };
   }
   if (rawPath === '/knowledge-centre' || rawPath === '/knowledge' || rawPath === '/knowledge-center' || rawPath === '/whitepapers' || rawPath === '/publications' || rawPath === '/resources') {
@@ -123,7 +123,7 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   if (rawPath === '/consulting' || rawPath === '/advisory' || rawPath === '/consulting-services' || rawPath === '/services/consulting' || rawPath === '/audits') {
     return { view: 'consulting' };
   }
-  if (rawPath === '/process-implementation' || rawPath === '/process' || rawPath === '/implementation' || rawPath === '/systems' || rawPath === '/services/process-implementation') {
+  if (rawPath === '/process-implementation' || rawPath === '/process' || rawPath === '/implementation' || rawPath === '/systems' || rawPath === '/services/business-process-implementation' || rawPath === '/services/process-implementation') {
     return { view: 'process_implementation' };
   }
   if (rawPath === '/training-calendar' || rawPath === '/calendar' || rawPath === '/schedule') {
@@ -131,6 +131,29 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   }
   if (rawPath === '/client-portal' || rawPath === '/portal' || rawPath === '/login' || rawPath === '/client-area') {
     return { view: 'portal' };
+  }
+
+  // 2. Hash-based quick matches (e.g. /#contact, /#training, /#privacy)
+  if (hash === 'contact' || hash === 'advisory-desk') return { view: 'contact', elementId: 'contact' };
+  if (hash === 'training') return { view: 'training' };
+  if (hash === 'certifications' || hash === 'schemes') return { view: 'certifications' };
+  if (hash === 'consulting' || hash === 'advisory') return { view: 'consulting' };
+  if (hash === 'process' || hash === 'implementation' || hash === 'process_implementation' || hash === 'business-process-implementation') return { view: 'process_implementation' };
+  if (hash === 'knowledge' || hash === 'whitepapers') return { view: 'knowledge' };
+  if (hash === 'calendar' || hash === 'schedule') return { view: 'calendar' };
+  if (hash === 'portal' || hash === 'login') return { view: 'portal' };
+  if (hash === 'privacy' || hash === 'privacy-policy' || hash === 'popia' || hash === 'privacy-notice') return { view: 'privacy' };
+  if (hash === 'why-us' || hash === 'about' || hash === 'about-section') return { view: 'home', elementId: 'why-us' };
+
+  // 3. Fallback: check stored session view in case the preview host/iframe refreshed back to root '/'
+  try {
+    const storedView = sessionStorage.getItem('yitzak_current_view') as AppView | null;
+    const storedElementId = sessionStorage.getItem('yitzak_element_id') || undefined;
+    if (storedView && VALID_VIEWS.includes(storedView)) {
+      return { view: storedView, elementId: storedElementId };
+    }
+  } catch {
+    // ignore sessionStorage access limitations
   }
 
   return { view: 'home' };
@@ -142,15 +165,24 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
 export function updateBrowserUrl(view: AppView, elementId?: string, replace = false) {
   if (typeof window === 'undefined') return;
 
+  // Persist current active view in sessionStorage
+  try {
+    sessionStorage.setItem('yitzak_current_view', view);
+    if (elementId) {
+      sessionStorage.setItem('yitzak_element_id', elementId);
+    } else {
+      sessionStorage.removeItem('yitzak_element_id');
+    }
+  } catch {
+    // ignore sessionStorage access limitations
+  }
+
   const route = ROUTES[view] || ROUTES.home;
   let targetUrl = route.path;
 
   if (elementId && elementId !== 'top') {
-    if (view === 'home' && (elementId === 'about-section' || elementId === 'why-us')) {
-      targetUrl = '/about';
-    } else {
-      targetUrl = `${route.path}#${elementId}`;
-    }
+    targetUrl = `${route.path === '/' ? '' : route.path}#${elementId}`;
+    if (targetUrl === '') targetUrl = '/';
   }
 
   // Update document title
@@ -165,12 +197,16 @@ export function updateBrowserUrl(view: AppView, elementId?: string, replace = fa
   }
 
   // Only push if different from current path+hash
-  const currentPathWithHash = window.location.pathname + window.location.hash;
-  if (currentPathWithHash !== targetUrl) {
-    if (replace) {
-      window.history.replaceState({ view, elementId }, route.title, targetUrl);
-    } else {
-      window.history.pushState({ view, elementId }, route.title, targetUrl);
+  try {
+    const currentPathWithHash = window.location.pathname + window.location.hash;
+    if (currentPathWithHash !== targetUrl) {
+      if (replace) {
+        window.history.replaceState({ view, elementId }, route.title, targetUrl);
+      } else {
+        window.history.pushState({ view, elementId }, route.title, targetUrl);
+      }
     }
+  } catch {
+    // ignore history state issues in strict iframe sandboxes
   }
 }

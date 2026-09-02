@@ -24,7 +24,7 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
       category: 'Curriculum & Standards',
       iconName: 'school',
       question: 'What is the difference between YITZAK Programmes and FoodChain ID courses?',
-      answer: 'YITZAK Programmes are practical training courses developed by our consultants to support compliance implementation, internal auditing skills, and management system maintenance. FoodChain ID courses are standardized auditor and scheme certification programs delivered through our official partnership, leading to accredited certificates (such as FSSC 22000, BRCGS, and ISO schemes).'
+      answer: 'YITZAK Programmes are practical training courses developed by our consultants to support compliance implementation, internal auditing skills, and management system maintenance. FoodChain ID Academy courses are standardized auditor and scheme training programs available through our partnership, leading to FoodChain ID issued certificates (such as FSSC 22000, BRCGS, and ISO schemes).'
     },
     {
       id: 'faq-customization',
@@ -157,7 +157,7 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
             }}
             className="inline-flex items-center gap-1.5 text-xs text-[#B68A35] hover:text-primary font-bold transition-colors cursor-pointer underline decoration-dotted underline-offset-4 focus:outline-none"
           >
-            <span>Speak with a Training Advisor</span>
+            <span>Speak with Yitzak</span>
             <span>→</span>
           </button>
         </div>

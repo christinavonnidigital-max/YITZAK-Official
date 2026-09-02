@@ -13,6 +13,18 @@ export interface Booking {
   updatedAt: any;
 }
 
+export interface BookingDraft {
+  saveProgressOptIn?: boolean;
+  fullName?: string;
+  email?: string;
+  company?: string;
+  message?: string;
+  selectedPillar?: string;
+  bookingMode?: 'direct' | 'calendly';
+  notes?: string;
+  savedAt?: string;
+}
+
 export interface Pillar {
   id: string;
   title: string;

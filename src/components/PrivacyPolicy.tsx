@@ -89,6 +89,14 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
             <p className="pt-1">
               Where secure client access is provided by invitation, we process the business email address and account identifiers needed to manage access and protect the service.
             </p>
+            <div className="mt-3 p-3 bg-[#FAF8F5] border border-border/80 rounded-xl space-y-1">
+              <h3 className="font-serif font-bold text-xs text-primary">
+                Local Device Storage for Enquiries & Consultations
+              </h3>
+              <p className="text-xs text-ash leading-relaxed">
+                When completing a consultation request, non-sensitive options (such as selected service pillar) may be remembered. Contact information and notes are stored on your device only if you explicitly check <em>"Save my progress on this device"</em>. Any saved draft remains solely within your browser’s local storage for a maximum of 7 days and is automatically removed thereafter, upon confirmed submission, or immediately when clicking <em>"Clear Draft"</em>.
+              </p>
+            </div>
           </section>
 
           {/* Section 3 */}

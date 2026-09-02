@@ -296,7 +296,7 @@ export async function exportCourseSyllabusPDF(course: any) {
 
   doc.text(`Dates: ${course.dates || 'Scheduled Session'}`, marginX + 4, y + 14);
   doc.text(`Mode: ${course.mode || 'Online'}`, marginX + 50, y + 14);
-  doc.text(`Instructor: ${course.instructor || 'Lead Auditor'}`, marginX + 110, y + 14);
+  doc.text(`Instructor: ${course.instructor || 'Senior Technical Specialist'}`, marginX + 110, y + 14);
 
   y += 30;
 
@@ -430,73 +430,171 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
 
     y += 10;
 
-    const docTitle = type === 'certification_portfolio'
-      ? 'CERTIFICATION PATHWAYS & AUDIT READINESS'
-      : type === 'consulting_statement'
-      ? 'CONSULTING & ADVISORY CAPABILITIES STATEMENT'
-      : 'BUSINESS PROCESS IMPLEMENTATION CAPABILITY SHEET';
+    if (type === 'certification_portfolio') {
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(2, 54, 37);
+      doc.text('CERTIFICATION PREPARATION DIRECTORY', marginX, y);
 
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(2, 54, 37);
-    doc.text(docTitle, marginX, y);
+      y += 6;
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(182, 138, 53);
+      doc.text('FOODCHAIN ID PARTNER & ADVISORY ROUTE | SOUTHERN AFRICA', marginX, y);
 
-    y += 7;
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(9.5);
-    doc.setTextColor(65, 73, 68);
-    const introText = 'Yitzak is a specialized compliance, audit readiness, and capability consulting practice delivering across Southern Africa. Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.';
-    const introLines = doc.splitTextToSize(introText, contentWidth);
-    doc.text(introLines, marginX, y);
+      y += 6;
+      // Accreditation & Advisory Boundary Callout Box
+      doc.setFillColor(250, 247, 240); // Soft gold tint
+      doc.rect(marginX, y, contentWidth, 18, 'F');
+      doc.setDrawColor(182, 138, 53);
+      doc.setLineWidth(0.4);
+      doc.rect(marginX, y, contentWidth, 18, 'S');
 
-    y += (introLines.length * 4.5) + 8;
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(2, 54, 37);
+      doc.text('HOW CERTIFICATION WORKS:', marginX + 4, y + 5);
 
-    // Four Pillars Box
-    const pillars = [
-      {
-        title: '1. Professional Training',
-        desc: 'Instructor-led competence building across BRCGS, FSSC 22000, ISO 22000 & HACCP. Access to selected FoodChain ID Academy courses.'
-      },
-      {
-        title: '2. Consulting & Advisory',
-        desc: 'Practical guidance to implement learning, gap assessments, management system formulation, SOP drafting, and internal audits.'
-      },
-      {
-        title: '3. Certification Pathways (FoodChain ID Partner)',
-        desc: 'Preparation and advisory for certification routes across GLOBALG.A.P., Non-GMO, Organic, and GFSI food safety schemes. Certification is issued by the accredited certification body.'
-      },
-      {
-        title: '4. Business Process Implementation',
-        desc: 'Building solid operational foundations from zero, process mapping, risk controls, HR/Accounting setup, and lean audits.'
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(65, 73, 68);
+      const boundaryText = 'Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.';
+      const boundaryLines = doc.splitTextToSize(boundaryText, contentWidth - 8);
+      doc.text(boundaryLines, marginX + 4, y + 9.5);
+
+      y += 24;
+
+      // 4 Detailed Schemes
+      const schemes = [
+        {
+          name: '1. Product & Label Certification',
+          badge: 'Products & Claims',
+          schemes: 'Non-GMO Project Verification, Organic, Identity Preserved, Gluten-Free',
+          desc: 'Preparation and advisory for certification schemes covering product integrity and clean label claims that hold up to global market and regulatory scrutiny.'
+        },
+        {
+          name: '2. GLOBALG.A.P. Farm Assurance',
+          badge: 'GFSI Benchmarked',
+          schemes: 'Good Agricultural Practice, Chain of Custody, GRASP, Produce Handling',
+          desc: 'Advisory and readiness support for good agricultural practice certification pathways covering food safety, traceability, and worker welfare recognised by international retailers.'
+        },
+        {
+          name: '3. BRCGS Standard for Food Safety',
+          badge: 'Global Standard',
+          schemes: 'Food Safety Issue 9, Packaging Materials, Storage & Distribution, Agents & Brokers',
+          desc: 'Comprehensive preparation and advisory for globally recognised food safety certification pathways across manufacturing, packaging, and supply chain operations.'
+        },
+        {
+          name: '4. FSSC 22000 & Integrated ISO Management Systems',
+          badge: 'ISO Standards & Schemes',
+          schemes: 'FSSC 22000 (v6), ISO 22000/22001, ISO 9001, ISO 14001, ISO 45001, ISO 27001, ISO 50001',
+          desc: 'Advisory, gap reviews, and system preparation for GFSI-recognised FSSC 22000 and integrated ISO management systems across quality, environment, safety, and security.'
+        }
+      ];
+
+      for (const scheme of schemes) {
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(2, 54, 37);
+        doc.text(scheme.name, marginX, y);
+
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(182, 138, 53);
+        doc.text(`[${scheme.badge}]`, pageWidth - marginX, y, { align: 'right' });
+
+        y += 4;
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(125, 88, 0);
+        doc.text(`Key Schemes: ${scheme.schemes}`, marginX, y);
+
+        y += 4;
+        doc.setFont('Helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(65, 73, 68);
+        const sLines = doc.splitTextToSize(scheme.desc, contentWidth);
+        doc.text(sLines, marginX, y);
+
+        y += (sLines.length * 3.8) + 4.5;
       }
-    ];
 
-    doc.setFillColor(249, 249, 249);
-    doc.rect(marginX, y, contentWidth, 8, 'F');
-    doc.setFillColor(2, 54, 37);
-    doc.rect(marginX, y, 3, 8, 'F');
+      // Availability Condition Box
+      doc.setFillColor(245, 245, 245);
+      doc.rect(marginX, y, contentWidth, 11, 'F');
+      doc.setFont('Helvetica', 'italic');
+      doc.setFontSize(7.5);
+      doc.setTextColor(80, 80, 80);
+      const availText = 'Note on Regional Scope: Scheme availability and audit delivery are subject to facility scope, sector criteria, and accredited partner scheduling across Southern Africa.';
+      const availLines = doc.splitTextToSize(availText, contentWidth - 6);
+      doc.text(availLines, marginX + 3, y + 4.5);
 
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(2, 54, 37);
-    doc.text('FOUR INTEGRATED OPERATIONAL PILLARS', marginX + 6, y + 5.5);
+      y += 16;
+    } else {
+      const docTitle = 'YITZAK CAPABILITY STATEMENT';
 
-    y += 14;
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(2, 54, 37);
+      doc.text(docTitle, marginX, y);
 
-    for (const p of pillars) {
+      y += 7;
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(65, 73, 68);
+      const introText = 'Yitzak is a specialized compliance, audit readiness, and capability consulting practice delivering across Southern Africa. Through our partnership with FoodChain ID, we help organisations access selected services and prepare for suitable certification routes across food safety, quality, and agricultural standards.';
+      const introLines = doc.splitTextToSize(introText, contentWidth);
+      doc.text(introLines, marginX, y);
+
+      y += (introLines.length * 4.5) + 8;
+
+      // Four Pillars Box
+      const pillars = [
+        {
+          title: '1. Professional Training',
+          desc: 'Instructor-led competence building across BRCGS, FSSC 22000, ISO 22000 & HACCP. Access to selected FoodChain ID Academy courses.'
+        },
+        {
+          title: '2. Consulting & Advisory',
+          desc: 'Specialist guidance, gap reviews, diagnostic assessments, readiness planning, and internal audit preparation for external assessment.'
+        },
+        {
+          title: '3. Certification Preparation (FoodChain ID Partner)',
+          desc: 'Preparation and advisory for selected certification routes across GLOBALG.A.P., Non-GMO, Organic, and GFSI food safety schemes. Certification is issued by the relevant accredited certification body.'
+        },
+        {
+          title: '4. Business Process Implementation',
+          desc: 'Structured operational foundations: end-to-end process mapping, SOP formulation, governance controls, workflow rollout, and team handover.'
+        }
+      ];
+
+      doc.setFillColor(249, 249, 249);
+      doc.rect(marginX, y, contentWidth, 8, 'F');
+      doc.setFillColor(2, 54, 37);
+      doc.rect(marginX, y, 3, 8, 'F');
+
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(10);
-      doc.setTextColor(182, 138, 53); // Gold
-      doc.text(p.title, marginX, y);
+      doc.setTextColor(2, 54, 37);
+      doc.text('FOUR INTEGRATED OPERATIONAL PILLARS', marginX + 6, y + 5.5);
 
-      y += 4.5;
-      doc.setFont('Helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(65, 73, 68);
-      const pLines = doc.splitTextToSize(p.desc, contentWidth - 4);
-      doc.text(pLines, marginX, y);
+      y += 14;
 
-      y += (pLines.length * 4.2) + 6;
+      for (const p of pillars) {
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(182, 138, 53); // Gold
+        doc.text(p.title, marginX, y);
+
+        y += 4.5;
+        doc.setFont('Helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(65, 73, 68);
+        const pLines = doc.splitTextToSize(p.desc, contentWidth - 4);
+        doc.text(pLines, marginX, y);
+
+        y += (pLines.length * 4.2) + 6;
+      }
     }
 
     // FoodChain ID Partnership Banner
@@ -507,12 +605,12 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(223, 193, 129); // Gold accent #DFC181
-    doc.text('OFFICIAL FOODCHAIN ID PARTNERSHIP', marginX + 6, y + 7);
+    doc.text('FOODCHAIN ID PARTNERSHIP', marginX + 6, y + 7);
 
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(255, 255, 255);
-    const fcText = 'Through our global partnership with FoodChain ID, Yitzak connects clients directly to internationally accredited certification bodies and FoodChain ID Academy qualifications recognized across global supply chains.';
+    const fcText = 'Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.';
     const fcLines = doc.splitTextToSize(fcText, contentWidth - 12);
     doc.text(fcLines, marginX + 6, y + 13);
 
@@ -740,7 +838,7 @@ export async function exportKnowledgeResourcePDF(resource: ExportableKnowledgeRe
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text('Official Partner: FoodChain ID Academy | Randburg, South Africa', marginX, y + 4.5);
+    doc.text('Partner: FoodChain ID Academy | Randburg, South Africa', marginX, y + 4.5);
     doc.text('Advisory Inquiries: info@yitzak.co.za | www.yitzak.co.za', marginX, y + 8.5);
 
     doc.text('Developing Competence. Enabling Compliance.', pageWidth - marginX, y + 4.5, { align: 'right' });

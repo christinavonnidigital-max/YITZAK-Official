@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Calendar, 
@@ -14,13 +14,54 @@ import {
   Building,
   ExternalLink,
   Clock,
-  Globe
+  Globe,
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { sendEmailViaVercel } from '../lib/emailService';
 import { PILLARS } from '../data';
+import { BookingDraft } from '../types';
+
+export const BOOKING_DRAFT_KEY = 'yitzak_booking_form_draft';
+export const DRAFT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export const loadBookingDraft = (): BookingDraft | null => {
+  try {
+    const raw = localStorage.getItem(BOOKING_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      if (parsed.savedAt) {
+        const savedTime = new Date(parsed.savedAt).getTime();
+        if (isNaN(savedTime) || Date.now() - savedTime > DRAFT_EXPIRY_MS) {
+          clearBookingDraft();
+          return null;
+        }
+      }
+      return parsed as BookingDraft;
+    }
+  } catch (e) {
+    console.debug('Failed to read booking draft from localStorage:', e);
+  }
+  return null;
+};
+
+export const clearBookingDraft = () => {
+  try {
+    localStorage.removeItem(BOOKING_DRAFT_KEY);
+  } catch (e) {
+    console.debug('Failed to clear booking draft from localStorage:', e);
+  }
+};
+
+const normalizePillarId = (id?: string) => {
+  if (!id) return 'consulting';
+  if (id === 'compliance') return 'certification';
+  return id;
+};
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -44,43 +85,207 @@ export default function BookingModal({
   onBookingSuccess,
   onNavigatePrivacy
 }: BookingModalProps) {
-  const [bookingMode, setBookingMode] = useState<'direct' | 'calendly'>('direct');
-  const [selectedPillar, setSelectedPillar] = useState(initialPillarId);
-  const [notes, setNotes] = useState(initialNotes);
+  const normalizedInitialPillar = normalizePillarId(initialPillarId);
+
+  // Initialize state with stored draft if available
+  const [bookingMode, setBookingMode] = useState<'direct' | 'calendly'>(() => {
+    const draft = loadBookingDraft();
+    return draft?.bookingMode || 'direct';
+  });
+
+  const [selectedPillar, setSelectedPillar] = useState<string>(() => {
+    if (initialNotes) {
+      return normalizedInitialPillar;
+    }
+    const draft = loadBookingDraft();
+    return normalizePillarId(draft?.selectedPillar) || normalizedInitialPillar;
+  });
+
+  const [notes, setNotes] = useState<string>(() => {
+    const draft = loadBookingDraft();
+    return draft?.saveProgressOptIn ? (draft?.notes || initialNotes || '') : (initialNotes || '');
+  });
+
+  const [saveProgressOptIn, setSaveProgressOptIn] = useState<boolean>(() => {
+    const draft = loadBookingDraft();
+    return Boolean(draft?.saveProgressOptIn);
+  });
+
   const [isIframeLoaded, setIsIframeLoaded] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // Simplified Direct Form State
-  const [directForm, setDirectForm] = useState({
-    fullName: currentUser?.displayName || '',
-    email: currentUser?.email || '',
-    company: '',
-    message: initialNotes || ''
+  // Simplified Direct Form State: Restore identity details ONLY if explicitly opted in
+  const [directForm, setDirectForm] = useState(() => {
+    const draft = loadBookingDraft();
+    if (draft && draft.saveProgressOptIn) {
+      return {
+        fullName: draft.fullName ?? currentUser?.displayName ?? '',
+        email: draft.email ?? currentUser?.email ?? '',
+        company: draft.company ?? '',
+        message: initialNotes || draft.message || ''
+      };
+    }
+    return {
+      fullName: currentUser?.displayName ?? '',
+      email: currentUser?.email ?? '',
+      company: '',
+      message: initialNotes ?? ''
+    };
   });
+
   const [isSubmittingDirect, setIsSubmittingDirect] = useState(false);
   const [directSuccess, setDirectSuccess] = useState(false);
   const [directError, setDirectError] = useState<string | null>(null);
+  const [draftRestoredBanner, setDraftRestoredBanner] = useState<boolean>(() => {
+    const draft = loadBookingDraft();
+    return !!(draft && draft.saveProgressOptIn && (draft.fullName || draft.email || draft.company || draft.message));
+  });
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Sync state when modal opens
+  // Sync and restore draft whenever modal opens or explicit props change
   useEffect(() => {
     if (isOpen) {
-      setBookingMode('direct');
-      setSelectedPillar(initialPillarId || 'consulting');
-      setNotes(initialNotes || '');
-      setDirectForm(prev => ({
-        ...prev,
-        fullName: currentUser?.displayName || prev.fullName || '',
-        email: currentUser?.email || prev.email || '',
-        message: initialNotes || prev.message || ''
-      }));
+      const draft = loadBookingDraft();
+      if (initialNotes) {
+        // Explicit scheme inquiry or specific CTA clicked
+        setSelectedPillar(normalizedInitialPillar);
+        setNotes(initialNotes);
+        setDirectForm(prev => ({
+          fullName: (draft?.saveProgressOptIn && draft?.fullName) || currentUser?.displayName || prev.fullName || '',
+          email: (draft?.saveProgressOptIn && draft?.email) || currentUser?.email || prev.email || '',
+          company: (draft?.saveProgressOptIn && draft?.company) || prev.company || '',
+          message: initialNotes
+        }));
+        setSaveProgressOptIn(Boolean(draft?.saveProgressOptIn));
+        setDraftRestoredBanner(false);
+      } else if (draft) {
+        setBookingMode(draft.bookingMode || 'direct');
+        setSelectedPillar(normalizePillarId(draft.selectedPillar) || normalizedInitialPillar);
+        setSaveProgressOptIn(Boolean(draft.saveProgressOptIn));
+        
+        if (draft.saveProgressOptIn) {
+          setNotes(draft.notes || '');
+          setDirectForm({
+            fullName: draft.fullName || currentUser?.displayName || '',
+            email: draft.email || currentUser?.email || '',
+            company: draft.company || '',
+            message: draft.message || ''
+          });
+          setDraftRestoredBanner(!!(draft.fullName || draft.email || draft.company || draft.message));
+        } else {
+          setNotes('');
+          setDirectForm(prev => ({
+            fullName: currentUser?.displayName || prev.fullName || '',
+            email: currentUser?.email || prev.email || '',
+            company: prev.company || '',
+            message: ''
+          }));
+          setDraftRestoredBanner(false);
+        }
+      } else {
+        setBookingMode('direct');
+        setSelectedPillar(normalizedInitialPillar);
+        setNotes(initialNotes || '');
+        setSaveProgressOptIn(false);
+        setDirectForm(prev => ({
+          fullName: currentUser?.displayName || prev.fullName || '',
+          email: currentUser?.email || prev.email || '',
+          company: prev.company || '',
+          message: initialNotes || prev.message || ''
+        }));
+        setDraftRestoredBanner(false);
+      }
+
       setBookingConfirmed(false);
       setDirectSuccess(false);
       setDirectError(null);
       setIsIframeLoaded(false);
     }
-  }, [isOpen, initialPillarId, initialNotes, currentUser]);
+  }, [isOpen, initialPillarId, initialNotes, currentUser, normalizedInitialPillar]);
+
+  // Persist form progress to localStorage with privacy safeguards
+  useEffect(() => {
+    if (!isOpen) return;
+    if (directSuccess || bookingConfirmed) return;
+
+    try {
+      if (saveProgressOptIn) {
+        // Explicit opt-in: persist selections AND identity/message with timestamp
+        const draftData: BookingDraft = {
+          saveProgressOptIn: true,
+          fullName: directForm.fullName,
+          email: directForm.email,
+          company: directForm.company,
+          message: directForm.message,
+          selectedPillar,
+          bookingMode,
+          notes,
+          savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify(draftData));
+      } else {
+        // Opt-in false: persist ONLY non-sensitive selections (service pillar & mode)
+        const nonSensitiveDraft: BookingDraft = {
+          saveProgressOptIn: false,
+          selectedPillar,
+          bookingMode,
+          savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify(nonSensitiveDraft));
+      }
+    } catch (err) {
+      console.debug('Failed to write booking draft to localStorage:', err);
+    }
+  }, [directForm, selectedPillar, bookingMode, notes, isOpen, directSuccess, bookingConfirmed, saveProgressOptIn]);
+
+  // Handler to clear draft and reset the form
+  const handleClearDraft = useCallback(() => {
+    clearBookingDraft();
+    setSaveProgressOptIn(false);
+    setDirectForm({
+      fullName: currentUser?.displayName || '',
+      email: currentUser?.email || '',
+      company: '',
+      message: ''
+    });
+    setSelectedPillar(initialPillarId || 'consulting');
+    setNotes('');
+    setDraftRestoredBanner(false);
+  }, [currentUser, initialPillarId]);
+
+  // Handler when toggling opt-in checkbox
+  const handleToggleOptIn = (checked: boolean) => {
+    setSaveProgressOptIn(checked);
+    if (!checked) {
+      // Immediately purge personal details and notes from localStorage
+      try {
+        const nonSensitive: BookingDraft = {
+          saveProgressOptIn: false,
+          selectedPillar,
+          bookingMode,
+          savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify(nonSensitive));
+      } catch {}
+      setDraftRestoredBanner(false);
+    } else {
+      try {
+        const draftData: BookingDraft = {
+          saveProgressOptIn: true,
+          fullName: directForm.fullName,
+          email: directForm.email,
+          company: directForm.company,
+          message: directForm.message,
+          selectedPillar,
+          bookingMode,
+          notes,
+          savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify(draftData));
+      } catch {}
+    }
+  };
 
   // Listen to Calendly PostMessage Events
   useEffect(() => {
@@ -90,6 +295,12 @@ export default function BookingModal({
       if (e.data.event === 'calendly.event_scheduled') {
         const payload = e.data.payload || {};
         setBookingConfirmed(true);
+
+        // Clear stored draft upon confirmed scheduling
+        clearBookingDraft();
+        try {
+          localStorage.removeItem('yitzak_booking_modal_open');
+        } catch {}
 
         const refCode = `YTZ-CAL-${Math.floor(100000 + Math.random() * 900000)}`;
         const pillarInfo = PILLARS.find(p => p.id === selectedPillar);
@@ -219,6 +430,12 @@ export default function BookingModal({
       console.warn('Consultation request dispatch notification:', mailErr);
     }
 
+    // Clear stored progress draft upon successful submission
+    clearBookingDraft();
+    try {
+      localStorage.removeItem('yitzak_booking_modal_open');
+    } catch {}
+
     setIsSubmittingDirect(false);
     setDirectSuccess(true);
     if (onBookingSuccess) onBookingSuccess();
@@ -228,18 +445,23 @@ export default function BookingModal({
     <AnimatePresence>
       <div 
         id="consultation-booking-modal"
-        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-[#00140D]/85 backdrop-blur-md"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 bg-[#00140D]/85 backdrop-blur-md overflow-hidden"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.98, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.98, y: 10 }}
-          transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="relative w-full max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 overflow-hidden flex flex-col h-[92vh] sm:h-[88vh] max-h-[780px]"
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 24, scale: 0.98 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="relative w-full max-w-3xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-white/20 overflow-hidden flex flex-col h-[94vh] sm:h-[88vh] max-h-[820px] my-0 sm:my-auto"
         >
+          {/* Mobile Sheet Grab Handle */}
+          <div className="sm:hidden pt-2 pb-1 flex justify-center bg-[#023625]">
+            <div className="w-10 h-1 rounded-full bg-white/30" />
+          </div>
+
           {/* Header */}
           <div className="bg-[#023625] text-white px-4 sm:px-6 py-3.5 sm:py-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
             <div className="flex items-center justify-between w-full sm:w-auto">
@@ -292,7 +514,7 @@ export default function BookingModal({
                   }`}
                 >
                   <Calendar size={12} />
-                  <span>Live Calendly</span>
+                  <span>Schedule a Time</span>
                 </button>
               </div>
 
@@ -338,14 +560,57 @@ export default function BookingModal({
                   </motion.div>
                 ) : (
                   <form onSubmit={handleDirectSubmit} className="space-y-4">
-                    <div>
-                      <h4 className="font-serif text-base sm:text-lg font-bold text-primary">
-                        Request a Consultation
-                      </h4>
-                      <p className="text-[11px] sm:text-xs text-ash mt-0.5">
-                        Tell us what you need and we’ll get back to arrange a suitable time.
-                      </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h4 className="font-serif text-base sm:text-lg font-bold text-primary">
+                          Request a Consultation
+                        </h4>
+                        <p className="text-[11px] sm:text-xs text-ash mt-0.5">
+                          Tell us what you need and we’ll get back to arrange a suitable time.
+                        </p>
+                      </div>
+
+                      {/* Explicit Storage Indicator */}
+                      {saveProgressOptIn ? (
+                        <div className="inline-flex items-center gap-1.5 text-[10px] text-primary/90 bg-[#FAF8F5] px-2.5 py-1 rounded-md border border-[#B68A35]/40 self-start sm:self-auto shrink-0 shadow-2xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#B68A35]" />
+                          <span>Saved on this device (7-day expiry)</span>
+                          <button
+                            type="button"
+                            onClick={handleClearDraft}
+                            className="text-ash hover:text-red-700 underline font-semibold ml-1 cursor-pointer"
+                            title="Clear saved draft from this device"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="inline-flex items-center gap-1 text-[10px] text-ash/80 bg-[#FAF8F5] px-2 py-0.5 rounded-md border border-border/60 self-start sm:self-auto shrink-0">
+                          <span>Device draft storage: Off</span>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Restored Draft Alert Banner */}
+                    {draftRestoredBanner && saveProgressOptIn && (
+                      <div className="p-2.5 bg-[#FAF8F5] border border-[#B68A35]/40 rounded-xl text-xs flex items-center justify-between text-[#023625] shadow-2xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Sparkles size={14} className="text-[#B68A35] shrink-0" />
+                          <span className="text-[11px] font-medium text-primary truncate">
+                            Restored saved enquiry progress on this device
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleClearDraft}
+                          className="text-[10px] text-ash hover:text-red-700 underline font-semibold flex items-center gap-1 cursor-pointer shrink-0 transition-colors ml-2"
+                          title="Delete saved draft from this browser"
+                        >
+                          <RotateCcw size={11} />
+                          <span>Clear Draft</span>
+                        </button>
+                      </div>
+                    )}
 
                     {directError && (
                       <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
@@ -460,6 +725,26 @@ export default function BookingModal({
                         placeholder="Detail standard targets (e.g. ISO 9001, ISO 27001, ISO 22000, FSSC 22000, BRCGS, HACCP) or specific requirements..."
                         className="w-full px-3 py-2 bg-[#FAF8F5] border border-border rounded-xl text-xs text-primary focus:outline-none focus:border-[#B68A35] focus:bg-white transition-colors resize-none"
                       />
+                    </div>
+
+                    {/* Explicit Progress Storage Opt-in Checkbox */}
+                    <div className="bg-[#FAF8F5] border border-border/80 rounded-xl p-3">
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={saveProgressOptIn}
+                          onChange={(e) => handleToggleOptIn(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 rounded border-border text-[#023625] focus:ring-[#B68A35] accent-[#023625] cursor-pointer shrink-0"
+                        />
+                        <div className="space-y-0.5 text-left">
+                          <div className="text-xs font-semibold text-primary">
+                            Save my progress on this device
+                          </div>
+                          <p className="text-[11px] text-ash leading-snug">
+                            Retains your contact details and enquiry draft in this browser for up to 7 days. Leave unchecked on public or shared computers.
+                          </p>
+                        </div>
+                      </label>
                     </div>
 
                     {/* Submit Button */}

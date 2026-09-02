@@ -185,7 +185,7 @@ export async function dispatchQuickChatInquiry(
           </a>
         </div>
         <div class="footer">
-          &copy; 2026 YITZAK Institutional Advisory · Official FoodChain ID Partner · info@yitzak.co.za
+          &copy; 2026 YITZAK Institutional Advisory · FoodChain ID Partner · info@yitzak.co.za
         </div>
       </div>
     </body>
