@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <!-- Homepage -->
+  <url>
+    <loc>https://yitzak.co.za/</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://yitzak.co.za/og-image.png</image:loc>
+      <image:title>YITZAK | Professional Training, Advisory &amp; Certification Preparation</image:title>
+      <image:caption>Developing Competence. Enabling Compliance.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://yitzak.co.za/YITZAK-logo-green.png</image:loc>
+      <image:title>YITZAK Official Logo</image:title>
+    </image:image>
+  </url>
+
+  <!-- Professional Training -->
+  <url>
+    <loc>https://yitzak.co.za/services/training</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Certification Preparation & FoodChain ID Coordination -->
+  <url>
+    <loc>https://yitzak.co.za/services/certifications</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Consulting & Advisory -->
+  <url>
+    <loc>https://yitzak.co.za/services/consulting</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Business Process Implementation -->
+  <url>
+    <loc>https://yitzak.co.za/services/business-process-implementation</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 2026 Training Calendar & Schedules -->
+  <url>
+    <loc>https://yitzak.co.za/training-calendar</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Knowledge Centre & Technical Library -->
+  <url>
+    <loc>https://yitzak.co.za/knowledge-centre</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Contact Advisory Desk -->
+  <url>
+    <loc>https://yitzak.co.za/contact</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Privacy Policy / POPIA Notice -->
+  <url>
+    <loc>https://yitzak.co.za/privacy-notice</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+</urlset>

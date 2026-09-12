@@ -21,50 +21,50 @@ export const ROUTES: Record<AppView, RouteMeta> = {
   home: {
     view: 'home',
     path: '/',
-    title: 'Yitzak Consulting | Developing Competence. Enabling Compliance.',
-    description: 'Empowering organisations through Accredited Training, Global Certification, Advisory, and Process Implementation.'
+    title: 'Yitzak Consulting | Professional Training, Advisory & Certification Preparation',
+    description: 'Developing competence and enabling compliance through Professional Training, Certification Preparation, Advisory, and Business Process Implementation across Southern Africa.'
   },
   training: {
     view: 'training',
     path: '/services/training',
-    title: 'Professional Training & Courses | Yitzak Consulting',
-    description: 'Explore food safety, ISO management, and auditor training programs.'
+    title: 'Professional Training & Auditor Courses | Yitzak Consulting',
+    description: 'Accredited training across ISO 9001, ISO 14001, ISO 45001, HACCP, and FSSC 22000. In-house and public delivery across South Africa and Zimbabwe.'
   },
   certifications: {
     view: 'certifications',
     path: '/services/certifications',
-    title: 'Certification Preparation | Yitzak Consulting',
-    description: 'Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.'
+    title: 'Certification Preparation & Scheme Advisory | Yitzak Consulting',
+    description: 'Expert preparation and advisory for globally recognised certification schemes including BRCGS, FSSC 22000, and ISO standards.'
   },
   consulting: {
     view: 'consulting',
     path: '/services/consulting',
-    title: 'Consulting & Advisory Services | Yitzak Consulting',
-    description: 'Tailored compliance advisory, gap assessments, internal audits, and management system consulting.'
+    title: 'Consulting & Management Advisory | Yitzak Consulting',
+    description: 'Institutional advisory, gap assessments, internal audits, and integrated management system (QMS/FSMS) formulation.'
   },
   process_implementation: {
     view: 'process_implementation',
     path: '/services/business-process-implementation',
-    title: 'Business Process Implementation | Yitzak Consulting',
-    description: 'Structured roadmap for business process implementation, management system formulation, and audit readiness.'
+    title: 'Business Process Implementation & SOPs | Yitzak Consulting',
+    description: 'End-to-end business process mapping, SOP development, governance controls, and workforce implementation roadmaps.'
   },
   knowledge: {
     view: 'knowledge',
     path: '/knowledge-centre',
     title: 'Knowledge Centre & Technical Library | Yitzak Consulting',
-    description: 'Institutional whitepapers, scheme transition guides, regulatory checklists, and compliance publications.'
+    description: 'Access free technical whitepapers, scheme transition guides, audit preparation checklists, and compliance publications.'
   },
   calendar: {
     view: 'calendar',
     path: '/training-calendar',
     title: '2026 Training Calendar & Schedules | Yitzak Consulting',
-    description: 'View scheduled public and corporate training sessions for 2026 with real-time seat availability.'
+    description: 'Browse 2026 course schedules, live seat availability, and instructor-led training dates across Southern Africa.'
   },
   contact: {
     view: 'contact',
     path: '/contact',
     title: 'Contact Advisory Desk | Yitzak Consulting',
-    description: 'Connect directly with Yitzak principal advisors for gap assessments, training quotes, or advisory proposals.'
+    description: 'Request course bookings, advisory consultations, or on-site gap assessments with Yitzak principal consultants.'
   },
   portal: {
     view: 'portal',
@@ -75,8 +75,8 @@ export const ROUTES: Record<AppView, RouteMeta> = {
   privacy: {
     view: 'privacy',
     path: '/privacy-notice',
-    title: 'Privacy Notice | Yitzak Consulting',
-    description: 'POPIA Privacy Notice for Yitzak Consulting (Pty) Ltd in compliance with Act No. 4 of 2013.'
+    title: 'Privacy Notice & POPIA Compliance | Yitzak Consulting',
+    description: 'Official POPIA Privacy Notice for Yitzak Consulting (Pty) Ltd in compliance with South African Act No. 4 of 2013.'
   }
 };
 
@@ -190,10 +190,46 @@ export function updateBrowserUrl(view: AppView, elementId?: string, replace = fa
     document.title = route.title;
   }
 
-  // Update meta description if present
-  const metaDesc = document.querySelector('meta[name="description"]');
-  if (metaDesc && route.description) {
-    metaDesc.setAttribute('content', route.description);
+  // Helper to set or create a meta tag
+  const setMeta = (selector: string, attr: 'name' | 'property', key: string, content: string) => {
+    let el = document.querySelector(selector);
+    if (!el) {
+      el = document.createElement('meta');
+      el.setAttribute(attr, key);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('content', content);
+  };
+
+  // Update primary meta description
+  if (route.description) {
+    setMeta('meta[name="description"]', 'name', 'description', route.description);
+  }
+
+  // Update Canonical Link tag
+  const canonicalUrl = `https://yitzak.co.za${route.path === '/' ? '' : route.path}`;
+  let canonicalLink = document.querySelector('link[rel="canonical"]');
+  if (!canonicalLink) {
+    canonicalLink = document.createElement('link');
+    canonicalLink.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonicalLink);
+  }
+  canonicalLink.setAttribute('href', canonicalUrl);
+
+  // Update Social & Open Graph tags
+  setMeta('meta[property="og:title"]', 'property', 'og:title', route.title);
+  setMeta('meta[property="og:description"]', 'property', 'og:description', route.description);
+  setMeta('meta[property="og:url"]', 'property', 'og:url', canonicalUrl);
+
+  setMeta('meta[name="twitter:title"]', 'name', 'twitter:title', route.title);
+  setMeta('meta[name="twitter:description"]', 'name', 'twitter:description', route.description);
+  setMeta('meta[name="twitter:url"]', 'name', 'twitter:url', canonicalUrl);
+
+  // Indexing rules: Restrict authenticated/private portal from indexing; permit all public views
+  if (view === 'portal') {
+    setMeta('meta[name="robots"]', 'name', 'robots', 'noindex, nofollow');
+  } else {
+    setMeta('meta[name="robots"]', 'name', 'robots', 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1');
   }
 
   // Only push if different from current path+hash

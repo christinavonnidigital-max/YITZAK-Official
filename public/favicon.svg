@@ -1,24 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Solid dark-green background with zero transparent padding -->
-  <rect width="512" height="512" fill="#023625" />
-  
-  <!-- Simplified Shield Outline (Gold / White) -->
-  <path
-    d="M 256 64 C 344 112 422 116 430 134 C 434 236 408 336 256 448 C 104 336 78 236 82 134 C 90 116 168 112 256 64 Z"
-    fill="none"
-    stroke="#E6CA85"
-    stroke-width="32"
-    stroke-linejoin="round"
-    stroke-linecap="round"
-  />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <g fill="#1f4d3a">
+    <!-- Outlined Shield Silhouette -->
+    <path fill-rule="evenodd" clip-rule="evenodd" d="
+      M 64 6
+      C 84 16 102 21 114 28
+      C 114 74 96 112 64 124
+      C 32 112 14 74 14 28
+      C 26 21 44 16 64 6 Z
 
-  <!-- Bold Simplified Tick / Checkmark (White) -->
-  <path
-    d="M 180 256 L 236 316 L 336 196"
-    fill="none"
-    stroke="#FFFFFF"
-    stroke-width="40"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
+      M 64 20
+      C 80 28 94 32 102 38
+      C 102 73 88 100 64 110
+      C 40 100 26 73 26 38
+      C 34 32 48 28 64 20 Z
+    " />
+
+    <!-- Center Check Mark (bold & clear) -->
+    <path d="
+      M 40 62
+      L 58 81
+      L 96 38
+      L 87 30
+      L 57 66
+      L 48 55
+      Z
+    " />
+
+    <!-- Bottom Distinctive Left Leaf -->
+    <path d="
+      M 64 104
+      C 46 95 32 86 28 72
+      C 39 74 53 86 64 104
+      Z
+    " />
+
+    <!-- Bottom Distinctive Right Leaf -->
+    <path d="
+      M 64 104
+      C 82 95 96 86 100 72
+      C 89 74 75 86 64 104
+      Z
+    " />
+  </g>
 </svg>

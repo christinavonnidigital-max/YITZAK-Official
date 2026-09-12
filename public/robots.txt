@@ -1,0 +1,15 @@
+# Robots.txt for Yitzak Consulting
+# https://www.yitzak.co.za
+
+User-agent: *
+Allow: /
+
+# Disallow restricted client portal, administrative views and internal API endpoints
+Disallow: /client-portal
+Disallow: /portal
+Disallow: /api/
+
+# Sitemap index
+Sitemap: https://yitzak.co.za/sitemap.xml
+Sitemap: https://www.yitzak.co.za/sitemap.xml
+Sitemap: https://yitzak-official.vercel.app/sitemap.xml

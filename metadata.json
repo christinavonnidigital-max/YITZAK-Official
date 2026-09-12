@@ -1,6 +1,6 @@
 {
   "name": "Yitzak Consulting",
-  "description": "Institutional consulting and professional training booking system featuring real-time scheduling, Firebase Auth, automated Gmail confirmation, and Google Calendar sync.",
+  "description": "Professional training, institutional advisory, certification preparation, and business process implementation platform.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
