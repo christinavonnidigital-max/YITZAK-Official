@@ -6,14 +6,27 @@ import defaultConfig from '../../firebase-applet-config.json';
 
 const env = (import.meta as any).env || {};
 
+// Helper to look up env variables regardless of whether they have the VITE_ prefix or not
+const getEnv = (key: string, viteKey: string, fallback: string) => {
+  const metaVal = env[key] || env[viteKey];
+  if (metaVal && typeof metaVal === 'string' && metaVal.trim() !== '') return metaVal;
+  
+  if (typeof process !== 'undefined' && process.env) {
+    const procVal = process.env[key] || process.env[viteKey];
+    if (procVal && typeof procVal === 'string' && procVal.trim() !== '') return procVal;
+  }
+
+  return fallback;
+};
+
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || defaultConfig.apiKey,
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || defaultConfig.authDomain,
-  projectId: env.VITE_FIREBASE_PROJECT_ID || defaultConfig.projectId,
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || defaultConfig.storageBucket,
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultConfig.messagingSenderId,
-  appId: env.VITE_FIREBASE_APP_ID || defaultConfig.appId,
-  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || defaultConfig.measurementId,
+  apiKey: getEnv('FIREBASE_API_KEY', 'VITE_FIREBASE_API_KEY', defaultConfig.apiKey),
+  authDomain: getEnv('FIREBASE_AUTH_DOMAIN', 'VITE_FIREBASE_AUTH_DOMAIN', defaultConfig.authDomain),
+  projectId: getEnv('FIREBASE_PROJECT_ID', 'VITE_FIREBASE_PROJECT_ID', defaultConfig.projectId),
+  storageBucket: getEnv('FIREBASE_STORAGE_BUCKET', 'VITE_FIREBASE_STORAGE_BUCKET', defaultConfig.storageBucket),
+  messagingSenderId: getEnv('FIREBASE_MESSAGING_SENDER_ID', 'VITE_FIREBASE_MESSAGING_SENDER_ID', defaultConfig.messagingSenderId),
+  appId: getEnv('FIREBASE_APP_ID', 'VITE_FIREBASE_APP_ID', defaultConfig.appId),
+  measurementId: getEnv('FIREBASE_MEASUREMENT_ID', 'VITE_FIREBASE_MEASUREMENT_ID', defaultConfig.measurementId),
 };
 
 // Initialize Firebase App

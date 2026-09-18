@@ -16,7 +16,9 @@ import {
   Clock,
   Globe,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  Copy
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -135,6 +137,8 @@ export default function BookingModal({
 
   const [isSubmittingDirect, setIsSubmittingDirect] = useState(false);
   const [directSuccess, setDirectSuccess] = useState(false);
+  const [submittedRef, setSubmittedRef] = useState<string>('');
+  const [copiedRef, setCopiedRef] = useState(false);
   const [directError, setDirectError] = useState<string | null>(null);
   const [draftRestoredBanner, setDraftRestoredBanner] = useState<boolean>(() => {
     const draft = loadBookingDraft();
@@ -384,6 +388,8 @@ export default function BookingModal({
     setDirectError(null);
 
     const refCode = `YTZ-REQ-${Math.floor(100000 + Math.random() * 900000)}`;
+    setSubmittedRef(refCode);
+
     const payload = {
       bookingRef: refCode,
       userName: directForm.fullName.trim(),
@@ -397,8 +403,9 @@ export default function BookingModal({
       createdAt: new Date().toISOString()
     };
 
+    // 1. Primary write to consultation_requests collection
     try {
-      const docId = `booking_${Date.now()}_${refCode}`;
+      const docId = `request_${Date.now()}_${refCode.replace(/[^a-zA-Z0-9]/g, '')}`;
       await setDoc(doc(db, 'consultation_requests', docId), {
         ...payload,
         timestamp: serverTimestamp()
@@ -407,18 +414,37 @@ export default function BookingModal({
       console.warn('Firestore direct write fallback:', dbErr);
     }
 
+    // 2. Also write to inquiries collection (standard verified collection for guest inquiries)
+    try {
+      const inqDocId = `inq_${Date.now()}_${refCode.replace(/[^a-zA-Z0-9]/g, '')}`;
+      await setDoc(doc(db, 'inquiries', inqDocId), {
+        name: directForm.fullName.trim(),
+        email: directForm.email.trim(),
+        subject: `[Consultation] ${directForm.company.trim()} - ${currentPillarObj.title}`,
+        message: `Consultation Booking Ref: ${refCode}\nClient: ${directForm.fullName.trim()} (${directForm.email.trim()})\nCompany/Facility: ${directForm.company.trim()}\nService Required: ${currentPillarObj.title}\nClient Notes: ${directForm.message || notes || 'None specified'}`,
+        status: 'unread',
+        createdAt: serverTimestamp(),
+        userId: currentUser?.uid || null
+      });
+    } catch (inqErr) {
+      console.warn('Firestore inquiries write fallback:', inqErr);
+    }
+
+    // 3. Local offline backup storage
     try {
       const stored = JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]');
       stored.push(payload);
       localStorage.setItem('yitzak_consultation_requests', JSON.stringify(stored));
     } catch {}
 
+    // 4. Serverless API Email Dispatch
     try {
       await sendEmailViaVercel({
         to: ['christinagumpo@gmail.com', 'info@yitzak.co.za'],
         subject: `Consultation Request: ${directForm.company} (${directForm.fullName})`,
         html: `
           <h2>New Consultation Request Received</h2>
+          <p><strong>Reference:</strong> ${refCode}</p>
           <p><strong>Client:</strong> ${directForm.fullName} (${directForm.email})</p>
           <p><strong>Company / Facility:</strong> ${directForm.company}</p>
           <p><strong>Service Required:</strong> ${currentPillarObj.title}</p>
@@ -538,21 +564,86 @@ export default function BookingModal({
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-[#FAF8F5] border border-[#B68A35]/30 rounded-2xl p-6 sm:p-8 text-center space-y-3 shadow-xs"
+                    className="bg-[#FAF8F5] border border-[#B68A35]/30 rounded-2xl p-6 sm:p-8 text-center space-y-4 shadow-xs"
                   >
                     <div className="w-12 h-12 rounded-full bg-[#023625] text-[#E6CA85] flex items-center justify-center mx-auto shadow-sm">
                       <CheckCircle2 size={26} />
                     </div>
-                    <h4 className="font-serif text-lg sm:text-xl font-bold text-primary">
-                      Consultation Request Received
-                    </h4>
-                    <p className="text-ash text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
-                      Thank you, <strong>{directForm.fullName}</strong>. Your consultation request for <strong>{currentPillarObj.title}</strong> has been received. We’ll get back to you at <strong>{directForm.email}</strong> to arrange a suitable time.
-                    </p>
+                    <div>
+                      <h4 className="font-serif text-lg sm:text-xl font-bold text-primary">
+                        Consultation Request Received
+                      </h4>
+                      <p className="text-ash text-xs sm:text-sm max-w-md mx-auto leading-relaxed mt-1">
+                        Thank you, <strong>{directForm.fullName}</strong>. Your request for <strong>{currentPillarObj.title}</strong> on behalf of <strong>{directForm.company}</strong> has been logged in our advisory queue.
+                      </p>
+                    </div>
+
+                    {/* Reference Code Badge */}
+                    {submittedRef && (
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-[#B68A35]/40 rounded-xl text-xs font-mono text-[#023625] shadow-2xs">
+                        <span className="text-[10px] text-ash font-sans uppercase font-bold tracking-wider">Ref Code:</span>
+                        <span className="font-bold">{submittedRef}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(submittedRef);
+                            setCopiedRef(true);
+                            setTimeout(() => setCopiedRef(false), 2500);
+                          }}
+                          className="text-ash hover:text-primary transition-colors cursor-pointer ml-1 p-0.5"
+                          title="Copy reference code"
+                        >
+                          {copiedRef ? <Check size={12} className="text-emerald-700" /> : <Copy size={12} />}
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="bg-white/80 border border-border/80 rounded-xl p-3 text-left max-w-md mx-auto text-xs space-y-1 text-ash">
+                      <div className="flex justify-between items-center text-primary font-medium text-[11px]">
+                        <span>Direct Confirmation Options</span>
+                        <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-semibold">Registered</span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed">
+                        Our advisory desk responds within 1 business day. You can also send a direct copy to our inbox or message our desk on WhatsApp:
+                      </p>
+                      
+                      <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <a
+                          href={`mailto:info@yitzak.co.za?cc=christinagumpo@gmail.com&subject=${encodeURIComponent(`Consultation Request [${submittedRef || 'Direct'}]: ${directForm.company} (${directForm.fullName})`)}&body=${encodeURIComponent(`Dear Yitzak Advisory Team,\n\nI have submitted a direct consultation request on yitzak.co.za:\n\nReference: ${submittedRef}\nClient Name: ${directForm.fullName}\nWork Email: ${directForm.email}\nCompany/Facility: ${directForm.company}\nService Required: ${currentPillarObj.title}\nNotes: ${directForm.message || notes || 'None specified'}\n\nPlease get in touch to coordinate our consultation.\n\nBest regards,\n${directForm.fullName}`)}`}
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-[#B68A35]/30 hover:border-[#B68A35] text-primary text-[11px] font-semibold transition-colors shadow-2xs"
+                        >
+                          <Mail size={13} className="text-[#B68A35]" />
+                          <span>Open in Email App</span>
+                        </a>
+
+                        <a
+                          href={`https://wa.me/27102107715?text=${encodeURIComponent(`Hello YITZAK Advisory, I submitted a consultation request (${submittedRef}) for ${directForm.company} regarding ${currentPillarObj.title}. Looking forward to connecting.`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold transition-colors shadow-2xs"
+                        >
+                          <MessageSquare size={13} />
+                          <span>WhatsApp Advisory</span>
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="pt-1 flex flex-col sm:flex-row items-center justify-center gap-2">
+                      <button
+                        onClick={() => {
+                          setDirectSuccess(false);
+                          setBookingMode('calendly');
+                        }}
+                        className="text-primary hover:text-[#B68A35] text-xs underline font-medium cursor-pointer"
+                      >
+                        Want to select an exact calendar time slot instead?
+                      </button>
+                    </div>
+
                     <div className="pt-2">
                       <button
                         onClick={onClose}
-                        className="bg-[#023625] hover:bg-primary text-white px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                        className="bg-[#023625] hover:bg-primary text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors shadow-xs"
                       >
                         Close Window
                       </button>

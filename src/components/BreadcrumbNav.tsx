@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, ChevronRight, GraduationCap, ShieldCheck, Award, Headphones, Workflow, Calendar, Mail, FileText, Lock, Shield } from 'lucide-react';
+import { Home, ChevronRight, GraduationCap, ShieldCheck, Award, Headphones, Workflow, Calendar, Mail, FileText, Lock, Shield, AlertCircle } from 'lucide-react';
 import { AppView } from '../lib/routes';
 import AppIcon from './AppIcon';
 
@@ -67,6 +67,7 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
             {currentView === 'knowledge' && 'Knowledge Centre'}
             {currentView === 'contact' && 'Contact & Advisory Desk'}
             {currentView === 'privacy' && 'Privacy Notice'}
+            {currentView === 'not_found' && 'Page Not Found (404)'}
             {currentView === 'home' && 'Institutional Overview'}
           </span>
         </div>
@@ -229,6 +230,20 @@ export const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
                 <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
                   <ShieldCheck size={13} className="text-[#B68A35]" />
                   <span>Privacy Notice</span>
+                </span>
+              </li>
+            </>
+          )}
+
+          {currentView === 'not_found' && (
+            <>
+              <li className="flex items-center">
+                <ChevronRight size={13} className="text-ash/50 shrink-0" />
+              </li>
+              <li>
+                <span className="font-serif font-bold text-xs text-[#023625] bg-white border border-border px-2.5 py-1 rounded-lg shadow-2xs inline-flex items-center gap-1.5">
+                  <AlertCircle size={13} className="text-[#B68A35]" />
+                  <span>404 - Page Not Found</span>
                 </span>
               </li>
             </>

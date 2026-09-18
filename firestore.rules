@@ -138,6 +138,14 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Rules for consultation_requests collection
+    match /consultation_requests/{requestId} {
+      // Anyone can submit a consultation request
+      allow create: if isValidId(requestId);
+      // Only admin can read, update, or delete consultation requests
+      allow read, update, delete: if isAdmin();
+    }
+
     // Validation helper for NewsletterSubscription entity
     function isValidNewsletterSubscription(data) {
       return data.email is string && data.email.size() <= 128

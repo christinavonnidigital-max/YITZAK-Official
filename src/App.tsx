@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow, ExternalLink, Info } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
+import { Analytics } from '@vercel/analytics/react';
 import ContactUs from './components/ContactUs';
 import { AdvisoryEnquiryForm } from './components/AdvisoryEnquiryForm';
 import ComplianceCalculator from './components/ComplianceCalculator';
@@ -12,7 +13,8 @@ import FloatingChatWidget from './components/FloatingChatWidget';
 import SchemeDetailsModal from './components/SchemeDetailsModal';
 import { checkEmailWhitelist, preRegisterGuest } from './lib/whitelist';
 import { exportPortfolioToCSV, exportPortfolioToPDF, triggerSmartPrint, exportCapabilitySheetPDF } from './utils/portfolioExport';
-import { getViewFromLocation, updateBrowserUrl, AppView } from './lib/routes';
+import { Helmet } from 'react-helmet-async';
+import { getViewFromLocation, updateBrowserUrl, AppView, ROUTES } from './lib/routes';
 import ScrollReveal from './components/ScrollReveal';
 import BreadcrumbNav from './components/BreadcrumbNav';
 import YitzakLogo, { YitzakShieldIcon } from './components/YitzakLogo';
@@ -28,6 +30,7 @@ const TrainingCalendar = lazy(() => import('./components/TrainingCalendar'));
 const WhitelistManager = lazy(() => import('./components/WhitelistManager'));
 const KnowledgeCenter = lazy(() => import('./components/KnowledgeCenter'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
+const NotFoundPage = lazy(() => import('./components/NotFoundPage'));
 
 const ViewLoadingFallback = () => (
   <div className="flex items-center justify-center min-h-[320px] py-16">
@@ -649,9 +652,39 @@ export default function App() {
     }
   };
 
+  const currentRoute = ROUTES[currentView] || ROUTES.home;
+  const canonicalUrl = `https://yitzak.co.za${currentRoute.path === '/' ? '' : currentRoute.path}`;
+  const isNoIndex = currentView === 'portal' || currentView === 'not_found';
+
   return (
     <div className="bg-[#F6F8F6] text-on-surface font-sans selection:bg-antique-gold selection:text-white overflow-x-clip min-h-screen flex flex-col">
       
+      {/* Dynamic SEO Metadata Management via React Helmet */}
+      <Helmet>
+        <title>{currentRoute.title}</title>
+        <meta name="description" content={currentRoute.description} />
+        <link rel="canonical" href={canonicalUrl} />
+
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={currentRoute.title} />
+        <meta property="og:description" content={currentRoute.description} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="Yitzak Consulting" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={currentRoute.title} />
+        <meta name="twitter:description" content={currentRoute.description} />
+        <meta name="twitter:url" content={canonicalUrl} />
+
+        {/* Indexing directives */}
+        <meta 
+          name="robots" 
+          content={isNoIndex ? 'noindex, nofollow' : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'} 
+        />
+      </Helmet>
+
       {/* Top Notification Toast */}
       <AnimatePresence>
         {showNotification && (
@@ -3215,6 +3248,21 @@ export default function App() {
             </Suspense>
           </motion.div>
         )}
+
+        {currentView === 'not_found' && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Suspense fallback={<ViewLoadingFallback />}>
+              <NotFoundPage 
+                onNavigate={navigateTo}
+              />
+            </Suspense>
+          </motion.div>
+        )}
       </main>
 
       {/* 6. Footer (Three Columns: Contact Info, Quick Links, Follow Us) */}
@@ -3467,6 +3515,9 @@ export default function App() {
         showBackToTop={showBackToTop}
         onScrollToTop={scrollToTop}
       />
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 }

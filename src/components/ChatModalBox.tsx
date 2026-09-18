@@ -83,23 +83,39 @@ export default function ChatModalBox({ onClose, onOpenBooking }: ChatModalBoxPro
     const category = selectedTopic || 'Quick Web Inquiry';
 
     try {
-      // 1. Save to Firestore if available
+      // 1. Save to Firestore (both inquiries and consultation_requests collections)
       try {
-        const chatDoc = {
+        const inqDoc = {
           name: name.trim(),
           email: email.trim().toLowerCase(),
-          organization: organization.trim() || null,
-          topic: category,
-          message: message.trim(),
-          recipient: 'info@yitzak.co.za',
-          status: 'new',
-          source: 'floating_chat_widget',
+          subject: `[Chat Desk] ${category}${organization.trim() ? ` - ${organization.trim()}` : ''}`,
+          message: `${organization.trim() ? `[Company/Org: ${organization.trim()}]\n` : ''}${message.trim()}`,
+          status: 'unread',
           userId: auth.currentUser?.uid || null,
           createdAt: serverTimestamp(),
         };
-        await setDoc(doc(db, 'inquiries', firestoreId), chatDoc);
+        await setDoc(doc(db, 'inquiries', firestoreId), inqDoc);
       } catch (dbErr) {
-        console.warn('Firestore quick chat record warning (using fallback):', dbErr);
+        console.warn('Firestore inquiries write error:', dbErr);
+      }
+
+      try {
+        const reqDocId = `request_${Date.now()}_chat_${Math.random().toString(36).substr(2, 6)}`;
+        await setDoc(doc(db, 'consultation_requests', reqDocId), {
+          bookingRef: `CHAT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          userName: name.trim(),
+          userEmail: email.trim().toLowerCase(),
+          company: organization.trim() || 'Not specified',
+          pillar: category,
+          pillarId: 'chat_inquiry',
+          notes: message.trim(),
+          source: 'Chat Advisory Desk',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          timestamp: serverTimestamp(),
+        });
+      } catch (reqErr) {
+        console.warn('Firestore consultation_requests write error:', reqErr);
       }
 
       // 2. Dispatch Email directly to info@yitzak.co.za

@@ -8,7 +8,8 @@ export type AppView =
   | 'process_implementation' 
   | 'knowledge' 
   | 'portal'
-  | 'privacy';
+  | 'privacy'
+  | 'not_found';
 
 export interface RouteMeta {
   view: AppView;
@@ -77,6 +78,12 @@ export const ROUTES: Record<AppView, RouteMeta> = {
     path: '/privacy-notice',
     title: 'Privacy Notice & POPIA Compliance | Yitzak Consulting',
     description: 'Official POPIA Privacy Notice for Yitzak Consulting (Pty) Ltd in compliance with South African Act No. 4 of 2013.'
+  },
+  not_found: {
+    view: 'not_found',
+    path: '/404',
+    title: '404 - Page Not Found | Yitzak Consulting',
+    description: 'The requested compliance standard, course syllabus, or advisory URL was not found on Yitzak Consulting.'
   }
 };
 
@@ -90,7 +97,8 @@ export const VALID_VIEWS: AppView[] = [
   'process_implementation',
   'knowledge',
   'portal',
-  'privacy'
+  'privacy',
+  'not_found'
 ];
 
 /**
@@ -104,7 +112,35 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   const rawPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
   const hash = window.location.hash.replace(/^#/, '').toLowerCase();
 
-  // 1. Path-based exact matches
+  // 1. Root / Home Path
+  if (rawPath === '' || rawPath === '/') {
+    // Hash-based quick matches (e.g. /#contact, /#training, /#privacy)
+    if (hash === 'contact' || hash === 'advisory-desk') return { view: 'contact', elementId: 'contact' };
+    if (hash === 'training') return { view: 'training' };
+    if (hash === 'certifications' || hash === 'schemes') return { view: 'certifications' };
+    if (hash === 'consulting' || hash === 'advisory') return { view: 'consulting' };
+    if (hash === 'process' || hash === 'implementation' || hash === 'process_implementation' || hash === 'business-process-implementation') return { view: 'process_implementation' };
+    if (hash === 'knowledge' || hash === 'whitepapers') return { view: 'knowledge' };
+    if (hash === 'calendar' || hash === 'schedule') return { view: 'calendar' };
+    if (hash === 'portal' || hash === 'login') return { view: 'portal' };
+    if (hash === 'privacy' || hash === 'privacy-policy' || hash === 'popia' || hash === 'privacy-notice') return { view: 'privacy' };
+    if (hash === 'why-us' || hash === 'about' || hash === 'about-section') return { view: 'home', elementId: 'why-us' };
+
+    // Fallback: check stored session view in case the preview host/iframe refreshed back to root '/'
+    try {
+      const storedView = sessionStorage.getItem('yitzak_current_view') as AppView | null;
+      const storedElementId = sessionStorage.getItem('yitzak_element_id') || undefined;
+      if (storedView && storedView !== 'not_found' && VALID_VIEWS.includes(storedView)) {
+        return { view: storedView, elementId: storedElementId };
+      }
+    } catch {
+      // ignore sessionStorage access limitations
+    }
+
+    return { view: 'home' };
+  }
+
+  // 2. Path-based exact matches
   if (rawPath === '/privacy-policy' || rawPath === '/privacy' || rawPath === '/popia' || rawPath === '/popia-notice' || rawPath === '/legal/privacy' || rawPath === '/privacy-notice') {
     return { view: 'privacy' };
   }
@@ -132,31 +168,12 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   if (rawPath === '/client-portal' || rawPath === '/portal' || rawPath === '/login' || rawPath === '/client-area') {
     return { view: 'portal' };
   }
-
-  // 2. Hash-based quick matches (e.g. /#contact, /#training, /#privacy)
-  if (hash === 'contact' || hash === 'advisory-desk') return { view: 'contact', elementId: 'contact' };
-  if (hash === 'training') return { view: 'training' };
-  if (hash === 'certifications' || hash === 'schemes') return { view: 'certifications' };
-  if (hash === 'consulting' || hash === 'advisory') return { view: 'consulting' };
-  if (hash === 'process' || hash === 'implementation' || hash === 'process_implementation' || hash === 'business-process-implementation') return { view: 'process_implementation' };
-  if (hash === 'knowledge' || hash === 'whitepapers') return { view: 'knowledge' };
-  if (hash === 'calendar' || hash === 'schedule') return { view: 'calendar' };
-  if (hash === 'portal' || hash === 'login') return { view: 'portal' };
-  if (hash === 'privacy' || hash === 'privacy-policy' || hash === 'popia' || hash === 'privacy-notice') return { view: 'privacy' };
-  if (hash === 'why-us' || hash === 'about' || hash === 'about-section') return { view: 'home', elementId: 'why-us' };
-
-  // 3. Fallback: check stored session view in case the preview host/iframe refreshed back to root '/'
-  try {
-    const storedView = sessionStorage.getItem('yitzak_current_view') as AppView | null;
-    const storedElementId = sessionStorage.getItem('yitzak_element_id') || undefined;
-    if (storedView && VALID_VIEWS.includes(storedView)) {
-      return { view: storedView, elementId: storedElementId };
-    }
-  } catch {
-    // ignore sessionStorage access limitations
+  if (rawPath === '/404' || rawPath === '/not-found') {
+    return { view: 'not_found' };
   }
 
-  return { view: 'home' };
+  // 3. Any other non-root path is an unknown URL -> 404 Not Found
+  return { view: 'not_found' };
 }
 
 /**
@@ -225,8 +242,8 @@ export function updateBrowserUrl(view: AppView, elementId?: string, replace = fa
   setMeta('meta[name="twitter:description"]', 'name', 'twitter:description', route.description);
   setMeta('meta[name="twitter:url"]', 'name', 'twitter:url', canonicalUrl);
 
-  // Indexing rules: Restrict authenticated/private portal from indexing; permit all public views
-  if (view === 'portal') {
+  // Indexing rules: Restrict authenticated/private portal and 404 error page from indexing; permit all public views
+  if (view === 'portal' || view === 'not_found') {
     setMeta('meta[name="robots"]', 'name', 'robots', 'noindex, nofollow');
   } else {
     setMeta('meta[name="robots"]', 'name', 'robots', 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1');

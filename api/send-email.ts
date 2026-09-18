@@ -30,10 +30,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const recipientList = Array.isArray(to) ? to : [to];
 
     // 1. Primary: Resend API Integration (Recommended for Vercel)
-    const resendApiKey = process.env.RESEND_API_KEY;
+    const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
     if (resendApiKey) {
       try {
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'YITZAK Advisory <onboarding@resend.dev>';
+        const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.VITE_RESEND_FROM_EMAIL || 'YITZAK Advisory <onboarding@resend.dev>';
         const resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -59,6 +59,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           });
         } else {
           console.warn('Resend API returned error status:', resendData);
+          // If Resend rejects because the domain is unverified (free sandbox only allows sending to account owner)
+          const errorStr = JSON.stringify(resendData).toLowerCase();
+          if (errorStr.includes('testing emails') || errorStr.includes('verify a domain') || resendRes.status === 403) {
+            const fallbackAdminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'christinagumpo@gmail.com';
+            const clientReplyTo = metadata?.senderEmail || metadata?.userEmail || metadata?.email;
+            const retryRes = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: fromEmail,
+                to: [fallbackAdminEmail],
+                subject: `[Lead Alert] ${subject}`,
+                html: html || `<p>${text}</p>`,
+                text: text,
+                ...(clientReplyTo ? { reply_to: clientReplyTo } : {})
+              }),
+            });
+            const retryData = await retryRes.json();
+            if (retryRes.ok) {
+              return res.status(200).json({
+                success: true,
+                provider: 'resend-sandbox-fallback',
+                id: retryData.id,
+                message: `Lead delivered to admin (${fallbackAdminEmail}) via Resend test mode.`
+              });
+            } else {
+              console.warn('Resend test sandbox fallback error:', retryData);
+            }
+          }
         }
       } catch (err: any) {
         console.error('Resend execution error:', err);
@@ -66,10 +98,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 2. Secondary: SendGrid API Integration
-    const sendgridApiKey = process.env.SENDGRID_API_KEY;
+    const sendgridApiKey = process.env.SENDGRID_API_KEY || process.env.VITE_SENDGRID_API_KEY;
     if (sendgridApiKey) {
       try {
-        const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'info@yitzak.co.za';
+        const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.VITE_SENDGRID_FROM_EMAIL || 'info@yitzak.co.za';
         const sgRes = await fetch('https://api.sendgrid.com/v3/mail/send', {
           method: 'POST',
           headers: {
@@ -87,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (sgRes.ok || sgRes.status === 202) {
           return res.status(200).json({ 
             success: true, 
-            provider: 'sendgrid',
+            provider: 'sendgrid', 
             message: 'Email delivered successfully via SendGrid API.' 
           });
         }
@@ -97,7 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 3. Tertiary: Generic Webhook Notification (e.g. Zapier / Make / Slack / Custom Webhook)
-    const webhookUrl = process.env.EMAIL_WEBHOOK_URL;
+    const webhookUrl = process.env.EMAIL_WEBHOOK_URL || process.env.VITE_EMAIL_WEBHOOK_URL;
     if (webhookUrl) {
       try {
         const webhookRes = await fetch(webhookUrl, {
