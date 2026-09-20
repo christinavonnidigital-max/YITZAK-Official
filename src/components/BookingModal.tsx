@@ -23,7 +23,7 @@ import {
 import { User } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { sendEmailViaVercel } from '../lib/emailService';
+import { sendEmailViaVercel, dispatchConsultationRequest } from '../lib/emailService';
 import { PILLARS } from '../data';
 import { BookingDraft } from '../types';
 
@@ -338,6 +338,22 @@ export default function BookingModal({
         stored.push(bookingRecord);
         localStorage.setItem('yitzak_consultation_requests', JSON.stringify(stored));
 
+        // Dispatch Email notifications (Team Alert + Client Confirmation)
+        if (bookingRecord.userEmail && bookingRecord.userEmail !== 'client@yitzak.co.za') {
+          try {
+            await dispatchConsultationRequest({
+              bookingRef: refCode,
+              clientName: bookingRecord.userName,
+              clientEmail: bookingRecord.userEmail,
+              company: directForm.company || 'Scheduled via Calendly',
+              pillarTitle: pillarTitle,
+              notes: notes || undefined,
+            });
+          } catch (mailErr) {
+            console.warn('Calendly booking notification error:', mailErr);
+          }
+        }
+
         if (onBookingSuccess) {
           onBookingSuccess();
         }
@@ -437,20 +453,15 @@ export default function BookingModal({
       localStorage.setItem('yitzak_consultation_requests', JSON.stringify(stored));
     } catch {}
 
-    // 4. Serverless API Email Dispatch
+    // 4. Serverless API Email Dispatch (Team Alert + Client Confirmation Email)
     try {
-      await sendEmailViaVercel({
-        to: ['christinagumpo@gmail.com', 'info@yitzak.co.za'],
-        subject: `Consultation Request: ${directForm.company} (${directForm.fullName})`,
-        html: `
-          <h2>New Consultation Request Received</h2>
-          <p><strong>Reference:</strong> ${refCode}</p>
-          <p><strong>Client:</strong> ${directForm.fullName} (${directForm.email})</p>
-          <p><strong>Company / Facility:</strong> ${directForm.company}</p>
-          <p><strong>Service Required:</strong> ${currentPillarObj.title}</p>
-          <p><strong>Notes:</strong><br>${(directForm.message || notes || 'None specified').replace(/\n/g, '<br>')}</p>
-        `,
-        type: 'booking'
+      await dispatchConsultationRequest({
+        bookingRef: refCode,
+        clientName: directForm.fullName.trim(),
+        clientEmail: directForm.email.trim(),
+        company: directForm.company.trim(),
+        pillarTitle: currentPillarObj.title,
+        notes: directForm.message || notes || undefined,
       });
     } catch (mailErr) {
       console.warn('Consultation request dispatch notification:', mailErr);

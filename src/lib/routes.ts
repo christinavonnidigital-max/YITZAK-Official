@@ -165,7 +165,7 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   if (rawPath === '/training-calendar' || rawPath === '/calendar' || rawPath === '/schedule') {
     return { view: 'calendar' };
   }
-  if (rawPath === '/client-portal' || rawPath === '/portal' || rawPath === '/login' || rawPath === '/client-area') {
+  if (rawPath === '/client-portal' || rawPath === '/portal' || rawPath === '/login' || rawPath === '/client-area' || rawPath === '/admin' || rawPath === '/admin-portal') {
     return { view: 'portal' };
   }
   if (rawPath === '/404' || rawPath === '/not-found') {

@@ -31,6 +31,14 @@ const WhitelistManager = lazy(() => import('./components/WhitelistManager'));
 const KnowledgeCenter = lazy(() => import('./components/KnowledgeCenter'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
 const NotFoundPage = lazy(() => import('./components/NotFoundPage'));
+const FaviconModal = lazy(() => import('./components/FaviconModal'));
+import { getStoredFavicon, applyFaviconToDocument } from './lib/faviconUtils';
+import { 
+  getStoredTrainingHero, 
+  FALLBACK_TRAINING_HERO 
+} from './lib/mediaAssets';
+import { dispatchPortalAccessCodeEmail } from './lib/emailService';
+import { getCMSState, CMSState } from './lib/cmsState';
 
 const ViewLoadingFallback = () => (
   <div className="flex items-center justify-center min-h-[320px] py-16">
@@ -71,6 +79,55 @@ export default function App() {
   const [showWhitelistModal, setShowWhitelistModal] = useState(false);
   const [advisoryPrefilledNeed, setAdvisoryPrefilledNeed] = useState<string>('');
   const [selectedSchemeForDetails, setSelectedSchemeForDetails] = useState<SchemeItem | null>(null);
+  const [isFaviconModalOpen, setIsFaviconModalOpen] = useState(false);
+  const [customFavicon, setCustomFavicon] = useState<string | null>(() => getStoredFavicon());
+  const [cmsState, setCmsState] = useState<CMSState>(() => getCMSState());
+  const [trainingHeroImage, setTrainingHeroImage] = useState<string>(() => getStoredTrainingHero());
+
+  useEffect(() => {
+    const handleCmsUpdate = () => {
+      setCmsState(getCMSState());
+    };
+    window.addEventListener('yitzak-cms-updated', handleCmsUpdate);
+    return () => window.removeEventListener('yitzak-cms-updated', handleCmsUpdate);
+  }, []);
+
+  useEffect(() => {
+    const handleTrainingHeroUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ imageUrl?: string }>;
+      const newUrl = customEvent.detail?.imageUrl || getStoredTrainingHero();
+      setTrainingHeroImage(newUrl);
+    };
+    window.addEventListener('yitzak-training-hero-updated', handleTrainingHeroUpdate);
+    return () => window.removeEventListener('yitzak-training-hero-updated', handleTrainingHeroUpdate);
+  }, []);
+
+  const isAdministratorEmail = (email: string) => {
+    const lower = email.trim().toLowerCase();
+    return (
+      lower === 'cgumpo@yitzak.co.za' ||
+      lower === 'admin@yitzak.co.za' ||
+      lower.endsWith('@yitzak.co.za') ||
+      lower === 'christinagumpo@gmail.com'
+    );
+  };
+
+  useEffect(() => {
+    const saved = getStoredFavicon();
+    if (saved) {
+      applyFaviconToDocument(saved);
+      setCustomFavicon(saved);
+    }
+
+    // Discreet owner/admin trigger:
+    // URL Query parameter: e.g. /?admin_favicon=1 or /?favicon=admin
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('admin_favicon') === '1' || searchParams.get('favicon') === 'admin') {
+        setIsFaviconModalOpen(true);
+      }
+    }
+  }, []);
 
   const handleScrollToAdvisoryForm = (needTopic?: string) => {
     if (needTopic) {
@@ -90,8 +147,21 @@ export default function App() {
   const [portalOneTimeCode, setPortalOneTimeCode] = useState('');
   const [portalCodeSent, setPortalCodeSent] = useState(false);
   const [portalSendingCode, setPortalSendingCode] = useState(false);
+  const [portalActiveCode, setPortalActiveCode] = useState<string | null>(null);
+  const [portalCodeExpiresAt, setPortalCodeExpiresAt] = useState<number | null>(null);
+  const [portalResendCountdown, setPortalResendCountdown] = useState<number>(0);
   const [portalLoginError, setPortalLoginError] = useState<string | null>(null);
   const [portalGuestWorkEmail, setPortalGuestWorkEmail] = useState('');
+
+  // Resend code countdown timer
+  useEffect(() => {
+    if (portalResendCountdown > 0) {
+      const timer = setTimeout(() => {
+        setPortalResendCountdown((prev) => Math.max(0, prev - 1));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [portalResendCountdown]);
   const [activeApproachPhase, setActiveApproachPhase] = useState<number>(0);
   const phaseTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const phaseContainerRef = useRef<HTMLDivElement | null>(null);
@@ -119,7 +189,15 @@ export default function App() {
 
   const isBusinessEmail = (email: string): boolean => {
     if (!email || !email.includes('@')) return false;
-    const parts = email.trim().toLowerCase().split('@');
+    const cleanEmail = email.trim().toLowerCase();
+    if (
+      cleanEmail === 'christinagumpo@gmail.com' || 
+      cleanEmail === 'admin@yitzak.co.za' || 
+      cleanEmail.endsWith('@yitzak.co.za')
+    ) {
+      return true;
+    }
+    const parts = cleanEmail.split('@');
     if (parts.length !== 2) return false;
     const domain = parts[1];
     if (!domain || !domain.includes('.') || domain.endsWith('.')) return false;
@@ -135,6 +213,57 @@ export default function App() {
     return !freeDomains.includes(domain);
   };
 
+  const handleSendPortalCode = async (targetEmail?: string) => {
+    const emailToUse = (targetEmail || portalWorkEmail).trim();
+    if (!emailToUse) {
+      setPortalLoginError("Please enter your work email address.");
+      return;
+    }
+
+    if (!isAdministratorEmail(emailToUse)) {
+      setPortalLoginError("Access Restricted: This portal is strictly designated for YITZAK Content Management & Administration (e.g. cgumpo@yitzak.co.za). Client inquiries should be submitted via the Contact Desk.");
+      return;
+    }
+
+    setPortalSendingCode(true);
+    setPortalLoginError(null);
+
+    try {
+      // 1. Generate real random 6-digit cryptographic-grade numeric code
+      const randomBuffer = new Uint32Array(1);
+      window.crypto.getRandomValues(randomBuffer);
+      const realCode = (100000 + (randomBuffer[0] % 900000)).toString();
+
+      const expiresAt = Date.now() + 15 * 60 * 1000; // 15-minute expiry
+      setPortalActiveCode(realCode);
+      setPortalCodeExpiresAt(expiresAt);
+      setPortalOneTimeCode('');
+      setPortalResendCountdown(45);
+
+      try {
+        sessionStorage.setItem('yitzak_portal_code', JSON.stringify({
+          email: emailToUse.toLowerCase(),
+          code: realCode,
+          expiresAt
+        }));
+      } catch (_) {}
+
+      // 2. Dispatch real email to the user's work inbox
+      let namePart = emailToUse.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
+      namePart = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+
+      await dispatchPortalAccessCodeEmail(emailToUse, realCode, namePart);
+
+      setPortalCodeSent(true);
+      triggerNotification(`✓ 6-digit verification code dispatched to ${emailToUse}`);
+    } catch (err: any) {
+      console.error('Error dispatching portal verification code:', err);
+      setPortalLoginError("Failed to dispatch verification code. Please check your internet connection or email.");
+    } finally {
+      setPortalSendingCode(false);
+    }
+  };
+
   const handlePortalWorkEmailLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setPortalLoginError(null);
@@ -145,8 +274,8 @@ export default function App() {
       return;
     }
 
-    if (!isBusinessEmail(emailToValidate)) {
-      setPortalLoginError("Please use your registered work email to access the portal.");
+    if (!isAdministratorEmail(emailToValidate)) {
+      setPortalLoginError("Access Restricted: This portal is strictly designated for YITZAK Content Management & Administration (e.g. cgumpo@yitzak.co.za). Client inquiries should be submitted via the Contact Desk.");
       return;
     }
 
@@ -157,23 +286,57 @@ export default function App() {
       }
     } else if (portalAuthMethod === 'code') {
       if (!portalCodeSent) {
-        setPortalSendingCode(true);
-        setTimeout(() => {
-          setPortalSendingCode(false);
-          setPortalCodeSent(true);
-          triggerNotification(`✓ One-time verification code sent to ${emailToValidate}`);
-        }, 700);
+        await handleSendPortalCode(emailToValidate);
         return;
       }
 
-      if (!portalOneTimeCode.trim()) {
-        setPortalLoginError("Please enter the 6-digit one-time code sent to your email.");
+      const enteredCode = portalOneTimeCode.trim();
+      if (!enteredCode) {
+        setPortalLoginError("Please enter the 6-digit code sent to your email.");
+        return;
+      }
+
+      let activeCode = portalActiveCode;
+      let expiresAt = portalCodeExpiresAt;
+
+      if (!activeCode) {
+        try {
+          const raw = sessionStorage.getItem('yitzak_portal_code');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed.email === emailToValidate.toLowerCase()) {
+              activeCode = parsed.code;
+              expiresAt = parsed.expiresAt;
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (!activeCode) {
+        setPortalLoginError("No active code found. Please click 'Send me a code' below.");
+        setPortalCodeSent(false);
+        return;
+      }
+
+      if (expiresAt && Date.now() > expiresAt) {
+        setPortalLoginError("Verification code has expired (15-minute limit). Please request a fresh code.");
+        return;
+      }
+
+      if (enteredCode !== activeCode) {
+        setPortalLoginError(`Invalid verification code. Please enter the 6-digit code sent to ${emailToValidate}.`);
         return;
       }
     }
 
     setVerifyingWhitelist(true);
     try {
+      try {
+        sessionStorage.removeItem('yitzak_portal_code');
+      } catch (_) {}
+      setPortalActiveCode(null);
+      setPortalCodeExpiresAt(null);
+
       const check = await checkEmailWhitelist(emailToValidate);
       let displayName = emailToValidate.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
       displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
@@ -199,6 +362,10 @@ export default function App() {
         isAnonymous: false
       } as unknown as FirebaseUser;
 
+      try {
+        sessionStorage.setItem('yitzak_portal_user', JSON.stringify(mockUser));
+      } catch (_) {}
+
       setCurrentUser(mockUser);
       triggerNotification(`✓ Access Granted. Welcome ${displayName}.`);
     } catch (err) {
@@ -212,6 +379,9 @@ export default function App() {
         emailVerified: true,
         isAnonymous: false
       } as unknown as FirebaseUser;
+      try {
+        sessionStorage.setItem('yitzak_portal_user', JSON.stringify(mockUser));
+      } catch (_) {}
       setCurrentUser(mockUser);
       triggerNotification(`✓ Access Granted. Welcome ${displayName}.`);
     } finally {
@@ -386,10 +556,34 @@ export default function App() {
 
   // Initialize Auth state on load with single clean listener
   useEffect(() => {
+    // Check if portal admin session is active in sessionStorage
+    try {
+      const saved = sessionStorage.getItem('yitzak_portal_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.email) {
+          setCurrentUser(parsed);
+          setIsAuthLoading(false);
+        }
+      }
+    } catch (_) {}
+
     const unsubAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         setCurrentUser(user);
       } else {
+        // If not in Firebase Auth, check if stored session exists
+        try {
+          const saved = sessionStorage.getItem('yitzak_portal_user');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && parsed.email) {
+              setCurrentUser(parsed);
+              setIsAuthLoading(false);
+              return;
+            }
+          }
+        } catch (_) {}
         setCurrentUser(null);
       }
       setIsAuthLoading(false);
@@ -683,6 +877,14 @@ export default function App() {
           name="robots" 
           content={isNoIndex ? 'noindex, nofollow' : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'} 
         />
+
+        {/* Dynamic Favicon */}
+        {customFavicon && (
+          <link rel="icon" href={customFavicon} />
+        )}
+        {customFavicon && (
+          <link rel="apple-touch-icon" href={customFavicon} />
+        )}
       </Helmet>
 
       {/* Top Notification Toast */}
@@ -699,6 +901,48 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Dynamic CMS Site Announcement Bar */}
+      {cmsState.banner.enabled && (
+        <div className={`py-2 px-4 text-xs font-sans border-b transition-all z-50 relative ${
+          cmsState.banner.theme === 'emerald' ? 'bg-[#023625] text-white border-[#034d35]' :
+          cmsState.banner.theme === 'gold' ? 'bg-[#B68A35] text-white border-[#9E7528]' :
+          'bg-[#111827] text-white border-gray-800'
+        }`}>
+          <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-white/20 text-white">
+                {cmsState.banner.badge || 'NOTICE'}
+              </span>
+              <span className="text-xs font-medium text-white/95">
+                {cmsState.banner.text}
+              </span>
+            </div>
+            {cmsState.banner.linkText && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (cmsState.banner.linkTarget === 'training') {
+                    navigateTo('training');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  } else if (cmsState.banner.linkTarget === 'contact') {
+                    navigateTo('contact');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  } else if (cmsState.banner.linkTarget === 'schemes' || cmsState.banner.linkTarget === 'certifications') {
+                    navigateTo('certifications');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  } else {
+                    handleOpenBooking();
+                  }
+                }}
+                className="text-xs text-[#E6CA85] hover:text-white font-semibold underline flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+              >
+                {cmsState.banner.linkText} →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* TopNavBar */}
       <header className="bg-white/98 backdrop-blur-md text-primary sticky top-0 border-b border-border/80 shadow-xs z-50 transition-all">
@@ -2122,7 +2366,12 @@ export default function App() {
                   <div className="rounded-2xl overflow-hidden shadow-ambient relative z-10 aspect-[4/3] border border-[#E5E5E5]">
                     <img
                       className="w-full h-full object-cover"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuCh8qjKo1mwyVEx2R4hcz_37lRzkxGHkT6V-oq1p6-aNLPzSIK1PeKocPwmsavBw-jzyWVB7YGBWC7mQGezHM9vJgXqXzW6XP-LZ0F3KVj7xjUPf9A30emofQLCDZzMztfEV_elrnRp7EgBGuSsJrD3EK0M9h-zOPiHOpehrbBdtNYBmiSgUTd0LjaWVrc-kU93-69KQ9lqCIkb1UTr7OvswZEbEAmW5BkzB5_ThEx55RADoHMnem4L"
+                      src={trainingHeroImage}
+                      onError={() => {
+                        if (trainingHeroImage !== FALLBACK_TRAINING_HERO) {
+                          setTrainingHeroImage(FALLBACK_TRAINING_HERO);
+                        }
+                      }}
                       alt="A professional corporate training room with executives engaged in a focused workshop"
                       loading="lazy"
                       decoding="async"
@@ -2846,12 +3095,12 @@ export default function App() {
             <div className="max-w-[1280px] mx-auto space-y-8">
               <div className="text-center space-y-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/15 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-xs font-mono font-bold uppercase tracking-wider">
-                  <Lock size={13} className="text-[#B68A35]" />
-                  <span>Institutional Portal • Coming Soon</span>
+                  <ShieldCheck size={13} className="text-[#B68A35]" />
+                  <span>Internal Administration • YITZAK CMS</span>
                 </div>
-                <h1 className="font-serif text-3xl md:text-4xl text-primary font-bold">Secure Client Portal</h1>
+                <h1 className="font-serif text-3xl md:text-4xl text-primary font-bold">Administrative Portal &amp; CMS</h1>
                 <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-xl mx-auto leading-relaxed">
-                  Our comprehensive institutional client portal is currently in active development. Authorized corporate partners and whitelisted accounts can preview features and test single sign-on access below.
+                  Authorized personnel access for live website content management, top announcement notice bars, client consultation desk, inbound enquiry triage, and brand assets.
                 </p>
               </div>
 
@@ -2866,52 +3115,45 @@ export default function App() {
                     currentUser={currentUser}
                     onLogout={() => {
                       setCurrentUser(null);
-                      triggerNotification('Logged out successfully.');
+                      try {
+                        sessionStorage.removeItem('yitzak_portal_user');
+                        sessionStorage.removeItem('yitzak_portal_code');
+                        localStorage.removeItem('yitzak_portal_user');
+                      } catch (_) {}
+                      setPortalWorkEmail('');
+                      setPortalPassword('');
+                      setPortalOneTimeCode('');
+                      setPortalCodeSent(false);
+                      setPortalActiveCode(null);
+                      setPortalCodeExpiresAt(null);
+                      setPortalLoginError(null);
+                      triggerNotification('Signed out of Administrator Console successfully.');
                     }}
                     onOpenBooking={() => setIsBookingOpen(true)}
                     refreshTrigger={refreshTrigger}
+                    onOpenFaviconModal={() => setIsFaviconModalOpen(true)}
                   />
                 </Suspense>
               ) : (
                 <div className="bg-mist/40 border border-border/80 rounded-2xl p-4 sm:p-8 shadow-sm max-w-5xl mx-auto">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
                     
-                    {/* Left Column: Work Email Authentication Card */}
+                    {/* Left Column: Admin Authentication Card */}
                     <div className="lg:col-span-7 bg-white border border-border p-6 sm:p-8 rounded-xl shadow-xs flex flex-col justify-between space-y-6">
                       
-                      {/* Tab Switcher: Work Email Login vs Guest Access */}
-                      <div className="flex bg-mist/80 p-1 rounded-xl border border-border/60">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPortalMode('work_email');
-                            setPortalLoginError(null);
-                          }}
-                          className={`flex-1 py-2 px-3 text-xs font-serif font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                            portalMode === 'work_email'
-                              ? 'bg-white text-primary shadow-xs border border-border/40'
-                              : 'text-ash hover:text-primary'
-                          }`}
-                        >
-                          <Mail size={14} className={portalMode === 'work_email' ? 'text-[#B68A35]' : ''} />
-                          <span>Work Email Login</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPortalMode('guest');
-                            setPortalLoginError(null);
-                          }}
-                          className={`flex-1 py-2 px-3 text-xs font-serif font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                            portalMode === 'guest'
-                              ? 'bg-white text-primary shadow-xs border border-border/40'
-                              : 'text-ash hover:text-primary'
-                          }`}
-                        >
-                          <UserCheck size={14} className={portalMode === 'guest' ? 'text-[#B68A35]' : ''} />
-                          <span>Guest Access</span>
-                        </button>
+                      <div className="border-b border-border/60 pb-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-serif font-bold text-lg text-primary flex items-center gap-2">
+                            <Lock size={18} className="text-[#B68A35]" />
+                            <span>Administrator Sign In</span>
+                          </h3>
+                          <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-primary/10 text-primary">
+                            CMS Restricted
+                          </span>
+                        </div>
+                        <p className="text-xs text-ash mt-1">
+                          Sign in with your authorized administrative credentials to manage live website content, announcements, and bookings.
+                        </p>
                       </div>
 
                       {/* Error Banner */}
@@ -2926,243 +3168,185 @@ export default function App() {
                         </motion.div>
                       )}
 
-                      {/* Mode 1: Work Email Login */}
-                      {portalMode === 'work_email' ? (
-                        <form onSubmit={handlePortalWorkEmailLogin} className="space-y-4">
-                          <div>
-                            <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1.5 flex items-center justify-between">
-                              <span>Work Email Address</span>
-                              <span className="text-[9px] text-[#B68A35] font-sans font-semibold">Business domains only</span>
+                      {/* Admin Login Form */}
+                      <form onSubmit={handlePortalWorkEmailLogin} className="space-y-4">
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                            <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold">
+                              Administrator Work Email
                             </label>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-3 text-ash/60" size={16} />
-                              <input
-                                type="email"
-                                required
-                                value={portalWorkEmail}
-                                onChange={(e) => {
-                                  setPortalWorkEmail(e.target.value);
-                                  if (portalLoginError) setPortalLoginError(null);
-                                }}
-                                placeholder="name@company.com"
-                                className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Auth Method Selector: Password vs One-Time Code */}
-                          <div className="space-y-2 pt-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-mono uppercase tracking-wider text-ash font-bold">Authentication Method</span>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPortalAuthMethod('code');
-                                    setPortalLoginError(null);
-                                  }}
-                                  className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                                    portalAuthMethod === 'code' ? 'bg-[#023625] text-white' : 'text-ash hover:text-primary'
-                                  }`}
-                                >
-                                  Send me a code
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPortalAuthMethod('password');
-                                    setPortalLoginError(null);
-                                  }}
-                                  className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                                    portalAuthMethod === 'password' ? 'bg-[#023625] text-white' : 'text-ash hover:text-primary'
-                                  }`}
-                                >
-                                  Password
-                                </button>
-                              </div>
-                            </div>
-
-                            {portalAuthMethod === 'password' ? (
-                              <div className="relative">
-                                <Lock className="absolute left-3 top-3 text-ash/60" size={16} />
-                                <input
-                                  type="password"
-                                  value={portalPassword}
-                                  onChange={(e) => {
-                                    setPortalPassword(e.target.value);
-                                    if (portalLoginError) setPortalLoginError(null);
-                                  }}
-                                  placeholder="Enter your account password"
-                                  className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
-                                />
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                {!portalCodeSent ? (
-                                  <div className="text-[11px] text-ash bg-mist/60 p-2.5 rounded-lg border border-border/60 leading-relaxed">
-                                    A secure 6-digit access code will be dispatched to your corporate email inbox upon verification.
-                                  </div>
-                                ) : (
-                                  <div className="space-y-1">
-                                    <div className="relative">
-                                      <KeyRound className="absolute left-3 top-3 text-[#B68A35]" size={16} />
-                                      <input
-                                        type="text"
-                                        maxLength={6}
-                                        value={portalOneTimeCode}
-                                        onChange={(e) => {
-                                          setPortalOneTimeCode(e.target.value);
-                                          if (portalLoginError) setPortalLoginError(null);
-                                        }}
-                                        placeholder="Enter 6-digit code"
-                                        className="w-full pl-9 pr-3 py-2.5 border border-[#B68A35] rounded-xl text-xs text-charcoal font-mono tracking-widest outline-none bg-white"
-                                      />
-                                    </div>
-                                    <p className="text-[10px] text-emerald-700 font-medium flex items-center gap-1">
-                                      <CheckCircle size={12} /> Verification code dispatched to {portalWorkEmail}. Check your inbox.
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="pt-2">
                             <button
-                              type="submit"
-                              disabled={verifyingWhitelist || portalSendingCode}
-                              className="w-full bg-[#B68A35] hover:bg-[#9E7528] text-white py-3 rounded-xl font-serif font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                              type="button"
+                              onClick={() => {
+                                setPortalWorkEmail('cgumpo@yitzak.co.za');
+                                if (portalLoginError) setPortalLoginError(null);
+                              }}
+                              className="text-[10px] text-[#B68A35] hover:underline font-semibold cursor-pointer"
                             >
-                              {verifyingWhitelist || portalSendingCode ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                  <span>Verifying Work Domain...</span>
-                                </>
-                              ) : portalAuthMethod === 'code' && !portalCodeSent ? (
-                                <>
-                                  <Send size={14} />
-                                  <span>Send me a one-time code</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Lock size={14} />
-                                  <span>Login Securely</span>
-                                </>
-                              )}
+                              Quick select: cgumpo@yitzak.co.za
                             </button>
-                            <p className="text-[11px] text-ash/80 text-center font-sans mt-3">
-                              By signing in, you acknowledge our{' '}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  navigateTo('privacy');
-                                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
-                                className="text-[#B68A35] underline hover:text-primary font-semibold cursor-pointer transition-colors"
-                              >
-                                Privacy Policy
-                              </button>.
-                            </p>
                           </div>
-                        </form>
-                      ) : (
-                        /* Mode 2: Guest Access */
-                        <form onSubmit={handlePortalGuestAccess} className="space-y-4">
-                          <div className="bg-mist/60 border border-border/60 p-3 rounded-xl text-xs text-ash leading-relaxed">
-                            Guest Access enables one-off bookings and audit record queries. Entry requires a valid business work email.
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1">
-                              Full Name
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={portalGuestName}
-                              onChange={(e) => setPortalGuestName(e.target.value)}
-                              placeholder="e.g. Alex Morgan"
-                              className="w-full p-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] bg-white font-sans"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1 flex items-center justify-between">
-                              <span>Work Email Address</span>
-                              <span className="text-[9px] text-[#B68A35] font-sans font-semibold">Business email required</span>
-                            </label>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-3 text-ash/60" size={16} />
                             <input
                               type="email"
                               required
-                              value={portalGuestWorkEmail}
+                              value={portalWorkEmail}
                               onChange={(e) => {
-                                setPortalGuestWorkEmail(e.target.value);
+                                setPortalWorkEmail(e.target.value);
                                 if (portalLoginError) setPortalLoginError(null);
                               }}
-                              placeholder="e.g. alex.morgan@company.com"
-                              className="w-full p-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] bg-white font-sans"
+                              placeholder="cgumpo@yitzak.co.za"
+                              className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors font-mono"
                             />
                           </div>
+                        </div>
 
-                          <div className="pt-2">
-                            <button
-                              type="submit"
-                              disabled={verifyingWhitelist}
-                              className="w-full bg-[#B68A35] hover:bg-[#9E7528] text-white py-3 rounded-xl font-serif font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
-                            >
-                              {verifyingWhitelist ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                  <span>Verifying Email...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <UserCheck size={14} />
-                                  <span>Verify &amp; Enter Portal</span>
-                                </>
-                              )}
-                            </button>
-                            <p className="text-[11px] text-ash/80 text-center font-sans mt-3">
-                              By signing in, you acknowledge our{' '}
+                        {/* Auth Method Selector: Code vs Password */}
+                        <div className="space-y-2 pt-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-ash font-bold">Verification Method</span>
+                            <div className="flex gap-1.5 bg-mist p-1 rounded-lg border border-border/50">
                               <button
                                 type="button"
                                 onClick={() => {
-                                  navigateTo('privacy');
-                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  setPortalAuthMethod('code');
+                                  setPortalLoginError(null);
                                 }}
-                                className="text-[#B68A35] underline hover:text-primary font-semibold cursor-pointer transition-colors"
+                                className={`text-[10px] font-sans font-bold px-2.5 py-1 rounded-md cursor-pointer transition-colors ${
+                                  portalAuthMethod === 'code' ? 'bg-[#023625] text-white shadow-2xs' : 'text-ash hover:text-primary'
+                                }`}
                               >
-                                Privacy Policy
-                              </button>.
-                            </p>
+                                6-Digit Email Code
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPortalAuthMethod('password');
+                                  setPortalLoginError(null);
+                                }}
+                                className={`text-[10px] font-sans font-bold px-2.5 py-1 rounded-md cursor-pointer transition-colors ${
+                                  portalAuthMethod === 'password' ? 'bg-[#023625] text-white shadow-2xs' : 'text-ash hover:text-primary'
+                                }`}
+                              >
+                                Password
+                              </button>
+                            </div>
                           </div>
-                        </form>
-                      )}
+
+                          {portalAuthMethod === 'password' ? (
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-3 text-ash/60" size={16} />
+                              <input
+                                type="password"
+                                value={portalPassword}
+                                onChange={(e) => {
+                                  setPortalPassword(e.target.value);
+                                  if (portalLoginError) setPortalLoginError(null);
+                                }}
+                                placeholder="Enter administrator password"
+                                className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
+                              />
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {!portalCodeSent ? (
+                                <div className="text-[11px] text-ash bg-mist/60 p-2.5 rounded-lg border border-border/60 leading-relaxed">
+                                  A real random 6-digit one-time code will be dispatched to your inbox ({portalWorkEmail || 'e.g. cgumpo@yitzak.co.za'}) upon clicking below.
+                                </div>
+                              ) : (
+                                <div className="space-y-1.5">
+                                  <div className="relative">
+                                    <KeyRound className="absolute left-3 top-3 text-[#B68A35]" size={16} />
+                                    <input
+                                      type="text"
+                                      maxLength={6}
+                                      value={portalOneTimeCode}
+                                      onChange={(e) => {
+                                        setPortalOneTimeCode(e.target.value.replace(/\D/g, ''));
+                                        if (portalLoginError) setPortalLoginError(null);
+                                      }}
+                                      placeholder="Enter 6-digit code"
+                                      className="w-full pl-9 pr-3 py-2.5 border border-[#B68A35] rounded-xl text-sm text-charcoal font-mono tracking-widest outline-none bg-white focus:ring-1 focus:ring-[#B68A35]"
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between text-[11px] pt-1">
+                                    <span className="text-emerald-700 font-medium flex items-center gap-1">
+                                      <CheckCircle size={12} /> Code dispatched to {portalWorkEmail}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      disabled={portalResendCountdown > 0 || portalSendingCode}
+                                      onClick={() => handleSendPortalCode()}
+                                      className="text-[#B68A35] hover:text-[#9E7528] font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                    >
+                                      {portalResendCountdown > 0 ? `Resend in ${portalResendCountdown}s` : 'Resend code'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2">
+                          <button
+                            type="submit"
+                            disabled={verifyingWhitelist || portalSendingCode}
+                            className="w-full bg-[#B68A35] hover:bg-[#9E7528] text-white py-3 rounded-xl font-serif font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                          >
+                            {verifyingWhitelist ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                <span>Verifying Administrator Credentials...</span>
+                              </>
+                            ) : portalSendingCode ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                <span>Dispatching Verification Code...</span>
+                              </>
+                            ) : portalAuthMethod === 'code' && !portalCodeSent ? (
+                              <>
+                                <Send size={14} />
+                                <span>Dispatch 6-Digit Code</span>
+                              </>
+                            ) : (
+                              <>
+                                <ShieldCheck size={14} />
+                                <span>Enter Content Management System</span>
+                              </>
+                            )}
+                          </button>
+                          <p className="text-[11px] text-ash/80 text-center font-sans mt-3">
+                            Administrator activity is logged under institutional compliance guidelines.
+                          </p>
+                        </div>
+                      </form>
 
                       <div className="border-t border-border/60 pt-3 flex items-center justify-between text-[10px] text-ash">
-                        <span>Need domain pre-registration?</span>
+                        <span>Technical issues or credentials lock?</span>
                         <a
-                          href="mailto:info@yitzak.co.za?subject=Institutional%20Domain%20Pre-Registration%20Request"
+                          href="mailto:cgumpo@yitzak.co.za?subject=Administrator%20Access%20Recovery"
                           className="text-[#B68A35] hover:underline font-bold"
                         >
-                          Contact Corporate Support →
+                          Root Admin Support →
                         </a>
                       </div>
                     </div>
 
-                    {/* Right Column: Institutional Benefits & Trust Signals */}
+                    {/* Right Column: CMS Features & Trust Signals */}
                     <div className="lg:col-span-5 bg-[#023625] text-white p-6 sm:p-8 rounded-xl shadow-xs flex flex-col justify-between space-y-6">
                       <div className="space-y-5">
-                        {/* Partner Badge */}
+                        {/* CMS Badge */}
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[#B68A35] font-serif font-bold text-xs">
                           <ShieldCheck size={16} />
-                          <span>Partner | FoodChain ID</span>
+                          <span>YITZAK Executive CMS Desk</span>
                         </div>
 
                         <div>
-                          <h3 className="font-serif font-bold text-lg text-white">Institutional Benefits</h3>
+                          <h3 className="font-serif font-bold text-lg text-white">CMS &amp; Console Features</h3>
                           <p className="text-xs text-white/70 mt-1 font-sans leading-relaxed">
-                            Empowering corporate partners with seamless scheduling and verified compliance.
+                            Complete administrative command center for site content, announcements, and schedules.
                           </p>
                         </div>
 
@@ -3170,42 +3354,39 @@ export default function App() {
                           <li className="flex items-start gap-3">
                             <Shield className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
                             <div>
-                              <span className="font-bold text-white block">Secure Advisory Records</span>
-                              <span className="text-[11px] text-white/60">Encrypted repository for institutional gap analyses and FSMS reports.</span>
+                              <span className="font-bold text-white block">Top Notice Announcement Bar</span>
+                              <span className="text-[11px] text-white/60">Toggle, edit text, theme, and CTA destinations on live web pages in real time.</span>
                             </div>
                           </li>
                           <li className="flex items-start gap-3">
                             <CheckCircle2 className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
                             <div>
-                              <span className="font-bold text-white block">Readiness Tracking</span>
-                              <span className="text-[11px] text-white/60">Status tracking for selected FoodChain ID certification preparation routes.</span>
+                              <span className="font-bold text-white block">Consultation Schedule Desk</span>
+                              <span className="text-[11px] text-white/60">Review, confirm, or cancel client consultation requests with SAST time conversion.</span>
                             </div>
                           </li>
                           <li className="flex items-start gap-3">
                             <Download className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
                             <div>
-                              <span className="font-bold text-white block">Compliance Downloads</span>
-                              <span className="text-[11px] text-white/60">On-demand access to whitepapers, course syllabi, and advisory briefs.</span>
+                              <span className="font-bold text-white block">Knowledge Base &amp; FAQ Manager</span>
+                              <span className="text-[11px] text-white/60">Publish new answers, guidance notes, and advice directly to the live homepage.</span>
+                            </div>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <Sparkles className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold text-white block">Brand &amp; Favicon Studio</span>
+                              <span className="text-[11px] text-white/60">Update browser favicon, manage SVG/PNG logos, and export vector tokens.</span>
                             </div>
                           </li>
                         </ul>
                       </div>
 
-                      {/* Trust Signal Reassurance */}
+                      {/* Security Footnote */}
                       <div className="border-t border-white/15 pt-4 text-[11px] text-white/70 leading-relaxed font-sans flex items-start gap-2.5">
                         <Lock className="w-4 h-4 text-[#B68A35] shrink-0 mt-0.5" />
                         <div>
-                          <span>Access restricted to verified business accounts. Your data is encrypted and protected under POPIA &amp; GDPR standards. </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigateTo('privacy');
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="text-[#DFC181] hover:underline font-semibold cursor-pointer inline-flex items-center gap-1 ml-1"
-                          >
-                            <span>Read POPIA Notice →</span>
-                          </button>
+                          <span>Administrative portal restricted to verified YITZAK directors and coordinators. Protected under POPIA &amp; ISO 27001 protocols.</span>
                         </div>
                       </div>
                     </div>
@@ -3471,9 +3652,21 @@ export default function App() {
               </button>
             </div>
 
-            {/* 3. Copyright */}
-            <div className="text-white/50 text-[11px] font-mono">
-              © 2026 YITZAK. All rights reserved.
+            {/* 3. Copyright & Subtle Admin Entry Point */}
+            <div className="text-white/50 text-[11px] font-mono flex items-center justify-center md:justify-start gap-1.5">
+              <span>© 2026 YITZAK. All rights reserved.</span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigateTo('portal');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-white/20 hover:text-[#B68A35] transition-colors p-0.5 cursor-pointer rounded inline-flex items-center"
+                title="Internal Portal"
+                aria-label="Internal Portal"
+              >
+                <Lock size={10} />
+              </button>
             </div>
           </div>
         </div>
@@ -3489,6 +3682,20 @@ export default function App() {
           handleOpenBooking('compliance', inquiryNote);
         }}
       />
+
+      {/* Favicon & Brand Icon Customizer Modal */}
+      {isFaviconModalOpen && (
+        <Suspense fallback={null}>
+          <FaviconModal
+            isOpen={isFaviconModalOpen}
+            onClose={() => setIsFaviconModalOpen(false)}
+            onFaviconUpdated={(newUrl) => {
+              setCustomFavicon(newUrl);
+              triggerNotification(newUrl ? 'Custom favicon applied to website' : 'Favicon reset to default');
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* Global Booking Modal Component */}
       {isBookingOpen && (

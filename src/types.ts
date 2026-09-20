@@ -9,6 +9,7 @@ export interface Booking {
   notes?: string;
   status: 'pending' | 'confirmed' | 'cancelled';
   calendarEventId?: string;
+  googleEventId?: string;
   createdAt: any; // Firestore Timestamp or ServerTimestamp
   updatedAt: any;
 }

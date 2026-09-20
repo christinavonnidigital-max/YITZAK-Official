@@ -1,0 +1,176 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EDF3F0" />
+      <stop offset="50%" stop-color="#E2EAE5" />
+      <stop offset="100%" stop-color="#D4DFDA" />
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#f0f7f4" stop-opacity="0.4" />
+    </linearGradient>
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F8FAFC" />
+    </linearGradient>
+    <linearGradient id="screenBezel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#023625" />
+      <stop offset="100%" stop-color="#B68A35" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- Background Corporate Boardroom -->
+  <rect width="1280" height="720" fill="url(#bgGrad)" />
+
+  <!-- Glass partition grids -->
+  <line x1="220" y1="0" x2="220" y2="540" stroke="#CBD5E1" stroke-width="2" opacity="0.6" />
+  <line x1="580" y1="0" x2="580" y2="540" stroke="#CBD5E1" stroke-width="2" opacity="0.6" />
+  <line x1="940" y1="0" x2="940" y2="540" stroke="#CBD5E1" stroke-width="2" opacity="0.6" />
+  <line x1="0" y1="260" x2="1280" y2="260" stroke="#CBD5E1" stroke-width="1.5" opacity="0.4" />
+
+  <!-- Circular architectural lights -->
+  <ellipse cx="320" cy="70" rx="55" ry="18" fill="#FFFFFF" opacity="0.8" />
+  <ellipse cx="720" cy="65" rx="60" ry="20" fill="#FFFFFF" opacity="0.85" />
+  <ellipse cx="1100" cy="70" rx="55" ry="18" fill="#FFFFFF" opacity="0.8" />
+
+  <!-- Big Presentation Display Stand -->
+  <rect x="925" y="380" width="30" height="240" fill="#1E293B" rx="4" />
+  <rect x="860" y="610" width="160" height="16" fill="#0F172A" rx="6" />
+
+  <!-- Large Presentation Display (TRAINING OUTCOMES) -->
+  <g filter="url(#shadow)">
+    <rect x="630" y="40" width="610" height="380" rx="16" fill="url(#screenBezel)" stroke="#334155" stroke-width="4" />
+    <rect x="642" y="52" width="586" height="356" rx="10" fill="url(#screenGrad)" />
+
+    <!-- Screen Title -->
+    <text x="680" y="95" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="20" font-weight="800" fill="#64748B" letter-spacing="1.5">TRAINING OUTCOMES</text>
+    <line x1="680" y1="110" x2="1190" y2="110" stroke="#E2E8F0" stroke-width="1.5" />
+
+    <!-- Trend Line Chart Box -->
+    <rect x="680" y="125" width="280" height="255" fill="#F8FAFC" stroke="#E2E8F0" rx="6" />
+    <line x1="680" y1="180" x2="960" y2="180" stroke="#E2E8F0" stroke-dasharray="3,3" />
+    <line x1="680" y1="240" x2="960" y2="240" stroke="#E2E8F0" stroke-dasharray="3,3" />
+    <line x1="680" y1="300" x2="960" y2="300" stroke="#E2E8F0" stroke-dasharray="3,3" />
+
+    <!-- Chart lines -->
+    <path d="M 700 320 Q 750 300 790 230 T 880 180 T 940 160" fill="none" stroke="#38BDF8" stroke-width="3.5" />
+    <path d="M 700 340 Q 760 310 820 280 T 900 240 T 940 210" fill="none" stroke="#818CF8" stroke-width="3" />
+    <path d="M 700 290 Q 770 270 810 210 T 890 150 T 940 135" fill="none" stroke="#0284C7" stroke-width="3" />
+
+    <!-- Bar Charts Box -->
+    <rect x="980" y="125" width="215" height="120" fill="#F8FAFC" stroke="#E2E8F0" rx="6" />
+    <rect x="1000" y="180" width="14" height="55" fill="#38BDF8" rx="3" />
+    <rect x="1022" y="160" width="14" height="75" fill="#22D3EE" rx="3" />
+    <rect x="1044" y="145" width="14" height="90" fill="#0284C7" rx="3" />
+    <rect x="1066" y="170" width="14" height="65" fill="#6366F1" rx="3" />
+    <rect x="1088" y="150" width="14" height="85" fill="#F59E0B" rx="3" />
+    <rect x="1110" y="140" width="14" height="95" fill="#EC4899" rx="3" />
+    <rect x="1132" y="165" width="14" height="70" fill="#023625" rx="3" />
+
+    <!-- Second Bar Group -->
+    <rect x="980" y="260" width="215" height="120" fill="#F8FAFC" stroke="#E2E8F0" rx="6" />
+    <rect x="1000" y="325" width="14" height="45" fill="#38BDF8" rx="3" />
+    <rect x="1022" y="305" width="14" height="65" fill="#22D3EE" rx="3" />
+    <rect x="1044" y="295" width="14" height="75" fill="#0284C7" rx="3" />
+    <rect x="1066" y="315" width="14" height="55" fill="#6366F1" rx="3" />
+    <rect x="1088" y="290" width="14" height="80" fill="#F59E0B" rx="3" />
+    <rect x="1110" y="285" width="14" height="85" fill="#EC4899" rx="3" />
+    <rect x="1132" y="300" width="14" height="70" fill="#023625" rx="3" />
+  </g>
+
+  <!-- Presenter / Instructor Figure -->
+  <g id="instructor">
+    <!-- Legs/Khaki Trousers -->
+    <path d="M 515 420 L 510 590 L 545 590 L 555 450 L 565 590 L 600 590 L 595 420 Z" fill="#8C6B46" />
+    <!-- Blue collared shirt peeking -->
+    <path d="M 545 205 L 565 205 L 568 220 L 542 220 Z" fill="#93C5FD" />
+    <path d="M 535 410 L 575 410 L 575 428 L 535 428 Z" fill="#93C5FD" />
+    <!-- White Knit Crewneck Sweater -->
+    <path d="M 510 215 Q 555 228 600 215 Q 618 290 610 420 L 500 420 Q 492 290 510 215 Z" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5" />
+    <!-- Arms -->
+    <path d="M 505 220 Q 480 290 525 350 L 540 335 Q 505 285 520 220 Z" fill="#F8FAFC" />
+    <path d="M 605 220 Q 625 290 585 350 L 570 335 Q 605 285 590 220 Z" fill="#F8FAFC" />
+    <!-- Hands & Pen -->
+    <ellipse cx="555" cy="350" rx="16" ry="12" fill="#D4A373" />
+    <line x1="545" y1="355" x2="570" y2="340" stroke="#1E293B" stroke-width="4" stroke-linecap="round" />
+    <!-- Neck & Head -->
+    <rect x="545" y="190" width="20" height="25" fill="#D4A373" rx="4" />
+    <ellipse cx="555" cy="155" rx="26" ry="34" fill="#D4A373" />
+    <!-- Hair & Beard -->
+    <path d="M 530 145 C 530 115 580 115 580 145 C 580 155 575 140 555 140 C 535 140 530 155 530 145 Z" fill="#1E1E1E" />
+    <path d="M 538 160 C 538 185 572 185 572 160 C 572 178 538 178 538 160 Z" fill="#1E1E1E" opacity="0.85" />
+    <!-- Glasses -->
+    <rect x="538" y="145" width="14" height="10" rx="3" fill="none" stroke="#0F172A" stroke-width="2" />
+    <rect x="558" y="145" width="14" height="10" rx="3" fill="none" stroke="#0F172A" stroke-width="2" />
+    <line x1="552" y1="150" x2="558" y2="150" stroke="#0F172A" stroke-width="2" />
+  </g>
+
+  <!-- White Credenza and Potted Plant on right -->
+  <g id="credenza">
+    <rect x="980" y="520" width="300" height="200" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" />
+    <!-- Plant pot -->
+    <path d="M 1120 540 L 1110 595 L 1160 595 L 1150 540 Z" fill="#94A3B8" stroke="#64748B" stroke-width="1.5" />
+    <!-- Plant foliage -->
+    <path d="M 1135 540 C 1110 490 1090 470 1090 450 C 1115 480 1130 520 1135 540 Z" fill="#16A34A" />
+    <path d="M 1135 540 C 1135 470 1130 440 1135 430 C 1140 450 1140 500 1135 540 Z" fill="#22C55E" />
+    <path d="M 1135 540 C 1150 480 1170 460 1180 440 C 1170 470 1155 510 1135 540 Z" fill="#15803D" />
+  </g>
+
+  <!-- Foreground Conference Table and Seated Attendees -->
+  <g id="foreground">
+    <!-- White Conference Table Top -->
+    <path d="M 0 540 L 880 540 L 800 720 L 0 720 Z" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" />
+
+    <!-- Open Laptop on table -->
+    <path d="M 510 495 L 590 495 L 610 590 L 530 590 Z" fill="#0F172A" />
+    <path d="M 515 500 L 585 500 L 580 580 L 520 580 Z" fill="#38BDF8" opacity="0.8" />
+    <polygon points="480,590 630,590 650,625 490,625" fill="#334155" />
+
+    <!-- Coffee Cup with kraft sleeve -->
+    <path d="M 610 520 L 615 585 L 645 585 L 650 520 Z" fill="#FFFFFF" stroke="#CBD5E1" />
+    <path d="M 612 540 L 614 568 L 646 568 L 648 540 Z" fill="#B45309" opacity="0.7" />
+    <ellipse cx="630" cy="520" rx="20" ry="6" fill="#FFFFFF" stroke="#94A3B8" />
+
+    <!-- Green Apple -->
+    <circle cx="670" cy="570" r="16" fill="#84CC16" />
+    <path d="M 670 554 Q 673 545 678 542" fill="none" stroke="#582F0E" stroke-width="2.5" stroke-linecap="round" />
+
+    <!-- Notebooks and Pens -->
+    <polygon points="410,560 500,560 490,615 400,615" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" />
+    <line x1="430" y1="575" x2="480" y2="575" stroke="#94A3B8" stroke-width="2" />
+    <line x1="430" y1="590" x2="475" y2="590" stroke="#94A3B8" stroke-width="2" />
+
+    <!-- Attendee 2 (Middle, beige sweater, glasses) -->
+    <ellipse cx="250" cy="390" rx="28" ry="38" fill="#D4A373" />
+    <path d="M 230 380 C 230 350 275 350 275 380 C 275 390 270 375 250 375 C 235 375 230 390 230 380 Z" fill="#2B1B17" />
+    <path d="M 235 425 Q 310 440 370 550 L 190 550 Q 180 440 235 425 Z" fill="#E5D9C5" />
+    <!-- Arms taking notes -->
+    <path d="M 270 480 Q 380 540 450 560 L 440 575 Q 350 555 260 510 Z" fill="#E5D9C5" />
+
+    <!-- Foreground Attendee 1 (Woman in plaid/checked blazer writing in notebook) -->
+    <g transform="translate(-40, 60)">
+      <path d="M 40 220 Q 120 220 140 330 C 110 390 100 450 80 550 L -20 550 Q -10 330 40 220 Z" fill="#1E1E1E" />
+      <!-- Plaid jacket pattern -->
+      <path d="M 60 380 Q 210 440 360 620 L 180 720 Q 60 520 60 380 Z" fill="#D6C7B2" stroke="#B8A790" stroke-width="1.5" />
+      <path d="M 180 560 Q 320 600 420 660 L 380 690 Q 280 630 160 590 Z" fill="#E8DFD1" />
+      <!-- Writing hand and pen -->
+      <ellipse cx="400" cy="655" rx="22" ry="14" fill="#E2B29F" />
+      <line x1="380" y1="665" x2="440" y2="640" stroke="#0F172A" stroke-width="4" stroke-linecap="round" />
+    </g>
+  </g>
+
+  <!-- Professional Badge Overlay -->
+  <g transform="translate(50, 40)">
+    <rect width="280" height="44" rx="22" fill="#023625" opacity="0.95" />
+    <circle cx="22" cy="22" r="12" fill="#B68A35" />
+    <path d="M 18 22 L 21 25 L 26 19" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="44" y="27" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">YITZAK TRAINING WORKSHOP</text>
+  </g>
+</svg>

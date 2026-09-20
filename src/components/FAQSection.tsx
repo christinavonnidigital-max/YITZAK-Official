@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Sparkles } from 'lucide-react';
 import AppIcon from './AppIcon';
+import { getCMSState, CMSFAQItem } from '../lib/cmsState';
 
 interface FAQItem {
   id: string;
@@ -17,8 +18,17 @@ interface FAQSectionProps {
 
 export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [customFaqs, setCustomFaqs] = useState<CMSFAQItem[]>(() => getCMSState().customFaqs);
 
-  const faqs: FAQItem[] = [
+  useEffect(() => {
+    const handleUpdate = () => {
+      setCustomFaqs(getCMSState().customFaqs);
+    };
+    window.addEventListener('yitzak-cms-updated', handleUpdate);
+    return () => window.removeEventListener('yitzak-cms-updated', handleUpdate);
+  }, []);
+
+  const defaultFaqs: FAQItem[] = [
     {
       id: 'faq-streams',
       category: 'Curriculum & Standards',
@@ -48,6 +58,16 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
       answer: 'You can check course availability directly online or submit a consultation request for on-site team training. Our team will provide schedule confirmation, venue details, and invoice requirements prior to course commencement.'
     }
   ];
+
+  const formattedCustomFaqs: FAQItem[] = customFaqs.map(cf => ({
+    id: cf.id,
+    question: cf.question,
+    answer: cf.answer,
+    category: cf.category || 'General & Advisory',
+    iconName: cf.iconName || 'help'
+  }));
+
+  const faqs: FAQItem[] = [...defaultFaqs, ...formattedCustomFaqs];
 
   const handleToggle = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);

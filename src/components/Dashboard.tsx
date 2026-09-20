@@ -12,9 +12,10 @@ interface DashboardProps {
   onLogout: () => void;
   onOpenBooking: () => void;
   refreshTrigger: number;
+  onOpenFaviconModal?: () => void;
 }
 
-export default function Dashboard({ currentUser, onLogout, onOpenBooking, refreshTrigger }: DashboardProps) {
+export default function Dashboard({ currentUser, onLogout, onOpenBooking, refreshTrigger, onOpenFaviconModal }: DashboardProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +23,14 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
-  const isAdminUser = Boolean(currentUser.email && (currentUser.email === 'admin@yitzak.co.za' || currentUser.email.endsWith('@yitzak.co.za')));
+  const isAdminUser = Boolean(
+    currentUser.email && (
+      currentUser.email.toLowerCase() === 'cgumpo@yitzak.co.za' ||
+      currentUser.email === 'admin@yitzak.co.za' || 
+      currentUser.email.endsWith('@yitzak.co.za') ||
+      currentUser.email.toLowerCase() === 'christinagumpo@gmail.com'
+    )
+  );
 
   const formatTimeSlotSAST = (slot: string) => {
     if (!slot) return '';
@@ -185,6 +193,22 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+    try {
+      sessionStorage.removeItem('yitzak_portal_user');
+      sessionStorage.removeItem('yitzak_portal_code');
+      localStorage.removeItem('yitzak_portal_user');
+    } catch (_) {}
+    if (onLogout) {
+      onLogout();
+    }
+  };
+
   return (
     <div id="client_dashboard_section" className="bg-white border border-border p-8 md:p-16 space-y-8">
       {/* Dashboard Top Header bar */}
@@ -230,8 +254,9 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
           </button>
           
           <button
-            onClick={logout}
-            className="flex items-center gap-2 border border-border hover:border-error text-charcoal hover:text-error px-4 py-4 font-label-btn text-[12px] uppercase tracking-wider transition-all"
+            type="button"
+            onClick={handleSignOut}
+            className="flex items-center gap-2 border border-border hover:border-error text-charcoal hover:text-error px-4 py-4 font-label-btn text-[12px] uppercase tracking-wider transition-all cursor-pointer"
           >
             <LogOut size={14} />
             <span>Sign Out</span>
@@ -247,141 +272,30 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
           loading={loading} 
           onRefresh={fetchBookings} 
           onOpenBooking={onOpenBooking} 
+          onOpenFaviconModal={onOpenFaviconModal}
         />
       ) : (
-        /* Client Personal Dashboard */
-        <div className="space-y-8">
-          <div className="flex justify-between items-center">
-            <h5 className="font-headline-md text-[18px] text-primary flex items-center gap-2">
-              <CalendarDays className="text-secondary" size={20} />
-              Your Consulting Engagements
-            </h5>
-            
+        /* Access Restricted message if logged in with non-admin account */
+        <div className="border border-red-200 bg-red-50/50 p-12 text-center rounded-2xl space-y-4 max-w-xl mx-auto">
+          <div className="w-12 h-12 rounded-full bg-red-100 text-red-700 flex items-center justify-center mx-auto">
+            <ShieldAlert size={24} />
+          </div>
+          <div className="space-y-2">
+            <h5 className="font-serif text-lg font-bold text-red-900">Administrative Access Required</h5>
+            <p className="text-xs text-red-800 leading-relaxed">
+              This console is strictly designated for YITZAK Content Management and Administration. Your current account ({currentUser.email}) does not hold administrative clearance.
+            </p>
+          </div>
+          <div className="pt-2">
             <button
-              onClick={onOpenBooking}
-              className="bg-primary text-on-primary hover:bg-primary-container px-4 py-4 font-label-btn text-xs uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95"
+              type="button"
+              onClick={handleSignOut}
+              className="px-6 py-2.5 bg-primary text-white hover:bg-[#034d35] rounded-xl text-xs font-serif font-bold uppercase tracking-wider transition-all cursor-pointer inline-flex items-center gap-2"
             >
-              <Plus size={14} />
-              <span>New Request</span>
+              <LogOut size={14} />
+              <span>Sign Out &amp; Switch Account</span>
             </button>
           </div>
-
-          {error && (
-            <div className="bg-error-container text-on-error-container p-4 flex items-start gap-2 text-xs">
-              <ShieldAlert className="text-error flex-shrink-0" size={16} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-32 space-y-4">
-              <Loader2 className="animate-spin text-primary" size={24} />
-              <p className="font-body-std text-xs text-ash">Retrieving secure schedule...</p>
-            </div>
-          ) : bookings.length === 0 ? (
-            <div className="border border-dashed border-border p-32 text-center space-y-4 bg-surface">
-              <CalendarDays className="mx-auto text-ash" size={32} />
-              <div>
-                <p className="font-body-std text-sm text-primary font-bold">No consultations scheduled</p>
-                <p className="font-body-std text-xs text-ash mt-2 max-w-sm mx-auto">
-                  Schedule your corporate consultation with an expert. Complete calendar synchronization will occur automatically.
-                </p>
-              </div>
-              <button
-                onClick={onOpenBooking}
-                className="bg-secondary-container text-on-secondary-container hover:bg-gold-hover hover:text-white px-16 py-4 font-label-btn text-xs uppercase tracking-widest transition-all"
-              >
-                Schedule First Consultation
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {bookings.map(booking => (
-                <div
-                  key={booking.id}
-                  className={`border p-4 flex flex-col justify-between transition-all ${booking.status === 'cancelled' ? 'border-border bg-surface opacity-60' : 'border-border bg-white hover:border-secondary shadow-sm'}`}
-                >
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="font-label-kicker text-[10px] text-secondary uppercase tracking-widest block">Stream</span>
-                        <h6 className="font-headline-md text-sm text-primary font-bold">{booking.pillar}</h6>
-                      </div>
-                      <span className={`text-[9px] font-mono uppercase px-4 py-0.5 font-bold tracking-wider ${booking.status === 'confirmed' ? 'bg-primary-fixed text-primary' : booking.status === 'cancelled' ? 'bg-error-container text-on-error-container' : 'bg-secondary-fixed text-on-secondary-container'}`}>
-                        {booking.status}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-b border-border py-2">
-                      <div className="flex items-center gap-2 text-xs text-charcoal">
-                        <Calendar size={14} className="text-ash" />
-                        <span>{booking.date}</span>
-                      </div>
-                      <div className="flex items-start gap-2 text-xs text-charcoal">
-                        <Clock size={14} className="text-ash mt-0.5 flex-shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="font-semibold">{formatTimeSlotSAST(booking.timeSlot)}</span>
-                          <span className="text-ash text-[9px] font-mono">({booking.timeSlot} UTC)</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {booking.notes && (
-                      <p className="font-body-std text-xs text-ash line-clamp-2 italic">
-                        "{booking.notes}"
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="mt-4 flex justify-between items-center pt-2 border-t border-border/40">
-                    <div className="flex items-center gap-0.5 text-[10px] text-ash font-mono">
-                      <Sparkles size={10} className="text-secondary" />
-                      <span>Google Sync Enabled</span>
-                    </div>
-
-                    {booking.status !== 'cancelled' && (
-                      confirmCancelId === booking.id ? (
-                        <div className="flex gap-1 items-center">
-                          <span className="text-[9px] font-bold text-error mr-1">Confirm?</span>
-                          <button
-                            onClick={() => {
-                              handleCancelBooking(booking);
-                              setConfirmCancelId(null);
-                            }}
-                            className="bg-error text-white hover:bg-red-700 px-2 py-1 text-[9px] font-mono font-bold uppercase transition-all"
-                          >
-                            Yes
-                          </button>
-                          <button
-                            onClick={() => setConfirmCancelId(null)}
-                            className="bg-gray-100 hover:bg-gray-200 border border-border text-charcoal px-2 py-1 text-[9px] font-mono font-bold uppercase transition-all"
-                          >
-                            No
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmCancelId(booking.id || null)}
-                          disabled={cancellingId === booking.id}
-                          className="text-ash hover:text-error hover:bg-error-container/10 p-2 transition-colors flex items-center gap-1 text-[11px] font-bold font-mono"
-                          title="Cancel Engagement"
-                        >
-                          {cancellingId === booking.id ? (
-                            <Loader2 className="animate-spin text-error" size={12} />
-                          ) : (
-                            <>
-                              <X size={12} />
-                              <span>Cancel</span>
-                            </>
-                          )}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
     </div>

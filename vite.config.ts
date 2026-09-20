@@ -18,7 +18,86 @@ export default defineConfig(({mode}) => {
       'process.env.FIREBASE_APP_ID': JSON.stringify(env.FIREBASE_APP_ID || env.VITE_FIREBASE_APP_ID || ''),
       'process.env.FIREBASE_MEASUREMENT_ID': JSON.stringify(env.FIREBASE_MEASUREMENT_ID || env.VITE_FIREBASE_MEASUREMENT_ID || ''),
     },
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: 'api-send-email-dev-handler',
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            if (req.url === '/api/send-email' && req.method === 'POST') {
+              let bodyStr = '';
+              req.on('data', (chunk) => {
+                bodyStr += chunk;
+              });
+              req.on('end', async () => {
+                try {
+                  const body = JSON.parse(bodyStr || '{}');
+                  const { to, subject, html, text, metadata } = body;
+                  const recipientList = Array.isArray(to) ? to : [to];
+
+                  const resendApiKey = process.env.RESEND_API_KEY || env.RESEND_API_KEY;
+                  if (resendApiKey) {
+                    const fromEmail = process.env.RESEND_FROM_EMAIL || env.RESEND_FROM_EMAIL || 'YITZAK Advisory <advisory@notifications.yitzak.co.za>';
+                    const r = await fetch('https://api.resend.com/emails', {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${resendApiKey}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        from: fromEmail,
+                        to: recipientList,
+                        subject: subject,
+                        html: html || `<p>${text}</p>`,
+                        text: text,
+                      }),
+                    });
+                    const rData = await r.json();
+                    res.setHeader('Content-Type', 'application/json');
+                    return res.end(JSON.stringify({ success: r.ok, provider: 'resend', data: rData }));
+                  }
+
+                  const sendgridApiKey = process.env.SENDGRID_API_KEY || env.SENDGRID_API_KEY;
+                  if (sendgridApiKey) {
+                    const fromEmail = process.env.SENDGRID_FROM_EMAIL || env.SENDGRID_FROM_EMAIL || 'info@yitzak.co.za';
+                    const sg = await fetch('https://api.sendgrid.com/v3/mail/send', {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${sendgridApiKey}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        personalizations: [{ to: recipientList.map((e: string) => ({ email: e })) }],
+                        from: { email: fromEmail, name: 'YITZAK Advisory' },
+                        subject: subject,
+                        content: [{ type: 'text/html', value: html || `<p>${text}</p>` }],
+                      }),
+                    });
+                    res.setHeader('Content-Type', 'application/json');
+                    return res.end(JSON.stringify({ success: sg.ok || sg.status === 202, provider: 'sendgrid' }));
+                  }
+
+                  console.log('[Dev Server Email Dispatcher] Processed:', { to: recipientList, subject, metadata });
+                  res.setHeader('Content-Type', 'application/json');
+                  return res.end(JSON.stringify({
+                    success: true,
+                    provider: 'dev-server',
+                    message: `Email dispatched to ${recipientList.join(', ')}`,
+                  }));
+                } catch (e: any) {
+                  res.statusCode = 500;
+                  res.setHeader('Content-Type', 'application/json');
+                  return res.end(JSON.stringify({ error: e?.message }));
+                }
+              });
+              return;
+            }
+            next();
+          });
+        },
+      },
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
