@@ -20,7 +20,8 @@ import {
   ShieldCheck,
   CheckCheck,
   FileText,
-  Camera
+  Camera,
+  RotateCcw
 } from 'lucide-react';
 import { 
   applyFaviconToDocument, 
@@ -37,7 +38,22 @@ import {
   getHorizontalLogoSvgString,
   downloadSvgFile,
   downloadFileFromUrl,
-  generateEmailSignatureHtml
+  generateEmailSignatureHtml,
+  DEFAULT_OFFICIAL_EMBLEM,
+  DEFAULT_GOLD_EMBLEM,
+  DEFAULT_ACCREDITATION_SEAL,
+  getStoredCustomEmblem,
+  saveCustomEmblem,
+  resetCustomEmblem,
+  getStoredCustomSeal,
+  saveCustomSeal,
+  resetCustomSeal,
+  getAccreditationSealSvgString,
+  getStoredSealVariant,
+  saveSealVariant,
+  getStoredMedallionSeal,
+  getStoredGoldCrest,
+  SealVariant
 } from '../lib/brandAssets';
 import {
   getStoredTrainingHero,
@@ -81,13 +97,94 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
   const [logoBg, setLogoBg] = useState<'light' | 'dark_green' | 'slate' | 'cream' | 'checker'>('light');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // Official Emblem & Accreditation Seal State
+  const [currentEmblem, setCurrentEmblem] = useState<string>(() => getStoredCustomEmblem());
+  const [currentSeal, setCurrentSeal] = useState<string>(() => getStoredCustomSeal());
+  const [sealVariant, setSealVariant] = useState<SealVariant>(() => getStoredSealVariant());
+  const [isEmblemDragging, setIsEmblemDragging] = useState(false);
+  const [isSealDragging, setIsSealDragging] = useState(false);
+  const [assetNotification, setAssetNotification] = useState<string | null>(null);
+  const emblemFileInputRef = useRef<HTMLInputElement>(null);
+  const sealFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSelectSealVariant = (variant: SealVariant) => {
+    setSealVariant(variant);
+    saveSealVariant(variant);
+    const activeUrl = variant === 'gold_crest' ? getStoredGoldCrest() : getStoredMedallionSeal();
+    setCurrentSeal(activeUrl);
+    setAssetNotification(
+      variant === 'gold_crest'
+        ? '✓ Antique Gold Crest active as Executive Accreditation Seal'
+        : '✓ Medallion Seal active as Executive Accreditation Seal'
+    );
+    setTimeout(() => setAssetNotification(null), 3500);
+  };
+
+  const handleEmblemUpload = (file: File) => {
+    if (!file.type.startsWith('image/') && !file.name.endsWith('.svg')) {
+      alert('Please upload a valid image file (PNG, SVG, JPG, or WEBP).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) {
+        saveCustomEmblem(dataUrl);
+        setCurrentEmblem(dataUrl);
+        setAssetNotification('✓ Official Emblem successfully updated and published!');
+        setTimeout(() => setAssetNotification(null), 3500);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetEmblem = () => {
+    resetCustomEmblem();
+    setCurrentEmblem(DEFAULT_OFFICIAL_EMBLEM);
+    setAssetNotification('Official Emblem restored to default.');
+    setTimeout(() => setAssetNotification(null), 3500);
+  };
+
+  const handleSealUpload = (file: File) => {
+    if (!file.type.startsWith('image/') && !file.name.endsWith('.svg')) {
+      alert('Please upload a valid image file (PNG, SVG, JPG, or WEBP).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) {
+        saveCustomSeal(dataUrl, sealVariant);
+        setCurrentSeal(dataUrl);
+        setAssetNotification(
+          sealVariant === 'gold_crest'
+            ? '✓ Custom Antique Gold Crest saved as active seal!'
+            : '✓ Custom Accreditation Seal saved as active seal!'
+        );
+        setTimeout(() => setAssetNotification(null), 3500);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetSeal = () => {
+    resetCustomSeal();
+    setSealVariant('seal');
+    setCurrentSeal(DEFAULT_ACCREDITATION_SEAL);
+    setAssetNotification('Accreditation Seal restored to default Medallion Seal.');
+    setTimeout(() => setAssetNotification(null), 3500);
+  };
+
   // Signature Tab State
   const [sigName, setSigName] = useState('Christina Gumpo');
-  const [sigTitle, setSigTitle] = useState('Managing Director');
-  const [sigPhone, setSigPhone] = useState('+27 76 680 7792');
+  const [sigTitle, setSigTitle] = useState('Business Development Manager');
+  const [sigPhone, setSigPhone] = useState('');
+  const [sigIncludePhone, setSigIncludePhone] = useState(false);
   const [sigEmail, setSigEmail] = useState('cgumpo@yitzak.co.za');
   const [sigWebsite, setSigWebsite] = useState('yitzak.co.za');
   const [sigCopied, setSigCopied] = useState(false);
+  const [sigVisualCopied, setSigVisualCopied] = useState(false);
+  const signaturePreviewRef = useRef<HTMLDivElement>(null);
 
   // Load active favicon on mount or when opened
   useEffect(() => {
@@ -95,8 +192,12 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
       const stored = getStoredFavicon();
       setCurrentFavicon(stored);
       setPreviewUrl(stored || DEFAULT_FAVICON);
+      setCurrentEmblem(getStoredCustomEmblem());
+      setSealVariant(getStoredSealVariant());
+      setCurrentSeal(getStoredCustomSeal());
       setAppliedNotification(false);
       setDownloadSuccess(false);
+      setAssetNotification(null);
     }
   }, [isOpen]);
 
@@ -189,13 +290,83 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
     }
   };
 
+  const handleSelectSignature = () => {
+    if (signaturePreviewRef.current) {
+      try {
+        const range = document.createRange();
+        range.selectNodeContents(signaturePreviewRef.current);
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } catch (err) {
+        console.warn('Auto-select error:', err);
+      }
+    }
+  };
+
+  const handleCopyVisualSignature = async () => {
+    const html = generateEmailSignatureHtml({
+      name: sigName,
+      title: sigTitle,
+      phone: sigIncludePhone ? sigPhone : '',
+      email: sigEmail,
+      website: sigWebsite,
+      includePhone: sigIncludePhone && Boolean(sigPhone.trim())
+    });
+
+    const plainText = `${sigName}\n${sigTitle.toUpperCase()}\nYitzak Consulting\nEmail: ${sigEmail}\nWeb: https://${sigWebsite}`;
+
+    let success = false;
+
+    // 1. Try modern rich HTML Clipboard API
+    if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+      try {
+        const htmlBlob = new Blob([html], { type: 'text/html' });
+        const textBlob = new Blob([plainText], { type: 'text/plain' });
+        const item = new ClipboardItem({
+          'text/html': htmlBlob,
+          'text/plain': textBlob,
+        });
+        await navigator.clipboard.write([item]);
+        success = true;
+      } catch (e) {
+        console.warn('ClipboardItem error, falling back to selection copy:', e);
+      }
+    }
+
+    // 2. Fallback to range selection + execCommand('copy')
+    if (signaturePreviewRef.current) {
+      try {
+        const range = document.createRange();
+        range.selectNodeContents(signaturePreviewRef.current);
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+          if (!success) {
+            document.execCommand('copy');
+            success = true;
+          }
+        }
+      } catch (err) {
+        console.warn('Selection copy fallback failed:', err);
+      }
+    }
+
+    setSigVisualCopied(true);
+    setTimeout(() => setSigVisualCopied(false), 3500);
+  };
+
   const handleCopySignature = () => {
     const html = generateEmailSignatureHtml({
       name: sigName,
       title: sigTitle,
-      phone: sigPhone,
+      phone: sigIncludePhone ? sigPhone : '',
       email: sigEmail,
-      website: sigWebsite
+      website: sigWebsite,
+      includePhone: sigIncludePhone && Boolean(sigPhone.trim())
     });
     if (navigator.clipboard) {
       navigator.clipboard.writeText(html);
@@ -317,67 +488,71 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
             </button>
           </div>
 
-          {/* 2. Studio Tabs Navigation Bar (Fixed, shrink-0) */}
-          <div className="shrink-0 bg-slate-100/90 border-b border-border flex items-center px-4 sm:px-6 gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
-            <button
-              onClick={() => setActiveTab('logos')}
-              className={`shrink-0 px-3 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-                activeTab === 'logos'
-                  ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
-                  : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
-              }`}
-            >
-              <Layers size={14} className={activeTab === 'logos' ? 'text-[#B68A35]' : ''} />
-              <span>Logos &amp; Vectors</span>
-            </button>
+          {/* 2. Studio Tabs Navigation Bar (Sideways Scrollable on Mobile) */}
+          <div className="relative shrink-0 bg-slate-100/95 border-b border-border">
+            <div className="flex items-center px-3 sm:px-6 gap-1 sm:gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 touch-pan-x scroll-smooth flex-nowrap py-1">
+              <button
+                onClick={() => setActiveTab('logos')}
+                className={`shrink-0 whitespace-nowrap px-3.5 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all cursor-pointer rounded-t-lg ${
+                  activeTab === 'logos'
+                    ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
+                    : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
+                }`}
+              >
+                <Layers size={14} className={activeTab === 'logos' ? 'text-[#B68A35]' : ''} />
+                <span>Logos &amp; Vectors</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('favicon')}
-              className={`shrink-0 px-3 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-                activeTab === 'favicon'
-                  ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
-                  : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
-              }`}
-            >
-              <Globe size={14} className={activeTab === 'favicon' ? 'text-[#B68A35]' : ''} />
-              <span>Favicon &amp; Tab Icons</span>
-            </button>
+              <button
+                onClick={() => setActiveTab('favicon')}
+                className={`shrink-0 whitespace-nowrap px-3.5 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all cursor-pointer rounded-t-lg ${
+                  activeTab === 'favicon'
+                    ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
+                    : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
+                }`}
+              >
+                <Globe size={14} className={activeTab === 'favicon' ? 'text-[#B68A35]' : ''} />
+                <span>Favicon &amp; Tab Icons</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('palette')}
-              className={`shrink-0 px-3 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-                activeTab === 'palette'
-                  ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
-                  : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
-              }`}
-            >
-              <Palette size={14} className={activeTab === 'palette' ? 'text-[#B68A35]' : ''} />
-              <span>Palette &amp; Tokens</span>
-            </button>
+              <button
+                onClick={() => setActiveTab('palette')}
+                className={`shrink-0 whitespace-nowrap px-3.5 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all cursor-pointer rounded-t-lg ${
+                  activeTab === 'palette'
+                    ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
+                    : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
+                }`}
+              >
+                <Palette size={14} className={activeTab === 'palette' ? 'text-[#B68A35]' : ''} />
+                <span>Palette &amp; Tokens</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('stationery')}
-              className={`shrink-0 px-3 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-                activeTab === 'stationery'
-                  ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
-                  : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
-              }`}
-            >
-              <Mail size={14} className={activeTab === 'stationery' ? 'text-[#B68A35]' : ''} />
-              <span>Email Signature</span>
-            </button>
+              <button
+                onClick={() => setActiveTab('stationery')}
+                className={`shrink-0 whitespace-nowrap px-3.5 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all cursor-pointer rounded-t-lg ${
+                  activeTab === 'stationery'
+                    ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
+                    : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
+                }`}
+              >
+                <Mail size={14} className={activeTab === 'stationery' ? 'text-[#B68A35]' : ''} />
+                <span>Email Signature</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab('media')}
-              className={`shrink-0 px-3 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-                activeTab === 'media'
-                  ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
-                  : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
-              }`}
-            >
-              <ImageIcon size={14} className={activeTab === 'media' ? 'text-[#B68A35]' : ''} />
-              <span>Training &amp; Hero Photos</span>
-            </button>
+              <button
+                onClick={() => setActiveTab('media')}
+                className={`shrink-0 whitespace-nowrap px-3.5 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all cursor-pointer rounded-t-lg ${
+                  activeTab === 'media'
+                    ? 'border-[#B68A35] text-[#023625] bg-white font-extrabold shadow-2xs'
+                    : 'border-transparent text-slate-600 hover:text-[#023625] hover:bg-white/50'
+                }`}
+              >
+                <ImageIcon size={14} className={activeTab === 'media' ? 'text-[#B68A35]' : ''} />
+                <span>Training &amp; Hero Photos</span>
+              </button>
+            </div>
+            {/* Subtle right scroll fade indicator on mobile screens */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-100 to-transparent sm:hidden" />
           </div>
 
           {/* Notifications */}
@@ -392,6 +567,13 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
             <div className="shrink-0 bg-emerald-50 border-b border-emerald-200 px-6 py-2.5 flex items-center gap-2 text-xs text-emerald-800 font-medium">
               <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
               <span>{heroNotification}</span>
+            </div>
+          )}
+
+          {assetNotification && (
+            <div className="shrink-0 bg-emerald-50 border-b border-emerald-200 px-6 py-2.5 flex items-center gap-2 text-xs text-emerald-800 font-medium animate-fade-in">
+              <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+              <span>{assetNotification}</span>
             </div>
           )}
 
@@ -414,11 +596,11 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
                     <span className="font-bold text-slate-800 block">Preview Background Canvas:</span>
                     <span className="text-slate-500 text-[11px]">Inspect high-contrast logo behavior across various client media</span>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-pan-x py-0.5 whitespace-nowrap">
                     <button
                       type="button"
                       onClick={() => setLogoBg('light')}
-                      className={`px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
+                      className={`shrink-0 px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
                         logoBg === 'light' ? 'bg-white text-[#023625] border-[#023625] shadow-xs font-bold' : 'bg-white text-slate-600 border-slate-200'
                       }`}
                     >
@@ -427,7 +609,7 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
                     <button
                       type="button"
                       onClick={() => setLogoBg('dark_green')}
-                      className={`px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
+                      className={`shrink-0 px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
                         logoBg === 'dark_green' ? 'bg-[#023625] text-white border-white shadow-xs font-bold' : 'bg-[#023625] text-white/80 border-transparent'
                       }`}
                     >
@@ -436,7 +618,7 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
                     <button
                       type="button"
                       onClick={() => setLogoBg('slate')}
-                      className={`px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
+                      className={`shrink-0 px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
                         logoBg === 'slate' ? 'bg-[#111827] text-white border-white shadow-xs font-bold' : 'bg-[#111827] text-white/80 border-transparent'
                       }`}
                     >
@@ -445,7 +627,7 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
                     <button
                       type="button"
                       onClick={() => setLogoBg('cream')}
-                      className={`px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
+                      className={`shrink-0 px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
                         logoBg === 'cream' ? 'bg-[#F6F8F6] text-[#023625] border-[#023625] shadow-xs font-bold' : 'bg-[#F6F8F6] text-slate-700 border-slate-300'
                       }`}
                     >
@@ -454,7 +636,7 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
                     <button
                       type="button"
                       onClick={() => setLogoBg('checker')}
-                      className={`px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
+                      className={`shrink-0 px-3 py-1 text-xs rounded-lg border font-medium transition-all ${
                         logoBg === 'checker' ? 'bg-slate-200 text-slate-900 border-slate-400 font-bold' : 'bg-slate-100 text-slate-600 border-slate-200'
                       }`}
                     >
@@ -580,20 +762,34 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
                     </div>
                   </div>
 
-                  {/* Card 3: Shield Crest Icon Mark */}
+                  {/* Card 3: Official Emblem */}
                   <div className="border border-border rounded-xl p-5 bg-white shadow-xs flex flex-col justify-between space-y-4">
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] font-mono uppercase font-bold text-[#B68A35]">Official Emblem</span>
-                        <span className="text-[10px] font-mono text-slate-400">Favicon / App Icon / Seal</span>
+                        {currentEmblem !== DEFAULT_OFFICIAL_EMBLEM ? (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">Custom Asset</span>
+                        ) : (
+                          <span className="text-[10px] font-mono text-slate-400">Institutional Mark</span>
+                        )}
                       </div>
-                      <h4 className="font-serif font-bold text-sm text-primary">Shield &amp; Sprout Crest</h4>
-                      <p className="text-xs text-ash mt-0.5">Signature geometric shield with center checkmark &amp; growth leaf motif.</p>
+                      <h4 className="font-serif font-bold text-sm text-primary">Official YITZAK Shield Emblem</h4>
+                      <p className="text-xs text-ash mt-0.5">Signature institutional crest for web favicon, mobile apps, and advisory heraldry.</p>
                     </div>
 
-                    {/* Logo Canvas Preview */}
+                    {/* Logo Canvas Preview & Interactive Dropzone */}
                     <div 
-                      className={`w-full h-28 rounded-xl border border-border flex items-center justify-center p-4 transition-colors ${
+                      onDragOver={(e) => { e.preventDefault(); setIsEmblemDragging(true); }}
+                      onDragLeave={() => setIsEmblemDragging(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsEmblemDragging(false);
+                        const f = e.dataTransfer.files?.[0];
+                        if (f) handleEmblemUpload(f);
+                      }}
+                      className={`relative group w-full h-32 rounded-xl border transition-all flex items-center justify-center p-4 ${
+                        isEmblemDragging ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20' : 'border-border'
+                      } ${
                         logoBg === 'light' ? 'bg-white' :
                         logoBg === 'dark_green' ? 'bg-[#023625]' :
                         logoBg === 'slate' ? 'bg-[#111827]' :
@@ -601,78 +797,235 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
                         'bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:12px_12px] bg-slate-50'
                       }`}
                     >
-                      <YitzakShieldIcon 
-                        size={64} 
-                        color={logoBg === 'dark_green' || logoBg === 'slate' ? '#FFFFFF' : '#023625'} 
+                      <img
+                        src={currentEmblem}
+                        alt="Official YITZAK Emblem"
+                        className={`max-h-24 max-w-[90px] object-contain transition-all drop-shadow-xs ${
+                          logoBg === 'dark_green' || logoBg === 'slate' ? 'brightness-0 invert' : ''
+                        }`}
                       />
+
+                      {/* Quick Change Overlay Button */}
+                      <button
+                        type="button"
+                        onClick={() => emblemFileInputRef.current?.click()}
+                        className="absolute bottom-2 right-2 px-2 py-1 bg-white/90 hover:bg-white text-slate-700 hover:text-primary rounded-lg shadow-xs border border-slate-200 text-[11px] font-semibold flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-xs"
+                        title="Upload new emblem"
+                      >
+                        <Camera size={12} className="text-[#B68A35]" />
+                        <span>Change</span>
+                      </button>
                     </div>
 
+                    <input
+                      ref={emblemFileInputRef}
+                      type="file"
+                      accept="image/png,image/svg+xml,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleEmblemUpload(f);
+                      }}
+                    />
+
                     {/* Action Buttons */}
-                    <div className="grid grid-cols-3 gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => downloadFileFromUrl('/YITZAK-icon-green.png', 'YITZAK-shield-crest.png')}
-                        className="py-2 px-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
-                      >
-                        <Download size={13} />
-                        <span>PNG</span>
-                      </button>
+                    <div className="space-y-2 pt-1">
+                      <div className="grid grid-cols-4 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => emblemFileInputRef.current?.click()}
+                          className="py-2 px-1 bg-[#023625] hover:bg-[#034d35] text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-xs"
+                          title="Upload new official emblem file"
+                        >
+                          <Upload size={12} className="text-[#B68A35]" />
+                          <span>Upload</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => downloadSvgFile(getShieldSvgString('#023625'), 'YITZAK-shield-crest.svg')}
-                        className="py-2 px-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
-                      >
-                        <Download size={13} />
-                        <span>SVG</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadFileFromUrl(currentEmblem, 'YITZAK-official-emblem.png')}
+                          className="py-2 px-1 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          <Download size={12} />
+                          <span>PNG</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleCopyText(getShieldSvgString('#023625'), 'svg_crest')}
-                        className="py-2 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
-                      >
-                        {copiedKey === 'svg_crest' ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
-                        <span>{copiedKey === 'svg_crest' ? 'Copied' : 'Copy'}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadSvgFile(getShieldSvgString('#023625'), 'YITZAK-official-emblem.svg')}
+                          className="py-2 px-1 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          <Download size={12} />
+                          <span>SVG</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(getShieldSvgString('#023625'), 'svg_crest')}
+                          className="py-2 px-1 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          {copiedKey === 'svg_crest' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                          <span>{copiedKey === 'svg_crest' ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+
+                      {currentEmblem !== DEFAULT_OFFICIAL_EMBLEM && (
+                        <button
+                          type="button"
+                          onClick={handleResetEmblem}
+                          className="w-full py-1 text-[11px] text-slate-500 hover:text-red-700 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <RotateCcw size={11} />
+                          <span>Reset Emblem to Default</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* Card 4: Executive Gold Crest */}
+                  {/* Card 4: Accreditation Seal */}
                   <div className="border border-border rounded-xl p-5 bg-white shadow-xs flex flex-col justify-between space-y-4">
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] font-mono uppercase font-bold text-[#B68A35]">Accreditation Seal</span>
-                        <span className="text-[10px] font-mono text-slate-400">Certificates &amp; Badges</span>
+                        {currentSeal !== DEFAULT_ACCREDITATION_SEAL ? (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">Custom Seal</span>
+                        ) : (
+                          <span className="text-[10px] font-mono text-slate-400">High-Res Insignia</span>
+                        )}
                       </div>
-                      <h4 className="font-serif font-bold text-sm text-primary">Executive Antique Gold Crest</h4>
-                      <p className="text-xs text-ash mt-0.5">Crafted in #B68A35 antique gold for graduation certificates &amp; seals.</p>
+                      <h4 className="font-serif font-bold text-sm text-primary">Executive Accreditation &amp; Advisory Seal</h4>
+                      <p className="text-xs text-ash mt-0.5">Official certified insignia for graduation certificates, compliance badges, and regulatory charters.</p>
                     </div>
 
-                    {/* Logo Canvas Preview */}
-                    <div className="w-full h-28 rounded-xl bg-[#023625] border border-[#034d35] flex items-center justify-center p-4">
-                      <YitzakShieldIcon size={64} color="#B68A35" />
+                    {/* Seal Style Selector */}
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg text-[11px] font-medium">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSealVariant('seal')}
+                        className={`flex-1 py-1.5 px-2 rounded-md transition-all text-center cursor-pointer font-bold flex items-center justify-center gap-1 ${
+                          sealVariant === 'seal' ? 'bg-[#023625] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {sealVariant === 'seal' && <Check size={12} className="text-[#B68A35]" />}
+                        <span>★ Medallion Seal</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSealVariant('gold_crest')}
+                        className={`flex-1 py-1.5 px-2 rounded-md transition-all text-center cursor-pointer font-bold flex items-center justify-center gap-1 ${
+                          sealVariant === 'gold_crest' ? 'bg-[#023625] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {sealVariant === 'gold_crest' && <Check size={12} className="text-[#B68A35]" />}
+                        <span>Antique Gold Crest</span>
+                      </button>
                     </div>
+
+                    {/* Seal Canvas Preview & Dropzone */}
+                    <div 
+                      onDragOver={(e) => { e.preventDefault(); setIsSealDragging(true); }}
+                      onDragLeave={() => setIsSealDragging(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsSealDragging(false);
+                        const f = e.dataTransfer.files?.[0];
+                        if (f) handleSealUpload(f);
+                      }}
+                      className={`relative group w-full h-32 rounded-xl bg-[#023625] border transition-all flex items-center justify-center p-3 overflow-hidden ${
+                        isSealDragging ? 'border-emerald-400 ring-2 ring-emerald-400/30' : 'border-[#034d35]'
+                      }`}
+                    >
+                      <img 
+                        src={currentSeal} 
+                        alt={sealVariant === 'gold_crest' ? 'Antique Gold Crest' : 'Executive Accreditation Seal'} 
+                        className={`object-contain drop-shadow-md transition-all ${
+                          sealVariant === 'gold_crest' ? 'max-h-24 max-w-[95px]' : 'max-h-28 max-w-[120px]'
+                        }`}
+                      />
+
+                      {/* Quick Change Overlay Button */}
+                      <button
+                        type="button"
+                        onClick={() => sealFileInputRef.current?.click()}
+                        className="absolute bottom-2 right-2 px-2 py-1 bg-[#012117]/80 hover:bg-[#012117] text-white/90 hover:text-white rounded-lg shadow-xs border border-[#B68A35]/40 text-[11px] font-semibold flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-xs"
+                        title={sealVariant === 'gold_crest' ? 'Upload custom antique gold crest file' : 'Upload custom accreditation seal file'}
+                      >
+                        <Camera size={12} className="text-[#B68A35]" />
+                        <span>Change</span>
+                      </button>
+                    </div>
+
+                    <input
+                      ref={sealFileInputRef}
+                      type="file"
+                      accept="image/png,image/svg+xml,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleSealUpload(f);
+                      }}
+                    />
 
                     {/* Action Buttons */}
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => downloadSvgFile(getShieldSvgString('#B68A35'), 'YITZAK-shield-gold.svg')}
-                        className="py-2 px-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
-                      >
-                        <Download size={13} />
-                        <span>Download Gold SVG</span>
-                      </button>
+                    <div className="space-y-2 pt-1">
+                      <div className="grid grid-cols-4 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => sealFileInputRef.current?.click()}
+                          className="py-2 px-1 bg-[#023625] hover:bg-[#034d35] text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-xs"
+                          title="Upload new seal file"
+                        >
+                          <Upload size={12} className="text-[#B68A35]" />
+                          <span>Upload</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleCopyText(getShieldSvgString('#B68A35'), 'svg_gold')}
-                        className="py-2 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
-                      >
-                        {copiedKey === 'svg_gold' ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
-                        <span>{copiedKey === 'svg_gold' ? 'Copied' : 'Copy SVG Code'}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadFileFromUrl(
+                            currentSeal,
+                            sealVariant === 'gold_crest' ? 'YITZAK-antique-gold-crest.png' : 'YITZAK-accreditation-seal.png'
+                          )}
+                          className="py-2 px-1 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          <Download size={12} />
+                          <span>PNG</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => downloadSvgFile(
+                            sealVariant === 'gold_crest' ? getShieldSvgString('#B68A35') : getAccreditationSealSvgString(),
+                            sealVariant === 'gold_crest' ? 'YITZAK-antique-gold-crest.svg' : 'YITZAK-accreditation-seal.svg'
+                          )}
+                          className="py-2 px-1 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          <Download size={12} />
+                          <span>SVG</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(
+                            sealVariant === 'gold_crest' ? getShieldSvgString('#B68A35') : getAccreditationSealSvgString(),
+                            'svg_seal'
+                          )}
+                          className="py-2 px-1 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          {copiedKey === 'svg_seal' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                          <span>{copiedKey === 'svg_seal' ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+
+                      {(sealVariant !== 'seal' || currentSeal !== DEFAULT_ACCREDITATION_SEAL) && (
+                        <button
+                          type="button"
+                          onClick={handleResetSeal}
+                          className="w-full py-1 text-[11px] text-slate-500 hover:text-red-700 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <RotateCcw size={11} />
+                          <span>Reset Seal to Default</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -989,13 +1342,37 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Direct Phone (SAST)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-bold uppercase text-slate-600">Direct Phone (SAST)</label>
+                        {sigPhone.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSigPhone('');
+                              setSigIncludePhone(false);
+                            }}
+                            className="text-[10px] text-red-600 hover:text-red-700 underline font-medium cursor-pointer"
+                          >
+                            Remove Tel
+                          </button>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={sigPhone}
-                        onChange={(e) => setSigPhone(e.target.value)}
+                        placeholder="Leave blank to omit Tel from signature"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSigPhone(val);
+                          setSigIncludePhone(Boolean(val.trim()));
+                        }}
                         className="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"
                       />
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {sigPhone.trim() && sigIncludePhone
+                          ? '✓ Tel line included in signature'
+                          : 'Tel line is removed from signature'}
+                      </p>
                     </div>
 
                     <div>
@@ -1018,41 +1395,85 @@ export default function FaviconModal({ isOpen, onClose, onFaviconUpdated }: Favi
                       />
                     </div>
 
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
+                      <button
+                        type="button"
+                        onClick={handleCopyVisualSignature}
+                        className="w-full py-2.5 bg-[#023625] hover:bg-[#034d35] text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+                      >
+                        {sigVisualCopied ? <CheckCircle2 size={15} className="text-emerald-400" /> : <Copy size={15} />}
+                        <span>{sigVisualCopied ? 'Visual Signature Copied!' : 'Copy Visual Signature (For Outlook / Gmail)'}</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={handleCopySignature}
-                        className="w-full py-2.5 bg-[#023625] hover:bg-[#034d35] text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+                        className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-slate-300"
+                        title="Copy raw HTML markup table"
                       >
-                        {sigCopied ? <CheckCircle2 size={15} className="text-emerald-400" /> : <Copy size={15} />}
-                        <span>{sigCopied ? 'HTML Signature Copied!' : 'Copy Formatted HTML Signature'}</span>
+                        {sigCopied ? <CheckCircle2 size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                        <span>{sigCopied ? 'HTML Code Copied!' : 'Copy Raw HTML Markup'}</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Live Rendered Email Signature Box */}
                   <div className="md:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Live Client Preview</span>
-                      <span className="text-[10px] text-slate-400">Compatible with Gmail, Outlook &amp; Apple Mail</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block">Live Client Preview</span>
+                        <span className="text-[10px] text-slate-400">Compatible with New Outlook, Classic Outlook &amp; Gmail</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSelectSignature}
+                          className="px-2.5 py-1.5 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md border border-slate-300 transition-colors cursor-pointer flex items-center gap-1"
+                          title="Click to automatically highlight the entire signature card below"
+                        >
+                          <Search size={12} />
+                          <span>Highlight All</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCopyVisualSignature}
+                          className="px-3 py-1.5 text-[11px] font-bold bg-[#023625] hover:bg-[#034d35] text-white rounded-md transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                        >
+                          {sigVisualCopied ? <CheckCircle2 size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                          <span>{sigVisualCopied ? 'Copied!' : 'Copy Visual'}</span>
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-100 overflow-x-auto">
+                    <div 
+                      ref={signaturePreviewRef}
+                      className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/80 overflow-x-auto select-all cursor-text"
+                      title="Click anywhere inside to select or highlight"
+                    >
                       <div 
                         dangerouslySetInnerHTML={{
                           __html: generateEmailSignatureHtml({
                             name: sigName,
                             title: sigTitle,
-                            phone: sigPhone,
+                            phone: sigIncludePhone ? sigPhone : '',
                             email: sigEmail,
-                            website: sigWebsite
+                            website: sigWebsite,
+                            includePhone: sigIncludePhone && Boolean(sigPhone.trim())
                           })
                         }} 
                       />
                     </div>
 
-                    <div className="p-3 bg-amber-50/80 rounded-lg border border-amber-200/80 text-[11px] text-amber-900 leading-relaxed">
-                      <strong>How to install:</strong> Click &ldquo;Copy Formatted HTML Signature&rdquo; above, open Gmail or Outlook Settings &gt; Signatures, and press Paste (Ctrl+V or ⌘V). The high-res icon and gold divider line are preserved automatically.
+                    <div className="p-3.5 bg-emerald-50/90 rounded-xl border border-emerald-200 text-[11px] text-emerald-950 leading-relaxed space-y-1.5">
+                      <div className="font-bold flex items-center gap-1.5 text-emerald-900">
+                        <CheckCircle2 size={14} className="text-emerald-700" />
+                        <span>How to paste into Outlook (3 easy steps):</span>
+                      </div>
+                      <ol className="list-decimal list-inside space-y-1 text-slate-700 text-[11px] pl-1">
+                        <li>Click the green <strong>&ldquo;Copy Visual&rdquo;</strong> button above (or click <strong>&ldquo;Highlight All&rdquo;</strong> and press <strong>Ctrl+C</strong>).</li>
+                        <li>Switch to your Outlook <strong>Edit signature</strong> window and click in the white text box.</li>
+                        <li>Press <strong>Ctrl+V</strong> (or right-click &gt; <strong>Paste</strong>) and click <strong>Save</strong>.</li>
+                      </ol>
                     </div>
                   </div>
                 </div>

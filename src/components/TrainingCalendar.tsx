@@ -593,18 +593,22 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
 
   // Filter courses
   const filteredCourses = UPCOMING_COURSES.filter(course => {
-    const matchesSearch = course.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          course.category.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
-    const matchesMode = modeFilter === 'all' || 
-                        (modeFilter === 'Online' && course.mode === 'Online') ||
-                        (modeFilter === 'Classroom' && course.mode.includes('Classroom'));
+    const q = (searchQuery || '').toLowerCase().trim();
+    const cName = (course?.name || '').toLowerCase();
+    const cDesc = (course?.description || '').toLowerCase();
+    const cCat = (course?.category || '').toLowerCase();
+    const cMode = course?.mode || '';
 
-    const matchesStandard = standardCategoryFilter === 'all' || course.standardCategory === standardCategoryFilter;
-    const matchesDifficulty = difficultyFilter === 'all' || course.difficulty === difficultyFilter;
-    const matchesVertical = verticalFilter === 'all' || course.vertical === verticalFilter;
+    const matchesSearch = !q || cName.includes(q) || cDesc.includes(q) || cCat.includes(q);
+    
+    const matchesCategory = categoryFilter === 'all' || course?.category === categoryFilter;
+    const matchesMode = modeFilter === 'all' || 
+                        (modeFilter === 'Online' && cMode === 'Online') ||
+                        (modeFilter === 'Classroom' && cMode.includes('Classroom'));
+
+    const matchesStandard = standardCategoryFilter === 'all' || course?.standardCategory === standardCategoryFilter;
+    const matchesDifficulty = difficultyFilter === 'all' || course?.difficulty === difficultyFilter;
+    const matchesVertical = verticalFilter === 'all' || course?.vertical === verticalFilter;
 
     return matchesSearch && matchesCategory && matchesMode && matchesStandard && matchesDifficulty && matchesVertical;
   });

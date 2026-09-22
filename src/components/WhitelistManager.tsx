@@ -187,11 +187,14 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
     });
   };
 
-  const filteredGuests = guests.filter(g => 
-    g.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    g.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (g.notes && g.notes.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const searchLower = (searchTerm || '').toLowerCase().trim();
+  const filteredGuests = guests.filter(g => {
+    if (!searchLower) return true;
+    const gEmail = (g?.email || '').toLowerCase();
+    const gName = (g?.name || '').toLowerCase();
+    const gNotes = (g?.notes || '').toLowerCase();
+    return gEmail.includes(searchLower) || gName.includes(searchLower) || gNotes.includes(searchLower);
+  });
 
   return (
     <div className="bg-white rounded-2xl border border-border shadow-lg p-6 space-y-6 max-w-4xl mx-auto text-left font-sans">

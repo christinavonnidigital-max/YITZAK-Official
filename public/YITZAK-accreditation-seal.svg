@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDF2C7"/>
+      <stop offset="25%" stop-color="#E5C158"/>
+      <stop offset="50%" stop-color="#B68A35"/>
+      <stop offset="75%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#8C661D"/>
+    </linearGradient>
+    <linearGradient id="shieldGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF3CE"/>
+      <stop offset="50%" stop-color="#C59B45"/>
+      <stop offset="100%" stop-color="#734F0C"/>
+    </linearGradient>
+    <radialGradient id="sealBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#034d35"/>
+      <stop offset="85%" stop-color="#023625"/>
+      <stop offset="100%" stop-color="#012117"/>
+    </radialGradient>
+    <path id="topTextArc" d="M 80 250 A 170 170 0 0 1 420 250" fill="none" />
+    <path id="bottomTextArc" d="M 420 250 A 170 170 0 0 1 80 250" fill="none" />
+    <filter id="sealShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#sealShadow)">
+    <!-- Outer Beaded Edge -->
+    <circle cx="250" cy="250" r="236" fill="#B68A35" stroke="#FDF2C7" stroke-width="2"/>
+    <circle cx="250" cy="250" r="231" fill="none" stroke="#66460B" stroke-width="1.5" stroke-dasharray="3, 3"/>
+    
+    <!-- Outer Deep Forest Green Ring -->
+    <circle cx="250" cy="250" r="225" fill="url(#sealBg)" stroke="url(#goldGradient)" stroke-width="5"/>
+    
+    <!-- Inner Accent Ring -->
+    <circle cx="250" cy="250" r="195" fill="none" stroke="url(#goldGradient)" stroke-width="1.5" stroke-dasharray="4, 2"/>
+  </g>
+
+  <!-- Circular Arching Typography -->
+  <text font-family="'Plus Jakarta Sans', Arial, sans-serif" font-weight="800" font-size="13" fill="url(#goldGradient)" letter-spacing="3.5">
+    <textPath href="#topTextArc" startOffset="50%" text-anchor="middle">
+      &#9733; YITZAK EXECUTIVE ADVISORY &#9733;
+    </textPath>
+  </text>
+
+  <text font-family="'Plus Jakarta Sans', Arial, sans-serif" font-weight="800" font-size="11.5" fill="url(#goldGradient)" letter-spacing="3">
+    <textPath href="#bottomTextArc" startOffset="50%" text-anchor="middle">
+      &#8226; ACCREDITATION &amp; GOVERNANCE SEAL &#8226;
+    </textPath>
+  </text>
+
+  <!-- Inner Medallion Center -->
+  <circle cx="250" cy="250" r="144" fill="#012117" stroke="url(#goldGradient)" stroke-width="3.5"/>
+  <circle cx="250" cy="250" r="138" fill="none" stroke="#B68A35" stroke-width="1" opacity="0.6"/>
+
+  <!-- Left Laurel Branch -->
+  <g stroke="url(#goldGradient)" fill="url(#goldGradient)" stroke-width="1.5">
+    <path d="M 160 270 C 152 230 162 195 185 165" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M 165 255 C 150 252 145 242 152 238 C 160 236 166 244 165 255 Z"/>
+    <path d="M 160 235 C 145 230 142 218 150 215 C 158 214 163 222 160 235 Z"/>
+    <path d="M 162 212 C 148 205 147 192 156 190 C 164 191 167 200 162 212 Z"/>
+    <path d="M 170 190 C 158 180 160 168 169 168 C 176 170 176 180 170 190 Z"/>
+    <path d="M 183 170 C 175 160 180 148 189 150 C 195 154 191 164 183 170 Z"/>
+  </g>
+
+  <!-- Right Laurel Branch -->
+  <g stroke="url(#goldGradient)" fill="url(#goldGradient)" stroke-width="1.5">
+    <path d="M 340 270 C 348 230 338 195 315 165" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M 335 255 C 350 252 355 242 348 238 C 340 236 334 244 335 255 Z"/>
+    <path d="M 340 235 C 355 230 358 218 350 215 C 342 214 337 222 340 235 Z"/>
+    <path d="M 338 212 C 352 205 353 192 344 190 C 336 191 333 200 338 212 Z"/>
+    <path d="M 330 190 C 342 180 340 168 331 168 C 324 170 324 180 330 190 Z"/>
+    <path d="M 317 170 C 325 160 320 148 311 150 C 305 154 309 164 317 170 Z"/>
+  </g>
+
+  <!-- Center Official YITZAK Shield -->
+  <g transform="translate(200, 168) scale(0.5)">
+    <g fill="url(#shieldGold)">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="
+        M 100 12
+        C 132 28, 164 36, 185 48
+        C 185 122, 158 190, 100 230
+        C 42 190, 15 122, 15 48
+        C 36 36, 68 28, 100 12 Z
+        M 100 34
+        C 126 47, 151 54, 166 64
+        C 166 122, 144 176, 100 210
+        C 56 176, 34 122, 34 64
+        C 49 54, 74 47, 100 34 Z
+      "/>
+      <path d="M 60 114 L 88 146 L 146 76 L 134 66 L 88 128 L 70 106 Z"/>
+      <path d="M 100 196 C 74 182, 52 168, 46 142 C 62 145, 82 166, 100 196 Z"/>
+      <path d="M 100 196 C 126 182, 148 168, 154 142 C 138 145, 118 166, 100 196 Z"/>
+    </g>
+  </g>
+
+  <!-- Central Gold Banner -->
+  <g filter="url(#sealShadow)">
+    <path d="M 166 292 L 250 285 L 334 292 L 324 316 L 250 311 L 176 316 Z" fill="url(#goldGradient)" stroke="#66460B" stroke-width="1"/>
+    <text x="250" y="305" font-family="'Plus Jakarta Sans', Arial, sans-serif" font-weight="900" font-size="11" fill="#012117" text-anchor="middle" letter-spacing="2">
+      VERIFIED &#8226; 2026
+    </text>
+  </g>
+
+  <!-- Bottom Gold Stars -->
+  <g fill="url(#goldGradient)">
+    <polygon points="250,330 253,337 260,337 254,341 256,348 250,344 244,348 246,341 240,337 247,337" />
+    <polygon points="228,333 230,339 236,339 231,343 233,349 228,345 223,349 225,343 220,339 226,339" />
+    <polygon points="272,333 274,339 280,339 275,343 277,349 272,345 267,349 269,343 264,339 270,339" />
+  </g>
+</svg>

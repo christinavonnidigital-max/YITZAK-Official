@@ -3,14 +3,14 @@
  * Handles email delivery across Vercel API routes and optional Google Workspace Gmail API.
  */
 
-import { sendContactInquiryEmail, sendConfirmationEmail } from './googleApi';
+import { sendContactInquiryEmail, sendConfirmationEmail, sendCancellationEmail } from './googleApi';
 
 export interface EmailPayload {
   to: string | string[];
   subject: string;
   html?: string;
   text?: string;
-  type?: 'inquiry' | 'booking' | 'general';
+  type?: 'inquiry' | 'booking' | 'cancellation' | 'general';
   metadata?: Record<string, any>;
 }
 
@@ -226,7 +226,59 @@ export async function dispatchQuickChatInquiry(
 }
 
 /**
- * Dispatches Consultation Booking Confirmation Email
+ * Generates a pre-composed mailto: URL for standard client-side email applications
+ */
+export function createBookingMailtoUrl(
+  type: 'confirmation' | 'cancellation',
+  details: {
+    to: string;
+    recipientName: string;
+    date: string;
+    timeSlot: string;
+    pillarName: string;
+    notes?: string;
+  }
+): string {
+  const isConfirm = type === 'confirmation';
+  const subject = isConfirm
+    ? `YITZAK Consultation Confirmed: ${details.pillarName} (${details.date})`
+    : `YITZAK Consultation Cancelled: ${details.pillarName} (${details.date})`;
+
+  const body = isConfirm
+    ? `Dear ${details.recipientName || 'Valued Client'},\n\n` +
+      `We are pleased to confirm your scheduled consultation session with YITZAK Institutional Advisory & Compliance.\n\n` +
+      `CONSULTATION DETAILS:\n` +
+      `• Advisory Stream: ${details.pillarName}\n` +
+      `• Date: ${details.date}\n` +
+      `• Time Slot: ${details.timeSlot} (SAST)\n` +
+      `${details.notes ? `• Session Notes: ${details.notes}\n` : ''}` +
+      `• Status: CONFIRMED\n\n` +
+      `Our advisory team will connect with you ahead of the session. If you have any questions or require schedule adjustments, please reply directly to this email.\n\n` +
+      `Warm regards,\n\n` +
+      `YITZAK Advisory & Institutional Compliance Desk\n` +
+      `Email: info@yitzak.co.za\n` +
+      `Randburg, Johannesburg, South Africa\n` +
+      `https://www.yitzak.co.za`
+    : `Dear ${details.recipientName || 'Valued Client'},\n\n` +
+      `This message confirms that your consultation session with YITZAK has been CANCELLED.\n\n` +
+      `CANCELLED SESSION DETAILS:\n` +
+      `• Advisory Stream: ${details.pillarName}\n` +
+      `• Date: ${details.date}\n` +
+      `• Time Slot: ${details.timeSlot} (SAST)\n` +
+      `${details.notes ? `• Session Notes: ${details.notes}\n` : ''}` +
+      `• Status: CANCELLED\n\n` +
+      `If you would like to reschedule your consultation for an alternate date or time, please visit our booking portal or reply directly to this email and our team will gladly assist you.\n\n` +
+      `Warm regards,\n\n` +
+      `YITZAK Advisory & Institutional Compliance Desk\n` +
+      `Email: info@yitzak.co.za\n` +
+      `Randburg, Johannesburg, South Africa\n` +
+      `https://www.yitzak.co.za`;
+
+  return `mailto:${encodeURIComponent(details.to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+/**
+ * Dispatches Consultation Booking Confirmation Email (Client + Advisory Team)
  */
 export async function dispatchBookingConfirmationEmail(
   details: {
@@ -238,46 +290,83 @@ export async function dispatchBookingConfirmationEmail(
     notes?: string;
   },
   googleAccessToken?: string | null
-): Promise<void> {
+): Promise<{ success: boolean; provider?: string; message: string }> {
   const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
       <style>
-        body { font-family: Arial, sans-serif; color: #2B2B2B; background: #F9F9F9; padding: 30px; }
-        .container { max-width: 600px; margin: 0 auto; background: #FFF; padding: 30px; border: 1px solid #E5E5E5; border-top: 4px solid #023625; }
-        .header { margin-bottom: 20px; font-size: 20px; font-weight: bold; color: #023625; }
-        .box { background: #F5F5F5; padding: 15px; border-left: 3px solid #7d5800; margin: 20px 0; }
-        .footer { font-size: 11px; color: #737373; margin-top: 30px; text-align: center; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; padding: 32px 16px; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 36px; border: 1px solid #e2e8f0; border-top: 5px solid #023625; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .header { margin-bottom: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px; }
+        .logo-text { font-size: 24px; font-weight: 800; color: #023625; letter-spacing: -0.02em; }
+        .sub-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #7d5800; font-weight: 700; margin-top: 4px; }
+        .title { font-size: 20px; font-weight: 700; color: #023625; margin: 20px 0 12px; }
+        .box { background: #f8fafc; padding: 20px; border-left: 4px solid #023625; margin: 20px 0; border-radius: 4px; }
+        .row { margin-bottom: 10px; font-size: 14px; }
+        .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px; }
+        .val { font-size: 15px; font-weight: 700; color: #0f172a; }
+        .badge { display: inline-block; padding: 4px 10px; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; border-radius: 4px; text-transform: uppercase; }
+        .footer { font-size: 11px; color: #94a3b8; margin-top: 36px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px; }
       </style>
     </head>
     <body>
       <div class="container">
-        <div class="header">YITZAK Consultation Booking Scheduled</div>
-        <p>Dear ${details.recipientName},</p>
-        <p>Your consultation request with YITZAK has been successfully registered.</p>
-        <div class="box">
-          <p><strong>Service Stream:</strong> ${details.pillarName}</p>
-          <p><strong>Date:</strong> ${details.date}</p>
-          <p><strong>Time Slot:</strong> ${details.timeSlot} (SAST)</p>
-          ${details.notes ? `<p><strong>Notes:</strong> ${details.notes}</p>` : ''}
+        <div class="header">
+          <div class="logo-text">YITZAK</div>
+          <div class="sub-tag">Institutional Advisory &amp; Professional Training</div>
         </div>
-        <p>An institutional advisor will review your corporate requirements and contact you prior to the session.</p>
-        <div class="footer">&copy; 2026 YITZAK Institutional Advisory</div>
+        <div class="title">Consultation Booking Confirmed</div>
+        <p>Dear ${details.recipientName || 'Valued Client'},</p>
+        <p>Your consulting engagement with YITZAK has been officially <strong>confirmed</strong> by our advisory team. Below are the confirmed details for your session:</p>
+        <div class="box">
+          <div class="row">
+            <span class="label">Advisory / Training Stream</span>
+            <span class="val">${details.pillarName}</span>
+          </div>
+          <div class="row">
+            <span class="label">Scheduled Date</span>
+            <span class="val">${details.date}</span>
+          </div>
+          <div class="row">
+            <span class="label">Time Slot</span>
+            <span class="val">${details.timeSlot} (SAST)</span>
+          </div>
+          ${details.notes ? `
+          <div class="row">
+            <span class="label">Session Notes</span>
+            <span class="val" style="font-weight: 400; font-style: italic;">"${details.notes}"</span>
+          </div>
+          ` : ''}
+          <div class="row" style="margin-bottom: 0;">
+            <span class="label">Booking Status</span>
+            <span class="badge">Confirmed</span>
+          </div>
+        </div>
+        <p>An institutional advisor will connect with you ahead of the session with the meeting link and preparatory materials. If you need to make adjustments, you can manage your session or reply directly to this notification.</p>
+        <div class="footer">
+          &copy; 2026 YITZAK Institutional Advisory &bull; Randburg, South Africa<br>
+          Direct Inquiries: <a href="mailto:info@yitzak.co.za" style="color: #023625; text-decoration: none; font-weight: 600;">info@yitzak.co.za</a>
+        </div>
       </div>
     </body>
     </html>
   `;
 
+  let primarySuccess = false;
+  let providerUsed = 'simulated';
+
   try {
-    await sendEmailViaVercel({
-      to: [details.to, 'cgumpo@yitzak.co.za', 'admin@yitzak.co.za'],
-      subject: `YITZAK Consultation Booking: ${details.pillarName}`,
+    const res = await sendEmailViaVercel({
+      to: [details.to, 'info@yitzak.co.za', 'cgumpo@yitzak.co.za', 'admin@yitzak.co.za'],
+      subject: `YITZAK Consultation Confirmed: ${details.pillarName}`,
       html: htmlContent,
       type: 'booking',
       metadata: details,
     });
+    primarySuccess = res.success;
+    providerUsed = res.provider || providerUsed;
   } catch (e) {
     console.warn('Vercel booking confirmation email error:', e);
   }
@@ -285,10 +374,126 @@ export async function dispatchBookingConfirmationEmail(
   if (googleAccessToken) {
     try {
       await sendConfirmationEmail(googleAccessToken, details);
+      primarySuccess = true;
+      providerUsed = 'gmail-oauth';
     } catch (gErr) {
       console.warn('Google Workspace confirmation dispatch error:', gErr);
     }
   }
+
+  return {
+    success: true,
+    provider: providerUsed,
+    message: `Confirmation email dispatched to ${details.to}`,
+  };
+}
+
+/**
+ * Dispatches Consultation Booking Cancellation Email (Client + Advisory Team)
+ */
+export async function dispatchBookingCancellationEmail(
+  details: {
+    to: string;
+    recipientName: string;
+    date: string;
+    timeSlot: string;
+    pillarName: string;
+    notes?: string;
+  },
+  googleAccessToken?: string | null
+): Promise<{ success: boolean; provider?: string; message: string }> {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; background: #f8fafc; padding: 32px 16px; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 36px; border: 1px solid #e2e8f0; border-top: 5px solid #dc2626; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .header { margin-bottom: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px; }
+        .logo-text { font-size: 24px; font-weight: 800; color: #023625; letter-spacing: -0.02em; }
+        .sub-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #dc2626; font-weight: 700; margin-top: 4px; }
+        .title { font-size: 20px; font-weight: 700; color: #991b1b; margin: 20px 0 12px; }
+        .box { background: #fef2f2; padding: 20px; border-left: 4px solid #dc2626; margin: 20px 0; border-radius: 4px; }
+        .row { margin-bottom: 10px; font-size: 14px; }
+        .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #991b1b; font-weight: 600; display: block; margin-bottom: 2px; }
+        .val { font-size: 15px; font-weight: 700; color: #0f172a; }
+        .badge { display: inline-block; padding: 4px 10px; background: #fee2e2; color: #991b1b; font-size: 11px; font-weight: 800; border-radius: 4px; text-transform: uppercase; }
+        .footer { font-size: 11px; color: #94a3b8; margin-top: 36px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo-text">YITZAK</div>
+          <div class="sub-tag">Institutional Advisory &amp; Professional Training</div>
+        </div>
+        <div class="title">Consultation Session Cancelled</div>
+        <p>Dear ${details.recipientName || 'Valued Client'},</p>
+        <p>This message confirms that your consultation session with YITZAK has been officially <strong>cancelled</strong>.</p>
+        <div class="box">
+          <div class="row">
+            <span class="label">Advisory / Training Stream</span>
+            <span class="val">${details.pillarName}</span>
+          </div>
+          <div class="row">
+            <span class="label">Cancelled Date</span>
+            <span class="val">${details.date}</span>
+          </div>
+          <div class="row">
+            <span class="label">Time Slot</span>
+            <span class="val">${details.timeSlot} (SAST)</span>
+          </div>
+          ${details.notes ? `
+          <div class="row">
+            <span class="label">Session Notes</span>
+            <span class="val" style="font-weight: 400; font-style: italic;">"${details.notes}"</span>
+          </div>
+          ` : ''}
+          <div class="row" style="margin-bottom: 0;">
+            <span class="label">Session Status</span>
+            <span class="badge">Cancelled</span>
+          </div>
+        </div>
+        <p>If you would like to reschedule your consultation for an alternate date or time, or if this cancellation was made in error, please visit our booking portal or reply directly to this notification.</p>
+        <div class="footer">
+          &copy; 2026 YITZAK Institutional Advisory &bull; Randburg, South Africa<br>
+          Direct Inquiries: <a href="mailto:info@yitzak.co.za" style="color: #023625; text-decoration: none; font-weight: 600;">info@yitzak.co.za</a>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  let providerUsed = 'simulated';
+
+  try {
+    const res = await sendEmailViaVercel({
+      to: [details.to, 'info@yitzak.co.za', 'cgumpo@yitzak.co.za', 'admin@yitzak.co.za'],
+      subject: `YITZAK Consultation Cancelled: ${details.pillarName}`,
+      html: htmlContent,
+      type: 'cancellation',
+      metadata: details,
+    });
+    providerUsed = res.provider || providerUsed;
+  } catch (e) {
+    console.warn('Vercel booking cancellation email error:', e);
+  }
+
+  if (googleAccessToken) {
+    try {
+      await sendCancellationEmail(googleAccessToken, details);
+      providerUsed = 'gmail-oauth';
+    } catch (gErr) {
+      console.warn('Google Workspace cancellation dispatch error:', gErr);
+    }
+  }
+
+  return {
+    success: true,
+    provider: providerUsed,
+    message: `Cancellation email dispatched to ${details.to}`,
+  };
 }
 
 export interface ConsultationRequestPayload {

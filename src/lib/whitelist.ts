@@ -40,6 +40,22 @@ export const INITIAL_WHITELIST_SEEDS: Omit<WhitelistedGuest, 'id'>[] = [
     notes: 'Institutional Advisory Lead',
   },
   {
+    email: 'christinavonnidigital@gmail.com',
+    name: 'Christina Vonni (Digital Executive)',
+    status: 'active',
+    role: 'admin',
+    addedAt: new Date().toISOString(),
+    notes: 'Institutional Administrator Account (Email Verified Authentication)',
+  },
+  {
+    email: 'christinagumpo@gmail.com',
+    name: 'Christina Gumpo (Personal Admin)',
+    status: 'active',
+    role: 'admin',
+    addedAt: new Date().toISOString(),
+    notes: 'Alternate Administrator Account',
+  },
+  {
     email: 'compliance@clientcompany.com',
     name: 'Corporate Client Portal Lead',
     status: 'active',
@@ -113,7 +129,7 @@ export async function checkEmailWhitelist(email: string): Promise<{
 
   // 2. Check Seed / Pre-registered List
   const seedMatch = INITIAL_WHITELIST_SEEDS.find(
-    item => item.email.toLowerCase() === cleanEmail
+    item => (item?.email || '').toLowerCase() === cleanEmail
   );
 
   if (seedMatch) {
@@ -142,7 +158,7 @@ export async function checkEmailWhitelist(email: string): Promise<{
       localStorage.getItem('yitzak_whitelisted_guests') || '[]'
     );
     const localMatch = localWhitelist.find(
-      item => item.email.toLowerCase() === cleanEmail && item.status === 'active'
+      item => (item?.email || '').toLowerCase() === cleanEmail && item.status === 'active'
     );
     if (localMatch) {
       return {
@@ -223,7 +239,9 @@ export async function fetchAllWhitelistedGuests(): Promise<WhitelistedGuest[]> {
       localStorage.getItem('yitzak_whitelisted_guests') || '[]'
     );
     localList.forEach(item => {
-      guestMap.set(item.email.toLowerCase(), item);
+      if (item && item.email) {
+        guestMap.set(item.email.toLowerCase(), item);
+      }
     });
   } catch (e) {
     console.warn('LocalStorage whitelist read error:', e);
@@ -251,7 +269,7 @@ export async function fetchAllWhitelistedGuests(): Promise<WhitelistedGuest[]> {
  * Remove/Revoke a guest from the Firestore Whitelist.
  */
 export async function removeGuestFromWhitelist(docId: string, email: string): Promise<void> {
-  const cleanEmail = email.trim().toLowerCase();
+  const cleanEmail = (email || '').trim().toLowerCase();
   
   try {
     await deleteDoc(doc(db, 'whitelisted_guests', docId));
@@ -263,7 +281,7 @@ export async function removeGuestFromWhitelist(docId: string, email: string): Pr
     const localList: WhitelistedGuest[] = JSON.parse(
       localStorage.getItem('yitzak_whitelisted_guests') || '[]'
     );
-    const updated = localList.filter(i => i.email.toLowerCase() !== cleanEmail);
+    const updated = localList.filter(i => (i?.email || '').toLowerCase() !== cleanEmail);
     localStorage.setItem('yitzak_whitelisted_guests', JSON.stringify(updated));
   } catch (e) {
     console.warn('LocalStorage delete error:', e);

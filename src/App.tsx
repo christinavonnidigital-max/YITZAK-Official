@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow, ExternalLink, Info } from 'lucide-react';
+import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow, ExternalLink, Info, Eye, EyeOff } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
 import { Analytics } from '@vercel/analytics/react';
@@ -32,6 +32,8 @@ const KnowledgeCenter = lazy(() => import('./components/KnowledgeCenter'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
 const NotFoundPage = lazy(() => import('./components/NotFoundPage'));
 const FaviconModal = lazy(() => import('./components/FaviconModal'));
+const ChangePasswordModal = lazy(() => import('./components/ChangePasswordModal'));
+import { verifyAdminPassword, isDefaultAdminPassword } from './lib/authSecurity';
 import { getStoredFavicon, applyFaviconToDocument } from './lib/faviconUtils';
 import { 
   getStoredTrainingHero, 
@@ -103,12 +105,14 @@ export default function App() {
   }, []);
 
   const isAdministratorEmail = (email: string) => {
-    const lower = email.trim().toLowerCase();
+    if (!email) return false;
+    const lower = (email || '').trim().toLowerCase();
     return (
       lower === 'cgumpo@yitzak.co.za' ||
       lower === 'admin@yitzak.co.za' ||
       lower.endsWith('@yitzak.co.za') ||
-      lower === 'christinagumpo@gmail.com'
+      lower === 'christinagumpo@gmail.com' ||
+      lower === 'christinavonnidigital@gmail.com'
     );
   };
 
@@ -144,6 +148,8 @@ export default function App() {
   const [portalWorkEmail, setPortalWorkEmail] = useState('');
   const [portalAuthMethod, setPortalAuthMethod] = useState<'password' | 'code'>('code');
   const [portalPassword, setPortalPassword] = useState('');
+  const [showPortalPassword, setShowPortalPassword] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [portalOneTimeCode, setPortalOneTimeCode] = useState('');
   const [portalCodeSent, setPortalCodeSent] = useState(false);
   const [portalSendingCode, setPortalSendingCode] = useState(false);
@@ -221,7 +227,7 @@ export default function App() {
     }
 
     if (!isAdministratorEmail(emailToUse)) {
-      setPortalLoginError("Access Restricted: This portal is strictly designated for YITZAK Content Management & Administration (e.g. cgumpo@yitzak.co.za). Client inquiries should be submitted via the Contact Desk.");
+      setPortalLoginError("Access Restricted: This portal is strictly designated for authorized YITZAK administrators. Client inquiries should be submitted via the Contact Desk.");
       return;
     }
 
@@ -275,13 +281,19 @@ export default function App() {
     }
 
     if (!isAdministratorEmail(emailToValidate)) {
-      setPortalLoginError("Access Restricted: This portal is strictly designated for YITZAK Content Management & Administration (e.g. cgumpo@yitzak.co.za). Client inquiries should be submitted via the Contact Desk.");
+      setPortalLoginError("Access Restricted: This portal is strictly designated for authorized YITZAK administrators. Client inquiries should be submitted via the Contact Desk.");
       return;
     }
 
     if (portalAuthMethod === 'password') {
-      if (!portalPassword.trim()) {
-        setPortalLoginError("Please enter your account password.");
+      const enteredPassword = portalPassword.trim();
+      if (!enteredPassword) {
+        setPortalLoginError("Please enter your administrator password.");
+        return;
+      }
+      const verification = verifyAdminPassword(enteredPassword, emailToValidate);
+      if (!verification.valid) {
+        setPortalLoginError(verification.errorMessage || "Incorrect password. Click 'Forgot / Set Password' below to verify via email.");
         return;
       }
     } else if (portalAuthMethod === 'code') {
@@ -304,7 +316,7 @@ export default function App() {
           const raw = sessionStorage.getItem('yitzak_portal_code');
           if (raw) {
             const parsed = JSON.parse(raw);
-            if (parsed.email === emailToValidate.toLowerCase()) {
+            if (parsed && typeof parsed.email === 'string' && parsed.email.toLowerCase() === (emailToValidate || '').toLowerCase()) {
               activeCode = parsed.code;
               expiresAt = parsed.expiresAt;
             }
@@ -3090,7 +3102,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className="bg-[#F9F9F9] min-h-screen text-[#2D3142] py-12 md:py-16 px-4 sm:px-6 md:px-12 lg:px-16"
+            className="bg-[#F9F9F9] min-h-screen text-[#2D3142] py-6 sm:py-10 md:py-16 px-2.5 sm:px-6 md:px-12 lg:px-16"
           >
             <div className="max-w-[1280px] mx-auto space-y-8">
               <div className="text-center space-y-3">
@@ -3168,6 +3180,27 @@ export default function App() {
                         </motion.div>
                       )}
 
+                      {/* Google Administrator Single Sign-On */}
+                      <button
+                        type="button"
+                        onClick={handleGoogleLoginOnly}
+                        className="w-full py-2.5 px-4 bg-white border border-border hover:border-[#B68A35] text-charcoal hover:text-primary rounded-xl text-xs font-sans font-bold flex items-center justify-center gap-2.5 transition-all shadow-2xs cursor-pointer hover:bg-mist/30"
+                      >
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                        <span>Sign In with Google Administrator Account</span>
+                      </button>
+
+                      <div className="relative flex py-1 items-center">
+                        <div className="flex-grow border-t border-border"></div>
+                        <span className="flex-shrink mx-3 text-[10px] font-mono text-ash uppercase tracking-wider">or continue with work email</span>
+                        <div className="flex-grow border-t border-border"></div>
+                      </div>
+
                       {/* Admin Login Form */}
                       <form onSubmit={handlePortalWorkEmailLogin} className="space-y-4">
                         <div>
@@ -3175,16 +3208,9 @@ export default function App() {
                             <label className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold">
                               Administrator Work Email
                             </label>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPortalWorkEmail('cgumpo@yitzak.co.za');
-                                if (portalLoginError) setPortalLoginError(null);
-                              }}
-                              className="text-[10px] text-[#B68A35] hover:underline font-semibold cursor-pointer"
-                            >
-                              Quick select: cgumpo@yitzak.co.za
-                            </button>
+                            <span className="text-[10px] text-ash/80 font-mono">
+                              Institutional Access Only
+                            </span>
                           </div>
                           <div className="relative">
                             <Mail className="absolute left-3 top-3 text-ash/60" size={16} />
@@ -3196,7 +3222,7 @@ export default function App() {
                                 setPortalWorkEmail(e.target.value);
                                 if (portalLoginError) setPortalLoginError(null);
                               }}
-                              placeholder="cgumpo@yitzak.co.za"
+                              placeholder="admin@yitzak.co.za"
                               className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors font-mono"
                             />
                           </div>
@@ -3235,24 +3261,50 @@ export default function App() {
                           </div>
 
                           {portalAuthMethod === 'password' ? (
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-3 text-ash/60" size={16} />
-                              <input
-                                type="password"
-                                value={portalPassword}
-                                onChange={(e) => {
-                                  setPortalPassword(e.target.value);
-                                  if (portalLoginError) setPortalLoginError(null);
-                                }}
-                                placeholder="Enter administrator password"
-                                className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
-                              />
+                            <div className="space-y-2">
+                              <div className="relative">
+                                <Lock className="absolute left-3 top-3 text-ash/60" size={16} />
+                                <input
+                                  type={showPortalPassword ? 'text' : 'password'}
+                                  value={portalPassword}
+                                  onChange={(e) => {
+                                    setPortalPassword(e.target.value);
+                                    if (portalLoginError) setPortalLoginError(null);
+                                  }}
+                                  placeholder="Enter administrator password"
+                                  className="w-full pl-9 pr-10 py-2.5 border border-border rounded-xl text-xs text-charcoal outline-none focus:border-[#B68A35] focus:ring-1 focus:ring-[#B68A35] bg-white font-sans transition-colors"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPortalPassword(!showPortalPassword)}
+                                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer transition-colors"
+                                  title={showPortalPassword ? 'Hide password' : 'Show password'}
+                                >
+                                  {showPortalPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                                </button>
+                              </div>
+
+                              <div className="flex items-center justify-between text-[11px] pt-0.5">
+                                <span className="text-slate-500 text-[10px] flex items-center gap-1 font-mono">
+                                  <ShieldCheck size={11} className="text-[#B68A35]" />
+                                  <span>Secure Credential Check</span>
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setIsChangePasswordModalOpen(true)}
+                                  className="text-[#B68A35] hover:text-[#9E7528] font-bold hover:underline flex items-center gap-1 cursor-pointer text-xs"
+                                >
+                                  <KeyRound size={12} />
+                                  <span>Set or Change Password</span>
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <div className="space-y-2">
                               {!portalCodeSent ? (
                                 <div className="text-[11px] text-ash bg-mist/60 p-2.5 rounded-lg border border-border/60 leading-relaxed">
-                                  A real random 6-digit one-time code will be dispatched to your inbox ({portalWorkEmail || 'e.g. cgumpo@yitzak.co.za'}) upon clicking below.
+                                  A real random 6-digit one-time code will be dispatched to your inbox ({portalWorkEmail || 'your administrator email'}) upon clicking below.
                                 </div>
                               ) : (
                                 <div className="space-y-1.5">
@@ -3401,6 +3453,24 @@ export default function App() {
                         </Suspense>
                       </div>
                     </div>
+                  )}
+
+                  {/* Modal overlay for Change Password */}
+                  {isChangePasswordModalOpen && (
+                    <Suspense fallback={null}>
+                      <ChangePasswordModal
+                        isOpen={isChangePasswordModalOpen}
+                        onClose={() => setIsChangePasswordModalOpen(false)}
+                        userEmail={portalWorkEmail || ''}
+                        onPasswordChanged={(newPwd, changedEmail) => {
+                          if (changedEmail && !portalWorkEmail) {
+                            setPortalWorkEmail(changedEmail);
+                          }
+                          setPortalPassword(newPwd);
+                          setPortalLoginError(null);
+                        }}
+                      />
+                    </Suspense>
                   )}
                 </div>
               )}

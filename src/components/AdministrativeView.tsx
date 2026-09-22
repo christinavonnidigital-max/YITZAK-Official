@@ -33,12 +33,29 @@ import {
   RefreshCw, 
   Image as ImageIcon,
   Upload,
-  Download
+  Download,
+  KeyRound,
+  Lock,
+  AlertCircle,
+  X,
+  Send
 } from 'lucide-react';
 import { doc, updateDoc, serverTimestamp, collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db, getAccessToken, OperationType, handleFirestoreError } from '../lib/firebase';
+import { db, auth, getAccessToken, OperationType, handleFirestoreError } from '../lib/firebase';
 import { Booking } from '../types';
+import { 
+  dispatchBookingConfirmationEmail, 
+  dispatchBookingCancellationEmail, 
+  createBookingMailtoUrl 
+} from '../lib/emailService';
 import WhitelistManager from './WhitelistManager';
+import ChangePasswordModal from './ChangePasswordModal';
+import { 
+  getStoredAdminPassword, 
+  isDefaultAdminPassword, 
+  getAdminPasswordLastUpdated,
+  resetAdminPasswordToDefault
+} from '../lib/authSecurity';
 import { getCMSState, saveCMSState, CMSState, CMSFAQItem } from '../lib/cmsState';
 import { 
   getStoredTrainingHero, 
@@ -48,6 +65,14 @@ import {
   DEFAULT_TRAINING_HERO, 
   FALLBACK_TRAINING_HERO 
 } from '../lib/mediaAssets';
+import {
+  getStoredCustomEmblem,
+  getStoredCustomSeal,
+  downloadFileFromUrl,
+  downloadSvgFile,
+  getShieldSvgString,
+  getAccreditationSealSvgString
+} from '../lib/brandAssets';
 
 interface AdministrativeViewProps {
   bookings: Booking[];
@@ -72,6 +97,15 @@ export default function AdministrativeView({
   const [referralStatusFilter, setReferralStatusFilter] = useState<'all' | 'needs_coordination' | 'click_logged' | 'coordination_complete' | 'cancelled'>('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  // Email Dispatch & Status State
+  const [emailStatusToast, setEmailStatusToast] = useState<{
+    type: 'success' | 'info' | 'error';
+    message: string;
+    email: string;
+    mailtoUrl?: string;
+  } | null>(null);
+  const [sendingEmailBookingId, setSendingEmailBookingId] = useState<string | null>(null);
+
   // CMS Form State
   const [cms, setCms] = useState<CMSState>(() => getCMSState());
   const [cmsSavedToast, setCmsSavedToast] = useState(false);
@@ -87,6 +121,16 @@ export default function AdministrativeView({
   const [isProcessingHero, setIsProcessingHero] = useState(false);
   const [heroPhotoToast, setHeroPhotoToast] = useState<{ type: 'success' | 'info'; text: string } | null>(null);
   const cmsHeroFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Official Emblem & Accreditation Seal State
+  const [officialEmblem, setOfficialEmblem] = useState<string>(() => getStoredCustomEmblem());
+  const [accreditationSeal, setAccreditationSeal] = useState<string>(() => getStoredCustomSeal());
+
+  // Password Security State
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isDefaultPassword, setIsDefaultPassword] = useState(() => isDefaultAdminPassword());
+  const [passwordLastUpdated, setPasswordLastUpdated] = useState(() => getAdminPasswordLastUpdated());
+  const [passwordNotice, setPasswordNotice] = useState<string | null>(null);
 
   // Inquiries State
   const [inquiries, setInquiries] = useState<any[]>([]);
@@ -109,6 +153,32 @@ export default function AdministrativeView({
     };
     window.addEventListener('yitzak-training-hero-updated', handleHeroUpdate);
     return () => window.removeEventListener('yitzak-training-hero-updated', handleHeroUpdate);
+  }, []);
+
+  useEffect(() => {
+    const handleEmblemUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ emblemUrl?: string }>;
+      setOfficialEmblem(customEvent.detail?.emblemUrl || getStoredCustomEmblem());
+    };
+    const handleSealUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ sealUrl?: string }>;
+      setAccreditationSeal(customEvent.detail?.sealUrl || getStoredCustomSeal());
+    };
+    window.addEventListener('yitzak-emblem-updated', handleEmblemUpdate);
+    window.addEventListener('yitzak-seal-updated', handleSealUpdate);
+    return () => {
+      window.removeEventListener('yitzak-emblem-updated', handleEmblemUpdate);
+      window.removeEventListener('yitzak-seal-updated', handleSealUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handlePasswordChange = () => {
+      setIsDefaultPassword(isDefaultAdminPassword());
+      setPasswordLastUpdated(getAdminPasswordLastUpdated());
+    };
+    window.addEventListener('yitzak-admin-password-changed', handlePasswordChange);
+    return () => window.removeEventListener('yitzak-admin-password-changed', handlePasswordChange);
   }, []);
 
   const handleHeroFileSelect = async (file: File) => {
@@ -172,12 +242,24 @@ export default function AdministrativeView({
   const fetchInquiries = async () => {
     setInquiriesLoading(true);
     try {
-      const col = collection(db, 'inquiries');
-      const snap = await getDocs(col);
       const list: any[] = [];
-      snap.forEach(d => {
-        list.push({ id: d.id, ...d.data() });
-      });
+      const localInquiries = JSON.parse(localStorage.getItem('yitzak_inquiries') || '[]');
+      localInquiries.forEach((item: any) => list.push(item));
+
+      if (auth.currentUser) {
+        try {
+          const col = collection(db, 'inquiries');
+          const snap = await getDocs(col);
+          snap.forEach(d => {
+            if (!list.some(item => item.id === d.id)) {
+              list.push({ id: d.id, ...d.data() });
+            }
+          });
+        } catch (dbErr) {
+          console.warn('Firestore inquiries read note:', dbErr);
+        }
+      }
+
       list.sort((a, b) => {
         const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
         const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
@@ -252,36 +334,157 @@ export default function AdministrativeView({
 
   // Filter bookings based on controls
   const filteredBookings = bookings.filter(booking => {
+    const searchLower = (search || '').toLowerCase().trim();
+    const userName = (booking?.userName || '').toLowerCase();
+    const userEmail = (booking?.userEmail || '').toLowerCase();
+    const pillar = (booking?.pillar || '').toLowerCase();
+
     const matchesSearch = 
-      booking.userName.toLowerCase().includes(search.toLowerCase()) ||
-      booking.userEmail.toLowerCase().includes(search.toLowerCase()) ||
-      booking.pillar.toLowerCase().includes(search.toLowerCase());
+      !searchLower ||
+      userName.includes(searchLower) ||
+      userEmail.includes(searchLower) ||
+      pillar.includes(searchLower);
     
-    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || booking?.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
   // Filter referrals based on controls
   const filteredReferrals = referrals.filter(ref => {
+    const searchLower = (search || '').toLowerCase().trim();
+    const userName = (ref?.userName || '').toLowerCase();
+    const userEmail = (ref?.userEmail || '').toLowerCase();
+    const schemeName = (ref?.schemeName || '').toLowerCase();
+    const referralCode = (ref?.referralCode || '').toLowerCase();
+    const userCompany = (ref?.userCompany || '').toLowerCase();
+
     const matchesSearch = 
-      ref.userName.toLowerCase().includes(search.toLowerCase()) ||
-      ref.userEmail.toLowerCase().includes(search.toLowerCase()) ||
-      ref.schemeName.toLowerCase().includes(search.toLowerCase()) ||
-      (ref.referralCode && ref.referralCode.toLowerCase().includes(search.toLowerCase())) ||
-      (ref.userCompany && ref.userCompany.toLowerCase().includes(search.toLowerCase()));
+      !searchLower ||
+      userName.includes(searchLower) ||
+      userEmail.includes(searchLower) ||
+      schemeName.includes(searchLower) ||
+      referralCode.includes(searchLower) ||
+      userCompany.includes(searchLower);
     
-    const matchesStatus = referralStatusFilter === 'all' || ref.status === referralStatusFilter;
+    const matchesStatus = referralStatusFilter === 'all' || ref?.status === referralStatusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
-  const handleUpdateStatus = async (bookingId: string, currentEventId: string | undefined, newStatus: 'confirmed' | 'cancelled') => {
+  const handleDispatchBookingEmail = async (b: Booking, type: 'confirmation' | 'cancellation') => {
+    if (!b?.userEmail) {
+      alert('This booking record does not contain a recipient client email address.');
+      return;
+    }
+
+    setSendingEmailBookingId(b.id || b.userEmail);
+    try {
+      const accessToken = await getAccessToken().catch(() => null);
+      const mailto = createBookingMailtoUrl(type, {
+        to: b.userEmail,
+        recipientName: b.userName || 'Valued Client',
+        date: b.date || 'Scheduled Date',
+        timeSlot: b.timeSlot || 'Standard Slot',
+        pillarName: b.pillar || 'Professional Advisory & Compliance',
+        notes: b.notes,
+      });
+
+      if (type === 'confirmation') {
+        const res = await dispatchBookingConfirmationEmail({
+          to: b.userEmail,
+          recipientName: b.userName || 'Valued Client',
+          date: b.date || 'Scheduled Date',
+          timeSlot: b.timeSlot || 'Standard Slot',
+          pillarName: b.pillar || 'Professional Advisory & Compliance',
+          notes: b.notes,
+        }, accessToken);
+
+        setEmailStatusToast({
+          type: 'success',
+          message: `Booking confirmation email successfully dispatched to ${b.userEmail}`,
+          email: b.userEmail,
+          mailtoUrl: mailto
+        });
+      } else {
+        const res = await dispatchBookingCancellationEmail({
+          to: b.userEmail,
+          recipientName: b.userName || 'Valued Client',
+          date: b.date || 'Scheduled Date',
+          timeSlot: b.timeSlot || 'Standard Slot',
+          pillarName: b.pillar || 'Professional Advisory & Compliance',
+          notes: b.notes,
+        }, accessToken);
+
+        setEmailStatusToast({
+          type: 'info',
+          message: `Booking cancellation notice successfully dispatched to ${b.userEmail}`,
+          email: b.userEmail,
+          mailtoUrl: mailto
+        });
+      }
+    } catch (err: any) {
+      console.warn('Booking email dispatch note:', err);
+      const mailto = createBookingMailtoUrl(type, {
+        to: b.userEmail,
+        recipientName: b.userName || 'Valued Client',
+        date: b.date || 'Scheduled Date',
+        timeSlot: b.timeSlot || 'Standard Slot',
+        pillarName: b.pillar || 'Professional Advisory & Compliance',
+        notes: b.notes,
+      });
+      setEmailStatusToast({
+        type: 'info',
+        message: `Status recorded. You can also send the ${type} notice directly via your email client.`,
+        email: b.userEmail,
+        mailtoUrl: mailto
+      });
+    } finally {
+      setSendingEmailBookingId(null);
+    }
+  };
+
+  const handleUpdateStatus = async (
+    bookingId: string, 
+    currentEventId: string | undefined, 
+    newStatus: 'confirmed' | 'cancelled',
+    directBookingObj?: Booking
+  ) => {
     setUpdatingId(bookingId);
 
+    // Resolve booking record early
+    const resolvedBooking = directBookingObj || 
+      bookings.find(b => b.id === bookingId) || 
+      JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]').find((b: any) => b.id === bookingId || b.bookingRef === bookingId) ||
+      JSON.parse(localStorage.getItem('yitzak_guest_bookings') || '[]').find((b: any) => b.id === bookingId);
+
     try {
+      // 1. Update in local storage consultation requests
+      try {
+        const localReqs = JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]');
+        const updatedReqs = localReqs.map((b: any) => {
+          if (b.id === bookingId || b.bookingRef === bookingId) {
+            return { ...b, status: newStatus, updatedAt: new Date().toISOString() };
+          }
+          return b;
+        });
+        localStorage.setItem('yitzak_consultation_requests', JSON.stringify(updatedReqs));
+
+        const localGuests = JSON.parse(localStorage.getItem('yitzak_guest_bookings') || '[]');
+        const updatedGuests = localGuests.map((b: any) => {
+          if (b.id === bookingId) {
+            return { ...b, status: newStatus, updatedAt: new Date().toISOString() };
+          }
+          return b;
+        });
+        localStorage.setItem('yitzak_guest_bookings', JSON.stringify(updatedGuests));
+      } catch (locErr) {
+        console.warn('Local storage status update note:', locErr);
+      }
+
+      // 2. Cancel calendar event if applicable
       if (newStatus === 'cancelled' && currentEventId) {
-        const accessToken = await getAccessToken();
+        const accessToken = await getAccessToken().catch(() => null);
         if (accessToken) {
           try {
             await fetch(
@@ -299,19 +502,27 @@ export default function AdministrativeView({
         }
       }
 
-      await updateDoc(doc(db, 'bookings', bookingId), {
-        status: newStatus,
-        updatedAt: serverTimestamp()
-      });
+      // 3. Update Firestore if authenticated in Firebase Auth
+      if (auth.currentUser) {
+        try {
+          await updateDoc(doc(db, 'bookings', bookingId), {
+            status: newStatus,
+            updatedAt: serverTimestamp()
+          });
+        } catch (dbErr) {
+          console.warn('Firestore updateDoc note:', dbErr);
+        }
+      }
+
+      // 4. Automatically dispatch email to client & advisory desk
+      if (resolvedBooking?.userEmail) {
+        await handleDispatchBookingEmail(resolvedBooking, newStatus === 'confirmed' ? 'confirmation' : 'cancellation');
+      }
 
       onRefresh();
     } catch (err: any) {
       console.error(err);
-      try {
-        handleFirestoreError(err, OperationType.UPDATE, `bookings/${bookingId}`);
-      } catch (firestoreErr: any) {
-        alert(`Administrative override failed: ${firestoreErr.message}`);
-      }
+      alert(`Administrative status update note: ${err.message || String(err)}`);
     } finally {
       setUpdatingId(null);
     }
@@ -354,13 +565,13 @@ export default function AdministrativeView({
   return (
     <div className="space-y-8 animate-fade-in text-charcoal font-sans">
       {/* Top Banner Notice */}
-      <div className="bg-[#023625] text-white p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm border border-[#034d35]">
+      <div className="bg-[#023625] text-white p-4 sm:p-5 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm border border-[#034d35]">
         <div className="flex items-start gap-3.5">
           <div className="p-2 bg-white/10 rounded-xl text-[#B68A35] shrink-0 mt-0.5">
             <ShieldCheck size={22} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h5 className="font-serif text-base text-white font-bold tracking-tight">YITZAK Administrative Console &amp; CMS</h5>
               <span className="bg-[#B68A35] text-white text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded tracking-wider">
                 Root Admin
@@ -372,102 +583,141 @@ export default function AdministrativeView({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-stretch sm:self-auto justify-start sm:justify-end">
+          <button
+            type="button"
+            onClick={() => setIsChangePasswordOpen(true)}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl border border-white/15 transition-all cursor-pointer shadow-2xs"
+            title="Change administrator portal password"
+          >
+            <KeyRound size={13} className="text-[#B68A35]" />
+            <span className="whitespace-nowrap">Change Password</span>
+          </button>
+
           {onOpenFaviconModal && (
             <button
               type="button"
               onClick={onOpenFaviconModal}
-              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl border border-white/15 transition-all cursor-pointer shadow-2xs"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl border border-white/15 transition-all cursor-pointer shadow-2xs"
             >
-              <Palette size={14} className="text-[#B68A35]" />
-              <span>Branding Studio</span>
+              <Palette size={13} className="text-[#B68A35]" />
+              <span className="whitespace-nowrap">Branding Studio</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Primary CMS Navigation Tabs */}
-      <div className="flex border-b border-border overflow-x-auto no-scrollbar scrollbar-none whitespace-nowrap -mx-1 sm:mx-0 px-1 sm:px-0 gap-1">
-        <button
-          onClick={() => setActiveTab('content')}
-          className={`shrink-0 px-4 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
-            activeTab === 'content' 
-              ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
-              : 'border-transparent text-ash hover:text-primary hover:bg-mist'
-          }`}
-        >
-          <Edit3 size={15} className={activeTab === 'content' ? 'text-[#B68A35]' : ''} />
-          <span>Site Content (CMS)</span>
-        </button>
+      {/* Default Password Security Advisory Banner */}
+      {isDefaultPassword && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-2xl text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-fade-in">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <div className="p-1.5 bg-amber-200/60 rounded-lg text-amber-800 shrink-0 mt-0.5 sm:mt-0">
+              <KeyRound size={17} className="text-amber-800" />
+            </div>
+            <div>
+              <p className="font-bold text-amber-950">Security Notice: Default Password Active (<code className="bg-amber-100 font-mono px-1.5 py-0.5 rounded text-amber-950 font-bold">123456</code>)</p>
+              <p className="text-amber-800 text-[11px] mt-0.5">
+                Your portal login currently uses the default password. We strongly recommend setting a custom password to protect your institutional administrative console.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsChangePasswordOpen(true)}
+            className="px-3.5 py-2 bg-[#023625] hover:bg-[#034d35] text-white font-bold rounded-xl transition-all text-xs flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs"
+          >
+            <KeyRound size={13} className="text-[#B68A35]" />
+            <span>Update Password Now</span>
+          </button>
+        </div>
+      )}
 
-        <button
-          onClick={() => {
-            setActiveTab('consultations');
-            setSearch('');
-          }}
-          className={`shrink-0 px-4 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
-            activeTab === 'consultations' 
-              ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
-              : 'border-transparent text-ash hover:text-primary hover:bg-mist'
-          }`}
-        >
-          <ClipboardList size={15} className={activeTab === 'consultations' ? 'text-[#B68A35]' : ''} />
-          <span>Consultations ({totalRequests})</span>
-        </button>
+      {/* Primary CMS Navigation Tabs (Smooth Sideways Scrollable on Mobile) */}
+      <div className="relative border-b border-border">
+        <div className="flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 touch-pan-x scroll-smooth whitespace-nowrap gap-1 pb-0.5">
+          <button
+            onClick={() => setActiveTab('content')}
+            className={`shrink-0 px-3.5 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
+              activeTab === 'content' 
+                ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
+                : 'border-transparent text-ash hover:text-primary hover:bg-mist'
+            }`}
+          >
+            <Edit3 size={15} className={activeTab === 'content' ? 'text-[#B68A35]' : ''} />
+            <span>Site Content (CMS)</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('enquiries')}
-          className={`shrink-0 px-4 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
-            activeTab === 'enquiries' 
-              ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
-              : 'border-transparent text-ash hover:text-primary hover:bg-mist'
-          }`}
-        >
-          <MessageSquare size={15} className={activeTab === 'enquiries' ? 'text-[#B68A35]' : ''} />
-          <span>Inbound Enquiries ({inquiries.length})</span>
-        </button>
+          <button
+            onClick={() => {
+              setActiveTab('consultations');
+              setSearch('');
+            }}
+            className={`shrink-0 px-3.5 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
+              activeTab === 'consultations' 
+                ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
+                : 'border-transparent text-ash hover:text-primary hover:bg-mist'
+            }`}
+          >
+            <ClipboardList size={15} className={activeTab === 'consultations' ? 'text-[#B68A35]' : ''} />
+            <span>Consultations ({totalRequests})</span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab('referrals');
-            setSearch('');
-          }}
-          className={`shrink-0 px-4 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
-            activeTab === 'referrals' 
-              ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
-              : 'border-transparent text-ash hover:text-primary hover:bg-mist'
-          }`}
-        >
-          <Award size={15} className={activeTab === 'referrals' ? 'text-[#B68A35]' : ''} />
-          <span>Partner Referrals ({totalReferrals})</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('enquiries')}
+            className={`shrink-0 px-3.5 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
+              activeTab === 'enquiries' 
+                ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
+                : 'border-transparent text-ash hover:text-primary hover:bg-mist'
+            }`}
+          >
+            <MessageSquare size={15} className={activeTab === 'enquiries' ? 'text-[#B68A35]' : ''} />
+            <span>Inbound Enquiries ({inquiries.length})</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('branding')}
-          className={`shrink-0 px-4 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
-            activeTab === 'branding' 
-              ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
-              : 'border-transparent text-ash hover:text-primary hover:bg-mist'
-          }`}
-        >
-          <Palette size={15} className={activeTab === 'branding' ? 'text-[#B68A35]' : ''} />
-          <span>Branding Studio</span>
-        </button>
+          <button
+            onClick={() => {
+              setActiveTab('referrals');
+              setSearch('');
+            }}
+            className={`shrink-0 px-3.5 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
+              activeTab === 'referrals' 
+                ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
+                : 'border-transparent text-ash hover:text-primary hover:bg-mist'
+            }`}
+          >
+            <Award size={15} className={activeTab === 'referrals' ? 'text-[#B68A35]' : ''} />
+            <span>Partner Referrals ({totalReferrals})</span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab('whitelist');
-            setSearch('');
-          }}
-          className={`shrink-0 px-4 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
-            activeTab === 'whitelist' 
-              ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
-              : 'border-transparent text-ash hover:text-primary hover:bg-mist'
-          }`}
-        >
-          <ShieldCheck size={15} className="text-emerald-600" />
-          <span>Staff Access</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('branding')}
+            className={`shrink-0 px-3.5 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
+              activeTab === 'branding' 
+                ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
+                : 'border-transparent text-ash hover:text-primary hover:bg-mist'
+            }`}
+          >
+            <Palette size={15} className={activeTab === 'branding' ? 'text-[#B68A35]' : ''} />
+            <span>Branding Studio</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('whitelist');
+              setSearch('');
+            }}
+            className={`shrink-0 px-3.5 sm:px-5 py-3 text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
+              activeTab === 'whitelist' 
+                ? 'border-[#B68A35] text-primary bg-[#B68A35]/5 font-extrabold' 
+                : 'border-transparent text-ash hover:text-primary hover:bg-mist'
+            }`}
+          >
+            <ShieldCheck size={15} className="text-emerald-600" />
+            <span>Staff Access</span>
+          </button>
+        </div>
+        {/* Subtle right gradient indicator on mobile */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent sm:hidden" />
       </div>
 
       {/* TAB 1: CONTENT MANAGEMENT SYSTEM (CMS) */}
@@ -1039,6 +1289,48 @@ export default function AdministrativeView({
             </div>
           </div>
 
+          {/* Email Notification Status Banner */}
+          {emailStatusToast && (
+            <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-fade-in ${
+              emailStatusToast.type === 'success' 
+                ? 'bg-emerald-50/90 border-emerald-200 text-emerald-950' 
+                : 'bg-amber-50/90 border-amber-200 text-amber-950'
+            }`}>
+              <div className="flex items-start sm:items-center gap-3">
+                <div className={`p-2 rounded-lg shrink-0 ${emailStatusToast.type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                  <Mail size={16} />
+                </div>
+                <div>
+                  <div className="font-bold text-sm flex items-center gap-2">
+                    <span>{emailStatusToast.message}</span>
+                  </div>
+                  <p className="text-[11px] opacity-80 mt-0.5">
+                    Notification synchronized for client: <strong>{emailStatusToast.email}</strong>
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                {emailStatusToast.mailtoUrl && (
+                  <a
+                    href={emailStatusToast.mailtoUrl}
+                    className="px-3 py-1.5 bg-white border border-current rounded-lg font-bold text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5 hover:bg-neutral-50 transition-colors shadow-2xs"
+                    title="Open draft in your local mail client or Gmail"
+                  >
+                    <ExternalLink size={12} />
+                    <span>Open in Email App</span>
+                  </a>
+                )}
+                <button
+                  onClick={() => setEmailStatusToast(null)}
+                  className="p-1 hover:bg-black/5 rounded cursor-pointer"
+                  title="Dismiss notice"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Filters bar */}
           <div className="flex flex-col md:flex-row justify-between gap-4 border-b border-border pb-4">
             <div className="relative flex-1">
@@ -1118,28 +1410,80 @@ export default function AdministrativeView({
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between pt-2 border-t border-border/40">
-                      <span className="text-[10px] text-ash font-mono">
-                        {b.googleEventId ? '✓ Google Calendar Event Linked' : 'Manual Entry'}
-                      </span>
-                      <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-border/40">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] text-ash font-mono">
+                          {b.googleEventId ? '✓ Google Calendar Event Linked' : 'Manual Entry'}
+                        </span>
+                        {b.userEmail && (
+                          <a
+                            href={createBookingMailtoUrl(b.status === 'cancelled' ? 'cancellation' : 'confirmation', {
+                              to: b.userEmail,
+                              recipientName: b.userName || 'Valued Client',
+                              date: b.date || '',
+                              timeSlot: b.timeSlot || '',
+                              pillarName: b.pillar || 'Professional Advisory & Compliance',
+                              notes: b.notes
+                            })}
+                            className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-secondary font-mono underline ml-1"
+                            title="Open pre-filled message in your email client"
+                          >
+                            <Mail size={11} />
+                            <span>Mailto Draft</span>
+                          </a>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Status update buttons */}
                         {b.status === 'pending' && (
                           <button
-                            onClick={() => handleUpdateStatus(b.id!, b.googleEventId, 'confirmed')}
-                            disabled={updatingId === b.id}
-                            className="px-3 py-1.5 bg-primary hover:bg-[#034d35] text-white text-[10px] font-bold uppercase rounded-lg transition-all cursor-pointer disabled:opacity-50"
+                            onClick={() => handleUpdateStatus(b.id!, b.googleEventId, 'confirmed', b)}
+                            disabled={updatingId === b.id || sendingEmailBookingId === b.id}
+                            className="px-3 py-1.5 bg-primary hover:bg-[#034d35] text-white text-[10px] font-bold uppercase rounded-lg transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                           >
-                            {updatingId === b.id ? 'Updating...' : 'Confirm'}
+                            <Check size={12} />
+                            <span>{updatingId === b.id ? 'Updating...' : 'Confirm'}</span>
                           </button>
                         )}
                         {b.status !== 'cancelled' && (
                           <button
-                            onClick={() => handleUpdateStatus(b.id!, b.googleEventId, 'cancelled')}
-                            disabled={updatingId === b.id}
-                            className="px-3 py-1.5 border border-red-200 text-red-700 hover:bg-red-50 text-[10px] font-bold uppercase rounded-lg transition-all cursor-pointer disabled:opacity-50"
+                            onClick={() => handleUpdateStatus(b.id!, b.googleEventId, 'cancelled', b)}
+                            disabled={updatingId === b.id || sendingEmailBookingId === b.id}
+                            className="px-3 py-1.5 border border-red-200 text-red-700 hover:bg-red-50 text-[10px] font-bold uppercase rounded-lg transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                           >
-                            Cancel
+                            <X size={12} />
+                            <span>{updatingId === b.id ? 'Updating...' : 'Cancel'}</span>
                           </button>
+                        )}
+
+                        {/* Direct email dispatch actions */}
+                        {b.userEmail && (
+                          <>
+                            {b.status === 'confirmed' && (
+                              <button
+                                onClick={() => handleDispatchBookingEmail(b, 'confirmation')}
+                                disabled={sendingEmailBookingId === b.id || updatingId === b.id}
+                                className="px-2.5 py-1.5 border border-[#023625]/40 text-[#023625] hover:bg-[#023625]/5 text-[10px] font-bold uppercase rounded-lg transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+                                title={`Resend confirmation email directly to ${b.userEmail}`}
+                              >
+                                <Mail size={11} />
+                                <span>{sendingEmailBookingId === b.id ? 'Sending...' : 'Resend Confirmation'}</span>
+                              </button>
+                            )}
+
+                            {b.status === 'cancelled' && (
+                              <button
+                                onClick={() => handleDispatchBookingEmail(b, 'cancellation')}
+                                disabled={sendingEmailBookingId === b.id || updatingId === b.id}
+                                className="px-2.5 py-1.5 border border-red-300 text-red-700 hover:bg-red-50 text-[10px] font-bold uppercase rounded-lg transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+                                title={`Resend cancellation notice directly to ${b.userEmail}`}
+                              >
+                                <Mail size={11} />
+                                <span>{sendingEmailBookingId === b.id ? 'Sending...' : 'Resend Cancellation'}</span>
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -1393,6 +1737,88 @@ export default function AdministrativeView({
                   )}
                 </div>
               </div>
+
+              {/* Official Emblem Card */}
+              <div className="p-5 border border-border rounded-xl bg-mist/30 text-center space-y-3 flex flex-col items-center justify-between">
+                <div className="w-full h-16 rounded-xl bg-white border border-border flex items-center justify-center p-2 shadow-2xs">
+                  <img src={officialEmblem} alt="Official Emblem" className="max-h-12 object-contain" />
+                </div>
+                <div>
+                  <h6 className="font-serif font-bold text-sm text-primary">Official YITZAK Emblem</h6>
+                  <p className="text-[11px] text-ash mt-1">Institutional shield crest for favicon, web mark, &amp; heraldry.</p>
+                </div>
+                <div className="flex flex-col gap-1.5 w-full">
+                  <div className="grid grid-cols-2 gap-1.5 w-full">
+                    <button
+                      type="button"
+                      onClick={() => downloadFileFromUrl(officialEmblem, 'YITZAK-official-emblem.png')}
+                      className="py-1.5 border border-border hover:border-primary text-charcoal hover:text-primary text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Download size={11} />
+                      <span>PNG</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadSvgFile(getShieldSvgString('#023625'), 'YITZAK-official-emblem.svg')}
+                      className="py-1.5 border border-border hover:border-primary text-charcoal hover:text-primary text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Download size={11} />
+                      <span>SVG</span>
+                    </button>
+                  </div>
+                  {onOpenFaviconModal && (
+                    <button
+                      type="button"
+                      onClick={onOpenFaviconModal}
+                      className="w-full py-1.5 bg-[#023625] hover:bg-[#034d35] text-white text-[11px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                    >
+                      <Sparkles size={11} className="text-[#B68A35]" />
+                      <span>Change in Studio</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Accreditation Seal Card */}
+              <div className="p-5 border border-border rounded-xl bg-mist/30 text-center space-y-3 flex flex-col items-center justify-between">
+                <div className="w-full h-16 rounded-xl bg-[#023625] border border-[#034d35] flex items-center justify-center p-2 shadow-2xs">
+                  <img src={accreditationSeal} alt="Accreditation Seal" className="max-h-13 object-contain drop-shadow-xs" />
+                </div>
+                <div>
+                  <h6 className="font-serif font-bold text-sm text-primary">Accreditation &amp; Advisory Seal</h6>
+                  <p className="text-[11px] text-ash mt-1">Executive certified gold insignia for certificates &amp; badges.</p>
+                </div>
+                <div className="flex flex-col gap-1.5 w-full">
+                  <div className="grid grid-cols-2 gap-1.5 w-full">
+                    <button
+                      type="button"
+                      onClick={() => downloadFileFromUrl(accreditationSeal, 'YITZAK-accreditation-seal.png')}
+                      className="py-1.5 border border-border hover:border-primary text-charcoal hover:text-primary text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Download size={11} />
+                      <span>PNG</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadSvgFile(getAccreditationSealSvgString(), 'YITZAK-accreditation-seal.svg')}
+                      className="py-1.5 border border-border hover:border-primary text-charcoal hover:text-primary text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Download size={11} />
+                      <span>SVG</span>
+                    </button>
+                  </div>
+                  {onOpenFaviconModal && (
+                    <button
+                      type="button"
+                      onClick={onOpenFaviconModal}
+                      className="w-full py-1.5 bg-[#023625] hover:bg-[#034d35] text-white text-[11px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                    >
+                      <Sparkles size={11} className="text-[#B68A35]" />
+                      <span>Change in Studio</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1401,9 +1827,81 @@ export default function AdministrativeView({
       {/* TAB 6: STAFF ACCESS & WHITELIST */}
       {activeTab === 'whitelist' && (
         <div className="space-y-6 animate-fade-in">
+          {/* Administrator Password & Credentials Panel */}
+          <div className="bg-white border border-border rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#023625]/10 text-[#023625] flex items-center justify-center shrink-0">
+                  <Lock size={20} className="text-[#B68A35]" />
+                </div>
+                <div>
+                  <h4 className="font-serif text-base font-bold text-primary">Administrator Authentication &amp; Password</h4>
+                  <p className="text-xs text-ash mt-0.5">Manage portal credentials for Christina Gumpo and authorized institutional administrators (cgumpo@yitzak.co.za / christinavonnidigital@gmail.com)</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsChangePasswordOpen(true)}
+                  className="px-4 py-2 bg-[#023625] hover:bg-[#034d35] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                >
+                  <KeyRound size={14} className="text-[#B68A35]" />
+                  <span>Change Password</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="p-4 bg-mist/50 rounded-xl border border-border/80">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1">Status</span>
+                <div className="flex items-center gap-2">
+                  {isDefaultPassword ? (
+                    <span className="px-2.5 py-1 bg-amber-100 text-amber-900 font-bold rounded-md flex items-center gap-1">
+                      <AlertCircle size={13} className="text-amber-600" />
+                      Default (123456)
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-900 font-bold rounded-md flex items-center gap-1">
+                      <CheckCircle2 size={13} className="text-emerald-600" />
+                      Custom Secure Password
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 bg-mist/50 rounded-xl border border-border/80">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1">Last Updated</span>
+                <span className="font-semibold text-slate-800">
+                  {passwordLastUpdated 
+                    ? new Date(passwordLastUpdated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : 'Initial Deployment (Default)'}
+                </span>
+              </div>
+
+              <div className="p-4 bg-mist/50 rounded-xl border border-border/80">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-ash font-bold block mb-1">Access Method</span>
+                <span className="text-slate-700 leading-relaxed block">
+                  Password Login + Real-Time 6-Digit Email Code Fallback
+                </span>
+              </div>
+            </div>
+          </div>
+
           <WhitelistManager />
         </div>
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+        userEmail="cgumpo@yitzak.co.za"
+        onPasswordChanged={() => {
+          setIsDefaultPassword(false);
+          setPasswordLastUpdated(new Date().toISOString());
+        }}
+      />
     </div>
   );
 }

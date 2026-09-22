@@ -26,6 +26,10 @@ service cloud.firestore {
       return isEmailVerified() && (
         request.auth.token.get('admin', false) == true
         || request.auth.token.email == "christinagumpo@gmail.com"
+        || request.auth.token.email == "cgumpo@yitzak.co.za"
+        || request.auth.token.email == "admin@yitzak.co.za"
+        || request.auth.token.email == "christinavonnidigital@gmail.com"
+        || request.auth.token.email.matches('.*@yitzak\\.co\\.za$')
       );
     }
 
@@ -161,6 +165,21 @@ service cloud.firestore {
 
       // Only admin can read, update, or delete subscriptions
       allow read, update, delete: if isAdmin();
+    }
+
+    // Rules for referral_clicks collection
+    match /referral_clicks/{clickId} {
+      // Anyone can log a referral click with a valid document ID
+      allow create: if isValidId(clickId);
+      // Admin can read and manage all referral clicks; signed-in users can read their own
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+    // Rules for whitelisted_guests collection
+    match /whitelisted_guests/{guestId} {
+      // Administrative session access and whitelist management
+      allow read, write: if isAdmin();
     }
   }
 }

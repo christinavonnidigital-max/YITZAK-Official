@@ -123,6 +123,12 @@
     "newsletter_subscriptions/{subscriptionId}": {
       "schema": "NewsletterSubscription",
       "description": "Newsletter email sign-ups"
+    },
+    "referral_clicks/{clickId}": {
+      "description": "Tracking logs of scheme referral clicks"
+    },
+    "whitelisted_guests/{guestId}": {
+      "description": "Whitelisted administrator and guest session records"
     }
   }
 }

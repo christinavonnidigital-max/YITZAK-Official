@@ -162,10 +162,15 @@ export default function KnowledgeCenter({ onOpenBooking, onNavigateToContact }: 
 
   const filteredResources = KNOWLEDGE_RESOURCES.filter(item => {
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.standards.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                          item.refNo.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = (searchQuery || '').toLowerCase().trim();
+    if (!q) return matchesCategory;
+
+    const title = (item?.title || '').toLowerCase();
+    const desc = (item?.description || '').toLowerCase();
+    const refNo = (item?.refNo || '').toLowerCase();
+    const matchesStandards = Array.isArray(item?.standards) && item.standards.some(s => (s || '').toLowerCase().includes(q));
+
+    const matchesSearch = title.includes(q) || desc.includes(q) || matchesStandards || refNo.includes(q);
     return matchesCategory && matchesSearch;
   });
 

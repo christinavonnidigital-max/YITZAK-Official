@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Calendar, Clock, LogOut, Trash2, CalendarDays, Plus, User as UserIcon, Loader2, RefreshCw, Sparkles, Check, X, ShieldAlert } from 'lucide-react';
+import { Calendar, Clock, LogOut, Trash2, CalendarDays, Plus, User as UserIcon, Loader2, RefreshCw, Sparkles, Check, X, ShieldAlert, Cloud, CloudOff } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { collection, query, where, getDocs, updateDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore';
-import { db, logout, getAccessToken, OperationType, handleFirestoreError } from '../lib/firebase';
+import { db, auth, googleSignIn, logout, getAccessToken, OperationType, handleFirestoreError } from '../lib/firebase';
 import { Booking } from '../types';
 import AdministrativeView from './AdministrativeView';
+import { dispatchBookingCancellationEmail } from '../lib/emailService';
 
 interface DashboardProps {
   currentUser: User;
@@ -22,13 +23,15 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [isCloudConnecting, setIsCloudConnecting] = useState(false);
 
   const isAdminUser = Boolean(
     currentUser.email && (
       currentUser.email.toLowerCase() === 'cgumpo@yitzak.co.za' ||
-      currentUser.email === 'admin@yitzak.co.za' || 
-      currentUser.email.endsWith('@yitzak.co.za') ||
-      currentUser.email.toLowerCase() === 'christinagumpo@gmail.com'
+      currentUser.email.toLowerCase() === 'admin@yitzak.co.za' || 
+      currentUser.email.toLowerCase().endsWith('@yitzak.co.za') ||
+      currentUser.email.toLowerCase() === 'christinagumpo@gmail.com' ||
+      currentUser.email.toLowerCase() === 'christinavonnidigital@gmail.com'
     )
   );
 
@@ -44,88 +47,146 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
     return `${convertHour(start)} - ${convertHour(end)} (SAST)`;
   };
 
+  const handleConnectCloudSync = async () => {
+    setIsCloudConnecting(true);
+    try {
+      const result = await googleSignIn();
+      if (result?.user) {
+        await fetchBookings();
+      }
+    } catch (err: any) {
+      console.warn('Google Cloud Auth link note:', err);
+    } finally {
+      setIsCloudConnecting(false);
+    }
+  };
+
   const fetchBookings = async () => {
     setLoading(true);
     setError(null);
     try {
-      const isGuest = currentUser?.uid?.startsWith('guest_') || currentUser?.isAnonymous;
+      const isFirebaseAuthUser = Boolean(auth.currentUser);
       let list: Booking[] = [];
 
-      if (isGuest) {
-        const localBookings = JSON.parse(localStorage.getItem('yitzak_guest_bookings') || '[]');
-        list = localBookings.filter((b: any) => b.userId === currentUser.uid);
-      } else {
-        const bookingsCol = collection(db, 'bookings');
-        let q;
-        if (isAdminUser) {
-          q = query(bookingsCol);
-        } else {
-          // Fetch user bookings without orderBy to avoid composite index error on custom fields
-          q = query(bookingsCol, where('userId', '==', currentUser.uid));
-        }
+      // 1. Load local consultation requests and guest bookings from storage
+      const localConsultations: any[] = JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]');
+      const localGuestBookings: any[] = JSON.parse(localStorage.getItem('yitzak_guest_bookings') || '[]');
 
-        const snapshot = await getDocs(q);
-        snapshot.forEach(docSnap => {
-          list.push({ id: docSnap.id, ...(docSnap.data() as any) } as Booking);
-        });
+      const normalizedLocalList: Booking[] = [
+        ...localConsultations.map(c => ({
+          id: c.id || c.bookingRef || `local_${Math.random()}`,
+          userId: c.userId || currentUser.uid,
+          userName: c.userName || c.clientName || 'Client',
+          userEmail: c.userEmail || c.clientEmail || '',
+          date: c.date || (c.createdAt ? String(c.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10)),
+          timeSlot: c.timeSlot || '09:00 - 10:00',
+          pillar: c.pillar || c.pillarTitle || 'Consulting & Advisory',
+          notes: c.notes || '',
+          status: c.status || 'pending',
+          scheduledVia: c.scheduledVia || 'Direct Request',
+          createdAt: c.createdAt || new Date().toISOString(),
+          updatedAt: c.updatedAt || new Date().toISOString(),
+        } as Booking)),
+        ...localGuestBookings.map(g => ({
+          ...g,
+          id: g.id || `guest_${Math.random()}`,
+        } as Booking))
+      ];
 
-        // Sort in-memory to prevent missing composite index error
-        list.sort((a, b) => {
-          const dateA = a.date || '';
-          const dateB = b.date || '';
-          if (dateA !== dateB) {
-            return dateA.localeCompare(dateB);
+      // 2. If authenticated with Firebase Auth, safely fetch from Firestore cloud database
+      if (isFirebaseAuthUser) {
+        try {
+          const bookingsCol = collection(db, 'bookings');
+          let q;
+          if (isAdminUser) {
+            q = query(bookingsCol);
+          } else {
+            q = query(bookingsCol, where('userId', '==', auth.currentUser!.uid));
           }
-          const slotA = a.timeSlot || '';
-          const slotB = b.timeSlot || '';
-          return slotA.localeCompare(slotB);
-        });
+
+          const snapshot = await getDocs(q);
+          snapshot.forEach(docSnap => {
+            list.push({ id: docSnap.id, ...(docSnap.data() as any) } as Booking);
+          });
+        } catch (dbErr: any) {
+          console.warn('Firestore cloud bookings sync note:', dbErr);
+          // If not a permission rejection, report through error handler
+          if (dbErr?.code !== 'permission-denied') {
+            try {
+              handleFirestoreError(dbErr, OperationType.LIST, 'bookings');
+            } catch (fe) {
+              console.warn('Handled firestore error:', fe);
+            }
+          }
+        }
       }
+
+      // 3. Merge local items that are not already present from Firestore
+      normalizedLocalList.forEach(localItem => {
+        const localEmail = (localItem?.userEmail || '').toLowerCase();
+        const currentEmail = (currentUser?.email || '').toLowerCase();
+        const alreadyExists = list.some(
+          b => b.id === localItem.id ||
+          (b.date === localItem.date && b.timeSlot === localItem.timeSlot && (b?.userEmail || '').toLowerCase() === localEmail)
+        );
+        if (!alreadyExists) {
+          if (isAdminUser || localItem.userId === currentUser.uid || (currentEmail && localEmail === currentEmail)) {
+            list.push(localItem);
+          }
+        }
+      });
+
+      // Sort in-memory to prevent missing composite index error
+      list.sort((a, b) => {
+        const dateA = a.date || '';
+        const dateB = b.date || '';
+        if (dateA !== dateB) {
+          return dateA.localeCompare(dateB);
+        }
+        const slotA = a.timeSlot || '';
+        const slotB = b.timeSlot || '';
+        return slotA.localeCompare(slotB);
+      });
 
       setBookings(list);
 
-      // Fetch referrals as well
+      // 4. Fetch referrals as well
       let refsList: any[] = [];
       const localRefs = JSON.parse(localStorage.getItem('yitzak_referral_clicks') || '[]');
-      if (!isGuest) {
+      
+      if (isFirebaseAuthUser) {
         try {
           const refCol = collection(db, 'referral_clicks');
           let qRefs;
           if (isAdminUser) {
             qRefs = query(refCol);
           } else {
-            qRefs = query(refCol, where('userId', '==', currentUser.uid));
+            qRefs = query(refCol, where('userId', '==', auth.currentUser!.uid));
           }
           const refSnapshot = await getDocs(qRefs);
           refSnapshot.forEach(docSnap => {
             refsList.push({ id: docSnap.id, ...(docSnap.data() as any) });
           });
-
-          // Merge local clicks belonging to this user
-          const localUserRefs = localRefs.filter((r: any) => r.userId === currentUser.uid);
-          localUserRefs.forEach((lr: any) => {
-            if (!refsList.some(r => r.id === lr.id)) {
-              refsList.push(lr);
-            }
-          });
         } catch (refErr) {
-          console.warn('Could not load referrals from DB, fallback to localStorage:', refErr);
-          refsList = localRefs.filter((r: any) => isAdminUser || r.userId === currentUser.uid);
+          console.warn('Could not load referrals from DB, fallback to local cache:', refErr);
         }
-      } else {
-        refsList = localRefs.filter((r: any) => r.userId === currentUser.uid);
       }
+
+      // Merge local clicks
+      localRefs.forEach((lr: any) => {
+        if (!refsList.some(r => r.id === lr.id)) {
+          if (isAdminUser || lr.userId === currentUser.uid) {
+            refsList.push(lr);
+          }
+        }
+      });
 
       // Sort by creation date descending
       refsList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setReferrals(refsList);
     } catch (err: any) {
-      console.error(err);
-      try {
-        handleFirestoreError(err, OperationType.LIST, 'bookings');
-      } catch (firestoreErr: any) {
-        setError(`Failed to retrieve scheduled bookings: ${firestoreErr.message}`);
-      }
+      console.warn('fetchBookings handling:', err);
+      setError(null); // Ensure fallback gracefully without blocking dashboard UI
     } finally {
       setLoading(false);
     }
@@ -142,22 +203,32 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
     setError(null);
 
     try {
-      const isGuest = currentUser?.uid?.startsWith('guest_') || currentUser?.isAnonymous;
+      const isFirebaseAuthUser = Boolean(auth.currentUser);
 
-      if (isGuest) {
-        const localBookings = JSON.parse(localStorage.getItem('yitzak_guest_bookings') || '[]');
-        const updated = localBookings.map((b: any) => {
-          if (b.id === booking.id) {
-            return { ...b, status: 'cancelled', updatedAt: new Date().toISOString() };
-          }
-          return b;
-        });
-        localStorage.setItem('yitzak_guest_bookings', JSON.stringify(updated));
-        fetchBookings();
-      } else {
+      // Update in local consultation requests
+      const localConsultations = JSON.parse(localStorage.getItem('yitzak_consultation_requests') || '[]');
+      const updatedConsultations = localConsultations.map((b: any) => {
+        if (b.id === booking.id || b.bookingRef === booking.id) {
+          return { ...b, status: 'cancelled', updatedAt: new Date().toISOString() };
+        }
+        return b;
+      });
+      localStorage.setItem('yitzak_consultation_requests', JSON.stringify(updatedConsultations));
+
+      // Update in local guest bookings
+      const localGuestBookings = JSON.parse(localStorage.getItem('yitzak_guest_bookings') || '[]');
+      const updatedGuests = localGuestBookings.map((b: any) => {
+        if (b.id === booking.id) {
+          return { ...b, status: 'cancelled', updatedAt: new Date().toISOString() };
+        }
+        return b;
+      });
+      localStorage.setItem('yitzak_guest_bookings', JSON.stringify(updatedGuests));
+
+      if (isFirebaseAuthUser) {
         const accessToken = await getAccessToken();
         
-        // Step 1: Cancel Google Calendar Event if it exists
+        // Cancel Google Calendar Event if it exists
         if (accessToken && booking.calendarEventId) {
           try {
             await fetch(
@@ -170,24 +241,42 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
               }
             );
           } catch (calErr) {
-            console.error('Failed to delete Google Calendar Event, proceeding with database cancellation:', calErr);
+            console.error('Failed to delete Google Calendar Event:', calErr);
           }
         }
 
-        // Step 2: Update Firestore status to 'cancelled' (Durable cloud state)
-        await updateDoc(doc(db, 'bookings', booking.id), {
-          status: 'cancelled',
-          updatedAt: serverTimestamp()
-        });
-        fetchBookings();
+        // Update Firestore status to 'cancelled'
+        try {
+          await updateDoc(doc(db, 'bookings', booking.id), {
+            status: 'cancelled',
+            updatedAt: serverTimestamp()
+          });
+        } catch (dbErr) {
+          console.warn('Firestore cancel booking write note:', dbErr);
+        }
       }
+
+      // Dispatch Cancellation Notification Email to Client & Advisory Team
+      if (booking.userEmail) {
+        try {
+          const accessToken = await getAccessToken().catch(() => null);
+          await dispatchBookingCancellationEmail({
+            to: booking.userEmail,
+            recipientName: booking.userName || 'Valued Client',
+            date: booking.date || 'Scheduled Date',
+            timeSlot: booking.timeSlot || 'Scheduled Time',
+            pillarName: booking.pillar || 'Professional Advisory & Compliance',
+            notes: booking.notes
+          }, accessToken);
+        } catch (mailErr) {
+          console.warn('Cancellation notification email dispatch note:', mailErr);
+        }
+      }
+
+      await fetchBookings();
     } catch (err: any) {
       console.error(err);
-      try {
-        handleFirestoreError(err, OperationType.UPDATE, `bookings/${booking.id}`);
-      } catch (firestoreErr: any) {
-        setError(`Failed to cancel booking: ${firestoreErr.message}`);
-      }
+      setError(`Failed to cancel booking: ${err.message || String(err)}`);
     } finally {
       setCancellingId(null);
     }
@@ -210,11 +299,11 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
   };
 
   return (
-    <div id="client_dashboard_section" className="bg-white border border-border p-8 md:p-16 space-y-8">
+    <div id="client_dashboard_section" className="bg-white border border-border p-3.5 sm:p-6 md:p-12 lg:p-16 space-y-6 sm:space-y-8 rounded-xl sm:rounded-2xl shadow-xs">
       {/* Dashboard Top Header bar */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary flex items-center justify-center bg-primary/10 text-primary font-bold text-lg">
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-6">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-full overflow-hidden border-2 border-primary flex items-center justify-center bg-primary/10 text-primary font-bold text-base sm:text-lg">
             {currentUser.photoURL ? (
               <img 
                 src={currentUser.photoURL} 
@@ -230,35 +319,57 @@ export default function Dashboard({ currentUser, onLogout, onOpenBooking, refres
               <span>{currentUser.displayName ? currentUser.displayName[0].toUpperCase() : 'G'}</span>
             )}
           </div>
-          <div>
-            <h4 className="font-headline-md text-primary text-md font-bold">{currentUser.displayName}</h4>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="font-body-std text-xs text-ash">{currentUser.email}</span>
+          <div className="min-w-0 truncate">
+            <h4 className="font-headline-md text-primary text-sm sm:text-base font-bold truncate">{currentUser.displayName}</h4>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <span className="font-body-std text-xs text-ash truncate">{currentUser.email}</span>
               {isAdminUser && (
-                <span className="bg-secondary/15 text-secondary text-[9px] font-mono font-bold uppercase px-2 py-0.5 tracking-wider flex items-center gap-0.5">
+                <span className="bg-secondary/15 text-secondary text-[9px] font-mono font-bold uppercase px-2 py-0.5 tracking-wider inline-flex items-center gap-0.5 shrink-0 rounded">
                   <ShieldAlert size={10} />
-                  Administrator
+                  <span>Admin</span>
                 </span>
+              )}
+              {auth.currentUser ? (
+                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-mono font-semibold px-2 py-0.5 inline-flex items-center gap-1 shrink-0 rounded">
+                  <Cloud size={10} className="text-emerald-600" />
+                  <span>Cloud Sync Active</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleConnectCloudSync}
+                  disabled={isCloudConnecting}
+                  className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-mono font-semibold px-2 py-0.5 inline-flex items-center gap-1 shrink-0 rounded cursor-pointer transition-colors"
+                  title="Click to connect Google account for real-time Cloud Firestore synchronization"
+                >
+                  {isCloudConnecting ? (
+                    <Loader2 size={10} className="animate-spin text-amber-700" />
+                  ) : (
+                    <CloudOff size={10} className="text-amber-700" />
+                  )}
+                  <span>{isCloudConnecting ? 'Connecting...' : 'Connect Cloud Sync'}</span>
+                </button>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-end shrink-0 pt-1 sm:pt-0">
           <button
             onClick={fetchBookings}
-            className="p-2 text-ash hover:text-primary border border-border hover:border-secondary transition-colors"
+            className="p-2 sm:p-2.5 text-ash hover:text-primary border border-border hover:border-secondary transition-colors rounded-lg cursor-pointer"
             title="Refresh bookings"
+            aria-label="Refresh bookings"
           >
-            <RefreshCw size={16} />
+            <RefreshCw size={15} />
           </button>
           
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex items-center gap-2 border border-border hover:border-error text-charcoal hover:text-error px-4 py-4 font-label-btn text-[12px] uppercase tracking-wider transition-all cursor-pointer"
+            className="flex items-center gap-1.5 border border-border hover:border-error text-charcoal hover:text-error px-3.5 py-2 font-label-btn text-xs uppercase tracking-wider transition-all cursor-pointer rounded-lg"
           >
-            <LogOut size={14} />
+            <LogOut size={13} />
             <span>Sign Out</span>
           </button>
         </div>
