@@ -5,8 +5,8 @@
  */
 
 export const FAVICON_STORAGE_KEY = 'yitzak_custom_favicon';
-export const DEFAULT_FAVICON = '/favicon.ico?v=4';
-export const DEFAULT_APPLE_TOUCH = '/apple-touch-icon.png?v=4';
+export const DEFAULT_FAVICON = '/favicon.svg?v=5';
+export const DEFAULT_APPLE_TOUCH = '/apple-touch-icon.png?v=5';
 
 /**
  * Dynamically updates all favicon and touch-icon link tags in the document head
@@ -14,25 +14,76 @@ export const DEFAULT_APPLE_TOUCH = '/apple-touch-icon.png?v=4';
 export function applyFaviconToDocument(iconUrl: string) {
   if (typeof document === 'undefined') return;
 
-  // Primary icon selectors
-  const selectors = [
-    { rel: 'icon', type: 'image/png' },
-    { rel: 'shortcut icon', type: 'image/x-icon' },
-    { rel: 'apple-touch-icon', sizes: '180x180' },
-  ];
+  const targetDoc = document;
 
-  selectors.forEach(({ rel, type, sizes }) => {
-    let link = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = rel;
-      if (type) link.type = type;
-      if (sizes) link.sizes = sizes;
-      document.head.appendChild(link);
+  try {
+    // 1. Remove all existing favicon links to force browser tab repaint
+    const existingLinks = targetDoc.querySelectorAll<HTMLLinkElement>(
+      'link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]'
+    );
+    existingLinks.forEach((el) => {
+      try {
+        el.remove();
+      } catch {}
+    });
+
+    const isData = iconUrl.startsWith('data:');
+    const isSvg = iconUrl.includes('.svg') || iconUrl.includes('image/svg+xml');
+    const cacheBuster = isData ? '' : `${iconUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+    const finalHref = isData ? iconUrl : `${iconUrl}${cacheBuster}`;
+
+    // 2. Add primary SVG icon if SVG (modern Chrome, Edge, Firefox prioritize this)
+    if (isSvg) {
+      const svgLink = targetDoc.createElement('link');
+      svgLink.rel = 'icon';
+      svgLink.type = 'image/svg+xml';
+      svgLink.href = finalHref;
+      targetDoc.head.appendChild(svgLink);
     }
-    // Append timestamp query parameter to bust browser cache if needed
-    link.href = iconUrl;
-  });
+
+    // 3. Add standard icon link
+    const iconLink = targetDoc.createElement('link');
+    iconLink.rel = 'icon';
+    iconLink.type = isSvg ? 'image/svg+xml' : 'image/png';
+    iconLink.sizes = 'any';
+    iconLink.href = finalHref;
+    targetDoc.head.appendChild(iconLink);
+
+    // 4. Add shortcut icon link for older engines / Windows
+    const shortcutLink = targetDoc.createElement('link');
+    shortcutLink.rel = 'shortcut icon';
+    shortcutLink.type = isSvg ? 'image/svg+xml' : 'image/x-icon';
+    shortcutLink.href = finalHref;
+    targetDoc.head.appendChild(shortcutLink);
+
+    // 5. Add Apple touch icon
+    const touchLink = targetDoc.createElement('link');
+    touchLink.rel = 'apple-touch-icon';
+    touchLink.sizes = '180x180';
+    touchLink.href = finalHref;
+    targetDoc.head.appendChild(touchLink);
+
+    // Try same-origin parent document if in an iframe
+    try {
+      if (typeof window !== 'undefined' && window.parent && window.parent !== window && window.parent.document) {
+        const parentDoc = window.parent.document;
+        const parentExisting = parentDoc.querySelectorAll<HTMLLinkElement>(
+          'link[rel="icon"], link[rel="shortcut icon"]'
+        );
+        parentExisting.forEach((el) => {
+          try { el.remove(); } catch {}
+        });
+        const parentLink = parentDoc.createElement('link');
+        parentLink.rel = 'icon';
+        parentLink.href = finalHref;
+        parentDoc.head.appendChild(parentLink);
+      }
+    } catch {
+      // Cross-origin iframe parent access expectedly blocked by sandbox security
+    }
+  } catch (err) {
+    console.warn('Error applying favicon to document:', err);
+  }
 }
 
 /**
