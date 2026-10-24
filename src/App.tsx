@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow, ExternalLink, Info, Eye, EyeOff } from 'lucide-react';
+import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow, ExternalLink, Info, Eye, EyeOff, Scale } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
 import { Analytics } from '@vercel/analytics/react';
@@ -30,6 +30,7 @@ const TrainingCalendar = lazy(() => import('./components/TrainingCalendar'));
 const WhitelistManager = lazy(() => import('./components/WhitelistManager'));
 const KnowledgeCenter = lazy(() => import('./components/KnowledgeCenter'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
+const CertificationIndependence = lazy(() => import('./components/CertificationIndependence'));
 const NotFoundPage = lazy(() => import('./components/NotFoundPage'));
 const FaviconModal = lazy(() => import('./components/FaviconModal'));
 const ChangePasswordModal = lazy(() => import('./components/ChangePasswordModal'));
@@ -1581,7 +1582,7 @@ export default function App() {
                               <ShieldCheck size={24} />
                             </div>
                             <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#7d5800] bg-[#B68A35]/15 px-2.5 py-1 rounded-full border border-[#B68A35]/20">
-                              FoodChain ID Partner
+                              FoodChain ID Partner · Independent CB
                             </span>
                           </div>
                           <div className="space-y-2">
@@ -1589,7 +1590,7 @@ export default function App() {
                               Certification Preparation
                             </h3>
                             <p className="font-sans text-xs text-on-surface-variant leading-relaxed min-h-[48px]">
-                              Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.
+                              Independent advisory and gap assessment to prepare for accredited third-party certification. Audits are conducted autonomously by accredited Certification Bodies.
                             </p>
                           </div>
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
@@ -2485,15 +2486,15 @@ export default function App() {
                     <div className="space-y-2.5 max-w-2xl">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="bg-[#B68A35]/20 text-[#DFC181] border border-[#B68A35]/40 px-3 py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap">
-                          FoodChain ID Partner
+                          FoodChain ID Academy Partner
                         </span>
-                        <span className="text-white/70 text-xs font-mono">FoodChain ID Academy</span>
+                        <span className="text-white/70 text-xs font-mono">Standardized Auditor &amp; Scheme Training</span>
                       </div>
                       <h3 className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-white">
                         FoodChain ID Academy Courses &amp; Certification Preparation
                       </h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        Access selected FoodChain ID Academy training courses and certification preparation across GLOBALG.A.P., Non-GMO, BRCGS, and ISO standards through our partnership.
+                        Access recognized FoodChain ID Academy training courses across GLOBALG.A.P., Non-GMO, BRCGS, and ISO schemes. Certification is conducted and awarded independently by accredited Certification Bodies in full compliance with ISO/IEC 17021-1.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
@@ -2504,11 +2505,19 @@ export default function App() {
                         <span>Certification Preparation</span>
                         <ArrowRight size={14} />
                       </button>
+                      <button
+                        onClick={() => navigateTo('independence')}
+                        className="border border-white/30 hover:border-white hover:bg-white/5 text-white font-sans text-xs uppercase tracking-widest font-bold py-3 px-5 rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto text-center"
+                        title="Read ISO/IEC 17021-1 Impartiality & Independence Statement"
+                      >
+                        <Scale size={13} className="text-[#DFC181]" />
+                        <span>Impartiality Policy</span>
+                      </button>
                       <a
                         href="https://www.foodchainid.com/academy/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="border border-white/30 hover:border-white hover:bg-white/5 text-white font-sans text-xs uppercase tracking-widest font-bold py-3 px-5 rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-2 w-full sm:w-auto text-center"
+                        className="border border-white/20 hover:border-white hover:bg-white/5 text-white/80 hover:text-white font-sans text-xs uppercase tracking-widest font-bold py-3 px-4 rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 w-full sm:w-auto text-center"
                       >
                         <span>Global Academy</span>
                         <span>↗</span>
@@ -2721,22 +2730,37 @@ export default function App() {
               <div className="max-w-4xl space-y-4 sm:space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider max-w-full">
                   <Award size={14} className="text-[#B68A35] shrink-0" />
-                  <span className="truncate sm:whitespace-normal">FoodChain ID Partner &amp; Advisory Route</span>
+                  <span className="truncate sm:whitespace-normal">Independent Certification Preparation · FoodChain ID Partner</span>
                 </div>
                 <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-[56px] leading-tight md:leading-[62px] tracking-tight text-primary font-bold">
                   Certification Preparation
                 </h1>
                 <p className="font-sans text-xs sm:text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl">
-                  Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.
+                  Yitzak Consulting provides diagnostic reviews, SOP development, and audit readiness preparation across food safety, quality, and agricultural standards. Formal third-party audits and certifications are conducted autonomously by independent accredited Certification Bodies (CBs) such as FoodChain ID.
                 </p>
 
-                {/* Explicit Accreditation Boundary Notice */}
-                <div className="bg-[#FAF7F0] border border-[#B68A35]/30 rounded-xl p-4 sm:p-5 flex items-start gap-3.5 text-xs text-charcoal shadow-2xs">
-                  <ShieldCheck size={18} className="text-[#B68A35] shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <span className="font-bold text-xs uppercase tracking-wider text-[#023625] block font-mono">How Certification Works</span>
-                    <p className="leading-relaxed text-on-surface-variant">
-                      Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.
+                {/* Explicit ISO/IEC 17021-1 Accreditation Boundary & Impartiality Notice */}
+                <div className="bg-[#FAF7F0] border-2 border-[#B68A35]/40 rounded-xl p-4 sm:p-5 flex items-start gap-3.5 text-xs text-charcoal shadow-2xs">
+                  <Scale size={20} className="text-[#B68A35] shrink-0 mt-0.5" />
+                  <div className="space-y-1.5 w-full">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                      <span className="font-bold text-xs uppercase tracking-wider text-[#023625] font-mono">
+                        ISO/IEC 17021-1:2015 Impartiality &amp; Certification Body Independence
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigateTo('independence');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="text-[#B68A35] hover:text-[#023625] font-semibold underline underline-offset-2 inline-flex items-center gap-1 cursor-pointer text-[11px] self-start sm:self-auto"
+                      >
+                        <span>Read Full Impartiality Policy</span>
+                        <ArrowRight size={11} />
+                      </button>
+                    </div>
+                    <p className="leading-relaxed text-on-surface-variant text-[11px] sm:text-xs">
+                      FoodChain ID is an independent accredited Certification Body (CB) and global Academy. Under ISO/IEC 17021-1:2015 Clause 5.2, Certification Bodies operate strictly independently from management consultancies. Engaging Yitzak Consulting does not guarantee certification, nor does it make audits simpler, faster, or less expensive. Clients retain unrestricted freedom to select any accredited Certification Body.
                     </p>
                   </div>
                 </div>
@@ -2748,6 +2772,17 @@ export default function App() {
                   >
                     <span>Request Certification Information</span>
                     <ArrowRight size={14} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigateTo('independence');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="border border-[#B68A35] bg-[#FAF7F0] hover:bg-[#B68A35]/15 text-[#7a5a1f] font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-5 rounded-xl cursor-pointer transition-all active:scale-95 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+                    title="View ISO/IEC 17021-1 Impartiality & Independence Statement"
+                  >
+                    <Scale size={14} className="text-[#B68A35]" />
+                    <span>Independence Policy</span>
                   </button>
                   <button
                     onClick={() => exportCapabilitySheetPDF('certification_portfolio')}
@@ -2923,24 +2958,43 @@ export default function App() {
                   </ScrollReveal>
                 )}
 
-                {/* FoodChain ID Partner Panel (Direct internal conversion) */}
+                {/* FoodChain ID Partner & Impartiality Panel */}
                 <ScrollReveal direction="up" delay={0.1}>
                   <div className="bg-[#023625] text-white p-8 md:p-10 rounded-2xl relative overflow-hidden shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="space-y-2 max-w-2xl">
-                      <span className="text-[#B68A35] font-mono text-xs uppercase tracking-widest font-bold block">Partnership &amp; Advisory Route</span>
+                    <div className="space-y-2.5 max-w-2xl">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[#DFC181] font-mono text-xs uppercase tracking-widest font-bold block">
+                          Independent Partnership &amp; Academy Route
+                        </span>
+                        <span className="text-white/40 text-xs">·</span>
+                        <span className="text-white/70 text-xs font-mono">ISO/IEC 17021-1 Compliant</span>
+                      </div>
                       <h3 className="font-serif text-xl md:text-2xl font-bold">FoodChain ID &amp; Yitzak Consulting</h3>
                       <p className="font-sans text-xs md:text-sm text-white/85 leading-relaxed">
-                        Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.
+                        FoodChain ID is an accredited independent Certification Body and global Academy. Yitzak Consulting provides independent readiness reviews, gap assessments, and workforce training. Formal certification audits are conducted autonomously under accredited certification procedures without consultancy influence.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenBooking('compliance', 'Inquiry: FoodChain ID Partnership & Certification Advisory')}
-                      className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl transition-all cursor-pointer shrink-0 inline-flex items-center justify-center gap-2 font-bold shadow-sm active:scale-95 w-full sm:w-auto text-center"
-                    >
-                      <span>Request Advisory Scoping</span>
-                      <ArrowRight size={14} />
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigateTo('independence');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="border border-white/40 hover:bg-white/10 text-white font-sans text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all cursor-pointer font-bold inline-flex items-center justify-center gap-2 text-center"
+                      >
+                        <Scale size={13} className="text-[#DFC181]" />
+                        <span>Impartiality Policy</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBooking('compliance', 'Inquiry: FoodChain ID Partnership & Certification Advisory')}
+                        className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all cursor-pointer shrink-0 inline-flex items-center justify-center gap-2 font-bold shadow-sm active:scale-95 text-center"
+                      >
+                        <span>Advisory Scoping</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
                   </div>
                 </ScrollReveal>
               </div>
@@ -3500,6 +3554,32 @@ export default function App() {
           </motion.div>
         )}
 
+        {currentView === 'independence' && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Suspense fallback={<ViewLoadingFallback />}>
+              <CertificationIndependence 
+                onNavigateHome={() => {
+                  navigateTo('home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onNavigateCertifications={() => {
+                  navigateTo('certifications');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onNavigateContact={() => {
+                  navigateTo('contact');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            </Suspense>
+          </motion.div>
+        )}
+
         {currentView === 'not_found' && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -3655,6 +3735,18 @@ export default function App() {
                     <span>Privacy Notice</span>
                   </button>
                 </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      navigateTo('independence');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="flex items-center gap-2.5 hover:text-[#B68A35] transition-colors cursor-pointer text-left group w-full"
+                  >
+                    <ChevronRight size={14} className="text-[#B68A35] shrink-0 group-hover:translate-x-1 transition-transform" />
+                    <span>Certification Independence (ISO 17021-1)</span>
+                  </button>
+                </li>
               </ul>
             </div>
 
@@ -3697,7 +3789,7 @@ export default function App() {
 
           </div>
 
-          {/* Bottom Branding & Legal - Cleanly stacked on mobile: logo/tagline, Privacy Notice, copyright */}
+          {/* Bottom Branding & Legal - Cleanly stacked on mobile: logo/tagline, Privacy & Independence, copyright */}
           <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 text-xs font-sans text-white/60 text-center md:text-left">
             {/* 1. Logo and Tagline */}
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
@@ -3708,8 +3800,8 @@ export default function App() {
               </span>
             </div>
 
-            {/* 2. Privacy Notice Link */}
-            <div className="flex items-center justify-center">
+            {/* 2. Legal Links */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -3719,6 +3811,17 @@ export default function App() {
                 className="text-white/80 hover:text-[#B68A35] underline underline-offset-2 transition-colors cursor-pointer text-xs"
               >
                 Privacy Notice
+              </button>
+              <span className="text-white/30">·</span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigateTo('independence');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-white/80 hover:text-[#B68A35] underline underline-offset-2 transition-colors cursor-pointer text-xs"
+              >
+                Certification Independence &amp; Impartiality
               </button>
             </div>
 

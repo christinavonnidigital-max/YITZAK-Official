@@ -440,29 +440,29 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(182, 138, 53);
-      doc.text('FOODCHAIN ID PARTNER & ADVISORY ROUTE | SOUTHERN AFRICA', marginX, y);
+      doc.text('FOODCHAIN ID PARTNER | INDEPENDENT ACCREDITED CERTIFICATION BODY', marginX, y);
 
       y += 6;
       // Accreditation & Advisory Boundary Callout Box
       doc.setFillColor(250, 247, 240); // Soft gold tint
-      doc.rect(marginX, y, contentWidth, 18, 'F');
+      doc.rect(marginX, y, contentWidth, 20, 'F');
       doc.setDrawColor(182, 138, 53);
       doc.setLineWidth(0.4);
-      doc.rect(marginX, y, contentWidth, 18, 'S');
+      doc.rect(marginX, y, contentWidth, 20, 'S');
 
       doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(8.5);
+      doc.setFontSize(8);
       doc.setTextColor(2, 54, 37);
-      doc.text('HOW CERTIFICATION WORKS:', marginX + 4, y + 5);
+      doc.text('IMPARTIALITY & INDEPENDENT CERTIFICATION (ISO/IEC 17021-1 CLAUSE 5.2):', marginX + 4, y + 5);
 
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(65, 73, 68);
-      const boundaryText = 'Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.';
+      const boundaryText = 'FoodChain ID is an independent accredited Certification Body (CB) and Academy. Yitzak Consulting provides independent readiness reviews and training. Formal certification audits are conducted autonomously by accredited Certification Bodies without consultancy influence or guarantees.';
       const boundaryLines = doc.splitTextToSize(boundaryText, contentWidth - 8);
       doc.text(boundaryLines, marginX + 4, y + 9.5);
 
-      y += 24;
+      y += 26;
 
       // 4 Detailed Schemes
       const schemes = [
@@ -605,14 +605,14 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(223, 193, 129); // Gold accent #DFC181
-    doc.text('FOODCHAIN ID PARTNERSHIP', marginX + 6, y + 7);
+    doc.text('FOODCHAIN ID PARTNERSHIP | INDEPENDENT CB & ACADEMY', marginX + 6, y + 7);
 
     doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(255, 255, 255);
-    const fcText = 'Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.';
+    const fcText = 'FoodChain ID is an accredited independent Certification Body and Academy. Yitzak Consulting provides independent readiness reviews and training. Formal certification audits are conducted autonomously under accredited certification procedures without consultancy influence.';
     const fcLines = doc.splitTextToSize(fcText, contentWidth - 12);
-    doc.text(fcLines, marginX + 6, y + 13);
+    doc.text(fcLines, marginX + 6, y + 12.5);
 
     y += 32;
 

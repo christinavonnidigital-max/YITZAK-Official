@@ -29,13 +29,13 @@ export const PILLARS: Pillar[] = [
     id: 'certification',
     title: 'Certification Preparation',
     icon: 'verified',
-    description: 'Through our partnership with FoodChain ID, we help organisations prepare for suitable certification routes across food safety, quality, and agricultural standards.',
+    description: 'Independent diagnostic advisory and audit preparation across international schemes. Third-party certification is conducted independently by accredited Certification Bodies.',
     details: [
       'Guidance on suitable certification routes',
       'FoodChain ID scheme preparation & advisory',
       'BRCGS, FSSC 22000 & ISO readiness reviews',
       'GLOBALG.A.P. & Non-GMO preparation support',
-      'Independent certification issued by accredited certification bodies'
+      'Strict impartiality & independent third-party certification'
     ]
   },
   {

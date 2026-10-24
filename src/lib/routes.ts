@@ -9,6 +9,7 @@ export type AppView =
   | 'knowledge' 
   | 'portal'
   | 'privacy'
+  | 'independence'
   | 'not_found';
 
 export interface RouteMeta {
@@ -79,6 +80,12 @@ export const ROUTES: Record<AppView, RouteMeta> = {
     title: 'Privacy Notice & POPIA Compliance | Yitzak Consulting',
     description: 'Official POPIA Privacy Notice for Yitzak Consulting (Pty) Ltd in compliance with South African Act No. 4 of 2013.'
   },
+  independence: {
+    view: 'independence',
+    path: '/certification-independence',
+    title: 'Certification Independence & Impartiality Statement | Yitzak Consulting',
+    description: 'Official impartiality statement regarding independent Certification Bodies (CBs) including FoodChain ID, in accordance with ISO/IEC 17021-1:2015 Clause 5.2.'
+  },
   not_found: {
     view: 'not_found',
     path: '/404',
@@ -98,6 +105,7 @@ export const VALID_VIEWS: AppView[] = [
   'knowledge',
   'portal',
   'privacy',
+  'independence',
   'not_found'
 ];
 
@@ -141,6 +149,9 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   }
 
   // 2. Path-based exact matches
+  if (rawPath === '/certification-independence' || rawPath === '/independence' || rawPath === '/impartiality' || rawPath === '/foodchain-id' || rawPath === '/cb-independence') {
+    return { view: 'independence' };
+  }
   if (rawPath === '/privacy-policy' || rawPath === '/privacy' || rawPath === '/popia' || rawPath === '/popia-notice' || rawPath === '/legal/privacy' || rawPath === '/privacy-notice') {
     return { view: 'privacy' };
   }
