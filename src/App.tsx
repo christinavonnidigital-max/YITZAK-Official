@@ -35,7 +35,7 @@ const NotFoundPage = lazy(() => import('./components/NotFoundPage'));
 const FaviconModal = lazy(() => import('./components/FaviconModal'));
 const ChangePasswordModal = lazy(() => import('./components/ChangePasswordModal'));
 import { verifyAdminPassword, isDefaultAdminPassword } from './lib/authSecurity';
-import { getStoredFavicon, applyFaviconToDocument } from './lib/faviconUtils';
+import { getStoredFavicon, applyFaviconToDocument, DEFAULT_FAVICON } from './lib/faviconUtils';
 import { 
   getStoredTrainingHero, 
   FALLBACK_TRAINING_HERO 
@@ -149,6 +149,8 @@ export default function App() {
     if (saved) {
       applyFaviconToDocument(saved);
       setCustomFavicon(saved);
+    } else {
+      applyFaviconToDocument(DEFAULT_FAVICON);
     }
 
     // Discreet owner/admin trigger:
@@ -897,7 +899,11 @@ export default function App() {
           <title>Scheduled Maintenance &amp; Governance Review | Yitzak Consulting</title>
           <meta name="description" content="Yitzak Consulting website is temporarily offline for scheduled maintenance. Advisory and client consultations remain active at cgumpo@yitzak.co.za." />
           <meta name="robots" content="noindex, nofollow" />
-          {customFavicon && <link rel="icon" href={customFavicon} />}
+          <link rel="icon" type="image/png" sizes="32x32" href={customFavicon || "/favicon-32.png?v=20261027_v6"} />
+          <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20261027_v6" />
+          <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261027_v6" />
+          <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=20261027_v6" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261027_v6" />
         </Helmet>
         <MaintenanceMode 
           onBypassGranted={() => {
@@ -974,13 +980,12 @@ export default function App() {
           content={isNoIndex ? 'noindex, nofollow' : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'} 
         />
 
-        {/* Dynamic Favicon */}
-        {customFavicon && (
-          <link rel="icon" href={customFavicon} />
-        )}
-        {customFavicon && (
-          <link rel="apple-touch-icon" href={customFavicon} />
-        )}
+        {/* Dynamic & Official Brand Favicon */}
+        <link rel="icon" type="image/png" sizes="32x32" href={customFavicon || "/favicon-32.png?v=20261027_v6"} />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=20261027_v6" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261027_v6" />
+        <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=20261027_v6" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261027_v6" />
       </Helmet>
 
       {/* Top Notification Toast */}

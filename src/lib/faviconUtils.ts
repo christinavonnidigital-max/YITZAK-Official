@@ -5,8 +5,9 @@
  */
 
 export const FAVICON_STORAGE_KEY = 'yitzak_custom_favicon';
-export const DEFAULT_FAVICON = '/favicon.svg?v=5';
-export const DEFAULT_APPLE_TOUCH = '/apple-touch-icon.png?v=5';
+export const DEFAULT_FAVICON = '/favicon-32.png?v=20261027_v6';
+export const DEFAULT_FAVICON_SVG = '/favicon.svg?v=20261027_v6';
+export const DEFAULT_APPLE_TOUCH = '/apple-touch-icon.png?v=20261027_v6';
 
 /**
  * Dynamically updates all favicon and touch-icon link tags in the document head
@@ -32,35 +33,33 @@ export function applyFaviconToDocument(iconUrl: string) {
     const cacheBuster = isData ? '' : `${iconUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
     const finalHref = isData ? iconUrl : `${iconUrl}${cacheBuster}`;
 
-    // 2. Add primary SVG icon if SVG (modern Chrome, Edge, Firefox prioritize this)
-    if (isSvg) {
-      const svgLink = targetDoc.createElement('link');
-      svgLink.rel = 'icon';
-      svgLink.type = 'image/svg+xml';
-      svgLink.href = finalHref;
-      targetDoc.head.appendChild(svgLink);
-    }
+    // 2. Add high-res PNG icon (broadest instant browser tab support)
+    const pngLink = targetDoc.createElement('link');
+    pngLink.rel = 'icon';
+    pngLink.type = 'image/png';
+    pngLink.sizes = '32x32';
+    pngLink.href = isSvg ? '/favicon-32.png?v=20261027_v6' : finalHref;
+    targetDoc.head.appendChild(pngLink);
 
-    // 3. Add standard icon link
-    const iconLink = targetDoc.createElement('link');
-    iconLink.rel = 'icon';
-    iconLink.type = isSvg ? 'image/svg+xml' : 'image/png';
-    iconLink.sizes = 'any';
-    iconLink.href = finalHref;
-    targetDoc.head.appendChild(iconLink);
+    // 3. Add primary SVG icon if SVG supported
+    const svgLink = targetDoc.createElement('link');
+    svgLink.rel = 'icon';
+    svgLink.type = 'image/svg+xml';
+    svgLink.href = isSvg ? finalHref : '/favicon.svg?v=20261027_v6';
+    targetDoc.head.appendChild(svgLink);
 
-    // 4. Add shortcut icon link for older engines / Windows
+    // 4. Add shortcut icon link for older engines / Windows taskbars
     const shortcutLink = targetDoc.createElement('link');
     shortcutLink.rel = 'shortcut icon';
-    shortcutLink.type = isSvg ? 'image/svg+xml' : 'image/x-icon';
-    shortcutLink.href = finalHref;
+    shortcutLink.type = 'image/x-icon';
+    shortcutLink.href = '/favicon.ico?v=20261027_v6';
     targetDoc.head.appendChild(shortcutLink);
 
     // 5. Add Apple touch icon
     const touchLink = targetDoc.createElement('link');
     touchLink.rel = 'apple-touch-icon';
     touchLink.sizes = '180x180';
-    touchLink.href = finalHref;
+    touchLink.href = isData ? finalHref : '/apple-touch-icon.png?v=20261027_v6';
     targetDoc.head.appendChild(touchLink);
 
     // Try same-origin parent document if in an iframe

@@ -10,53 +10,29 @@ interface YitzakLogoProps {
 }
 
 /**
- * Official YITZAK Shield Emblem Vector.
- * Uses exact mathematical path coordinates matching official YITZAK brand guidelines.
+ * Official YITZAK Shield Emblem.
+ * Renders the authentic high-resolution YITZAK brand emblem icon.
  */
 export const YitzakShieldIcon: React.FC<{ size?: number | string; color?: string; className?: string }> = ({
   size = 36,
   color = 'currentColor',
   className = ''
 }) => {
+  const numSize = typeof size === 'number' ? size : parseInt(String(size), 10) || 36;
+  const isWhite = color === 'white' || color === '#FFFFFF' || color === '#fff';
+  const isGold = color === '#B68A35' || color === '#DFC181' || color?.toLowerCase().includes('gold');
+
+  const iconSrc = isGold ? '/YITZAK-icon-gold.png' : '/YITZAK-icon-green.png';
+
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 200 240"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      <g fill={color}>
-        {/* Outer Shield Border */}
-        <path
-          fillRule="evenodd"
-          clipRule="evenodd"
-          d="
-            M 100 12
-            C 132 28, 164 36, 185 48
-            C 185 122, 158 190, 100 230
-            C 42 190, 15 122, 15 48
-            C 36 36, 68 28, 100 12 Z
-
-            M 100 34
-            C 126 47, 151 54, 166 64
-            C 166 122, 144 176, 100 210
-            C 56 176, 34 122, 34 64
-            C 49 54, 74 47, 100 34 Z
-          "
-        />
-
-        {/* Center Checkmark */}
-        <path d="M 56 116 L 86 150 L 150 72 L 136 61 L 86 130 L 67 107 Z" />
-
-        {/* Left Leaf Motif */}
-        <path d="M 100 198 C 72 184, 48 170, 42 144 C 58 147, 80 168, 100 198 Z" />
-
-        {/* Right Leaf Motif */}
-        <path d="M 100 198 C 128 184, 152 170, 158 144 C 142 147, 120 168, 100 198 Z" />
-      </g>
-    </svg>
+    <img
+      src={iconSrc}
+      alt="YITZAK Emblem"
+      width={numSize}
+      height={numSize}
+      style={{ width: numSize, height: numSize }}
+      className={`object-contain select-none shrink-0 ${isWhite ? 'brightness-0 invert' : ''} ${className}`}
+    />
   );
 };
 
