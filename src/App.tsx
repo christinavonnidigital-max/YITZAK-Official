@@ -42,6 +42,13 @@ import {
 } from './lib/mediaAssets';
 import { dispatchPortalAccessCodeEmail } from './lib/emailService';
 import { getCMSState, CMSState } from './lib/cmsState';
+import { MaintenanceMode } from './components/MaintenanceMode';
+import { 
+  isMaintenanceModeEnabled, 
+  setMaintenanceModeEnabled, 
+  hasStaffBypass, 
+  setStaffBypass 
+} from './lib/maintenanceConfig';
 
 const ViewLoadingFallback = () => (
   <div className="flex items-center justify-center min-h-[320px] py-16">
@@ -86,6 +93,26 @@ export default function App() {
   const [customFavicon, setCustomFavicon] = useState<string | null>(() => getStoredFavicon());
   const [cmsState, setCmsState] = useState<CMSState>(() => getCMSState());
   const [trainingHeroImage, setTrainingHeroImage] = useState<string>(() => getStoredTrainingHero());
+  const [isMaintenanceActive, setIsMaintenanceActive] = useState<boolean>(() => isMaintenanceModeEnabled());
+  const [hasBypass, setHasBypass] = useState<boolean>(() => hasStaffBypass());
+
+  useEffect(() => {
+    const handleMaintenanceChange = () => {
+      setIsMaintenanceActive(isMaintenanceModeEnabled());
+      setHasBypass(hasStaffBypass());
+    };
+    window.addEventListener('yitzak_maintenance_change', handleMaintenanceChange);
+
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('staff_unlock') === '1' || searchParams.get('preview') === 'staff') {
+        setStaffBypass(true);
+        setHasBypass(true);
+      }
+    }
+
+    return () => window.removeEventListener('yitzak_maintenance_change', handleMaintenanceChange);
+  }, []);
 
   useEffect(() => {
     const handleCmsUpdate = () => {
@@ -863,9 +890,65 @@ export default function App() {
   const canonicalUrl = `https://yitzak.co.za${currentRoute.path === '/' ? '' : currentRoute.path}`;
   const isNoIndex = currentView === 'portal' || currentView === 'not_found';
 
+  if (isMaintenanceActive && !hasBypass) {
+    return (
+      <>
+        <Helmet>
+          <title>Scheduled Maintenance &amp; Governance Review | Yitzak Consulting</title>
+          <meta name="description" content="Yitzak Consulting website is temporarily offline for scheduled maintenance. Advisory and client consultations remain active at cgumpo@yitzak.co.za." />
+          <meta name="robots" content="noindex, nofollow" />
+          {customFavicon && <link rel="icon" href={customFavicon} />}
+        </Helmet>
+        <MaintenanceMode 
+          onBypassGranted={() => {
+            setHasBypass(true);
+            triggerNotification('Staff bypass unlocked. You are previewing the full website.');
+          }} 
+        />
+        <Analytics />
+      </>
+    );
+  }
+
   return (
     <div className="bg-[#F6F8F6] text-on-surface font-sans selection:bg-antique-gold selection:text-white overflow-x-clip min-h-screen flex flex-col">
       
+      {/* Staff Preview Indicator Banner when Maintenance is Active */}
+      {isMaintenanceActive && hasBypass && (
+        <div className="bg-[#B68A35] text-[#023625] px-4 py-2 text-xs font-mono font-bold flex flex-wrap items-center justify-between gap-2 shadow-md relative z-50">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#023625] animate-ping" />
+            <span>MAINTENANCE MODE ACTIVE · PUBLIC SEES OFFLINE NOTICE · (STAFF PREVIEW)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setStaffBypass(false);
+                setHasBypass(false);
+              }}
+              className="px-2.5 py-1 bg-[#023625] text-white hover:bg-black rounded text-[11px] uppercase tracking-wider font-bold cursor-pointer transition-colors shadow-xs"
+            >
+              Lock Site for Staff
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const confirmed = window.confirm('Turn OFF Maintenance Mode and make the website live to the public again?');
+                if (confirmed) {
+                  setMaintenanceModeEnabled(false);
+                  setIsMaintenanceActive(false);
+                  triggerNotification('Website is now LIVE to the public.');
+                }
+              }}
+              className="px-2.5 py-1 bg-white text-[#023625] hover:bg-gray-100 rounded text-[11px] uppercase tracking-wider font-bold cursor-pointer transition-colors shadow-xs"
+            >
+              Bring Site Back Live
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic SEO Metadata Management via React Helmet */}
       <Helmet>
         <title>{currentRoute.title}</title>
