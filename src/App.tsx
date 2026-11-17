@@ -1602,16 +1602,14 @@ export default function App() {
                   >
                     <div className="h-full">
                       <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
-                        <div className="space-y-5">
-                          <div className="flex items-center justify-between">
-                            <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <GraduationCap size={24} />
-                            </div>
-                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#7d5800] bg-[#B68A35]/15 px-2.5 py-1 rounded-full">
-                              Training
-                            </span>
+                        <div className="space-y-4">
+                          <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
+                            <GraduationCap size={24} />
                           </div>
                           <div className="space-y-2">
+                            <p className="text-xs font-sans font-semibold tracking-wide text-[#7d5800] leading-snug">
+                              Training
+                            </p>
                             <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug min-h-[56px] flex items-center">
                               Professional Training
                             </h3>
@@ -1664,16 +1662,14 @@ export default function App() {
                   >
                     <div className="h-full">
                       <div className="bg-white p-6 sm:p-7 rounded-2xl border border-[#B68A35]/40 shadow-xs hover:shadow-lg hover:border-[#B68A35] transition-all flex flex-col justify-between h-full group">
-                        <div className="space-y-5">
-                          <div className="flex items-center justify-between">
-                            <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <ShieldCheck size={24} />
-                            </div>
-                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#7d5800] bg-[#B68A35]/15 px-2.5 py-1 rounded-full border border-[#B68A35]/20">
-                              FoodChain ID Partner · Independent CB
-                            </span>
+                        <div className="space-y-4">
+                          <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
+                            <ShieldCheck size={24} />
                           </div>
                           <div className="space-y-2">
+                            <p className="text-xs font-sans font-semibold tracking-wide text-[#7d5800] leading-snug">
+                              FoodChain ID Partner · Independent CB
+                            </p>
                             <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug min-h-[56px] flex items-center">
                               Certification Preparation
                             </h3>
@@ -1726,16 +1722,14 @@ export default function App() {
                   >
                     <div className="h-full">
                       <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
-                        <div className="space-y-5">
-                          <div className="flex items-center justify-between">
-                            <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <Headphones size={24} />
-                            </div>
-                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
-                              Advisory
-                            </span>
+                        <div className="space-y-4">
+                          <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
+                            <Headphones size={24} />
                           </div>
                           <div className="space-y-2">
+                            <p className="text-xs font-sans font-semibold tracking-wide text-[#023625]/75 leading-snug">
+                              Advisory
+                            </p>
                             <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug min-h-[56px] flex items-center">
                               Consulting &amp; Advisory
                             </h3>
@@ -1788,16 +1782,14 @@ export default function App() {
                   >
                     <div className="h-full">
                       <div className="bg-white p-6 sm:p-7 rounded-2xl border border-border shadow-xs hover:shadow-lg hover:border-[#B68A35]/50 transition-all flex flex-col justify-between h-full group">
-                        <div className="space-y-5">
-                          <div className="flex items-center justify-between">
-                            <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
-                              <Workflow size={24} />
-                            </div>
-                            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#023625] bg-[#023625]/10 px-2.5 py-1 rounded-full">
-                              Operations
-                            </span>
+                        <div className="space-y-4">
+                          <div className="w-12 h-12 rounded-xl bg-[#023625]/10 flex items-center justify-center text-[#023625] group-hover:bg-[#023625] group-hover:text-white transition-colors duration-300">
+                            <Workflow size={24} />
                           </div>
                           <div className="space-y-2">
+                            <p className="text-xs font-sans font-semibold tracking-wide text-[#023625]/75 leading-snug">
+                              Operations
+                            </p>
                             <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug min-h-[56px] flex items-center">
                               Business Process Implementation
                             </h3>
