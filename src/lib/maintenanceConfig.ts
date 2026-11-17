@@ -2,18 +2,18 @@
  * YITZAK Consulting - Site Maintenance Configuration & Staff Bypass Management
  */
 
-const STORAGE_KEY_MAINTENANCE = 'yitzak_maintenance_mode_active';
+const STORAGE_KEY_MAINTENANCE = 'yitzak_maintenance_mode_active_v2';
 const STORAGE_KEY_BYPASS = 'yitzak_staff_maintenance_bypass';
 
-// Default state: TRUE (Website disabled / Maintenance screen active)
-export const DEFAULT_MAINTENANCE_ACTIVE = true;
+// Default state: FALSE (Website live and active for public visitors)
+export const DEFAULT_MAINTENANCE_ACTIVE = false;
 
 // Staff Access PINs accepted for bypass
 export const STAFF_BYPASS_PINS = ['yitzak2026', '123456', 'yitzak'];
 
 /**
  * Checks if maintenance mode is currently active.
- * Defaults to true unless explicitly turned off by an administrator.
+ * Defaults to false unless explicitly turned on by an administrator.
  */
 export function isMaintenanceModeEnabled(): boolean {
   if (typeof window === 'undefined') return DEFAULT_MAINTENANCE_ACTIVE;
