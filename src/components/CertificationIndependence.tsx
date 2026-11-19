@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Printer, ShieldCheck, Scale, Award, FileText, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Printer, ShieldCheck, Scale, Award, FileText, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface CertificationIndependenceProps {
   onNavigateHome?: () => void;
@@ -51,7 +51,7 @@ export const CertificationIndependence: React.FC<CertificationIndependenceProps>
               Certification Independence &amp; Impartiality Statement
             </h1>
             <p className="text-xs sm:text-sm text-ash">
-              Governance notice regarding Certification Bodies (CBs), FoodChain ID, and ISO/IEC 17021-1:2015 Clause 5.2 compliance
+              Governance notice regarding Accredited Certification Bodies (CBs) and ISO/IEC 17021-1:2015 Clause 5.2 compliance
             </p>
           </div>
 
@@ -76,7 +76,7 @@ export const CertificationIndependence: React.FC<CertificationIndependenceProps>
             <p className="leading-relaxed text-on-surface-variant">
               International conformity assessment standards require strict structural and operational separation between 
               <strong> Management System Consultancy</strong> (Clause 5.2.5) and <strong>Third-Party Certification Bodies</strong> (Clause 5.2.9). 
-              This statement defines the strict independence between Yitzak Consulting (Pty) Ltd and accredited certification bodies, including FoodChain ID.
+              This statement defines the strict independence between Yitzak Consulting (Pty) Ltd and accredited third-party certification bodies.
             </p>
           </div>
         </div>
@@ -110,7 +110,7 @@ export const CertificationIndependence: React.FC<CertificationIndependenceProps>
               </h2>
             </div>
             <p>
-              To ensure compliance with <strong>ISO/IEC 17021-1:2015 Clause 5.2.5</strong> (which prohibits Certification Bodies from providing management system consultancy), the roles of Yitzak Consulting and FoodChain ID are strictly segregated:
+              To ensure compliance with <strong>ISO/IEC 17021-1:2015 Clause 5.2.5</strong> (which prohibits Certification Bodies from providing management system consultancy), the roles of Yitzak Consulting and accredited Certification Bodies are strictly segregated:
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -149,16 +149,16 @@ export const CertificationIndependence: React.FC<CertificationIndependenceProps>
                 </ul>
               </div>
 
-              {/* FoodChain ID Box */}
+              {/* Accredited Certification Body Box */}
               <div className="bg-[#FAF7F0] border border-[#B68A35]/30 rounded-xl p-5 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#B68A35]" />
                   <span className="font-mono text-xs uppercase font-bold text-[#7a5a1f] tracking-wider">
-                    FoodChain ID
+                    Accredited Certification Bodies (CBs)
                   </span>
                 </div>
                 <div className="text-[11px] font-semibold text-[#7a5a1f] uppercase">
-                  Independent Certification Body &amp; Academy
+                  Independent Conformity Assessment Bodies
                 </div>
                 <ul className="space-y-2 text-xs text-charcoal">
                   <li className="flex items-start gap-2">
@@ -208,10 +208,10 @@ export const CertificationIndependence: React.FC<CertificationIndependenceProps>
                 <strong>No Guarantee of Certification:</strong> Engaging Yitzak Consulting for gap assessments, internal audits, SOP development, or training does not guarantee, state, or imply that an organisation will pass an accredited certification audit.
               </li>
               <li>
-                <strong>No Simpler, Faster, or Discounted Auditing:</strong> Working with Yitzak Consulting does not make an audit through FoodChain ID (or any other certification body) simpler, easier, expedited, or less expensive.
+                <strong>No Simpler, Faster, or Discounted Auditing:</strong> Working with Yitzak Consulting does not make an audit through any accredited certification body simpler, easier, expedited, or less expensive.
               </li>
               <li>
-                <strong>Objective Assessment:</strong> All certification audits conducted by FoodChain ID auditors are performed autonomously and evaluated strictly against normative scheme requirements without bias or leniency.
+                <strong>Objective Assessment:</strong> All certification audits conducted by accredited CB auditors are performed autonomously and evaluated strictly against normative scheme requirements without bias or leniency.
               </li>
             </ul>
           </section>
@@ -228,23 +228,23 @@ export const CertificationIndependence: React.FC<CertificationIndependenceProps>
               Clients who engage Yitzak Consulting maintain complete and unrestricted freedom to select any accredited Certification Body of their choice for formal third-party certification.
             </p>
             <p>
-              While Yitzak assists clients in understanding scheme requirements and can facilitate access to FoodChain ID Academy training courses, clients are never required or pressured to select FoodChain ID for their certification audit. Our advisory prepares clients to meet standard requirements regardless of which accredited certification body conducts the final assessment.
+              While Yitzak assists clients in understanding scheme requirements and provides structured training to build internal competence, clients are never required or pressured to select any specific certification body for their audit. Our advisory prepares clients to meet standard requirements regardless of which accredited certification body conducts the final assessment.
             </p>
           </section>
 
-          {/* Section 5: FoodChain ID Academy Courses */}
+          {/* Section 5: Standardised Training & Educational Framework */}
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-primary">
               <FileText size={18} className="text-[#B68A35]" />
               <h2 className="font-serif text-lg font-bold">
-                5. FoodChain ID Academy Educational Framework
+                5. Standardised Training &amp; Educational Framework
               </h2>
             </div>
             <p>
-              Yitzak Consulting collaborates with FoodChain ID Academy to facilitate access to selected scheme-approved auditor and professional training courses across Southern Africa.
+              Yitzak Consulting delivers structured, scheme-aligned auditor and professional training programmes across Southern Africa.
             </p>
             <p>
-              These training courses represent standardized educational curricula designed to build scheme competence. They do not constitute client-specific consultancy. Examinations and certifications resulting from FoodChain ID Academy courses are administered, evaluated, and issued independently by FoodChain ID in accordance with Academy criteria.
+              These training courses represent standardized educational curricula designed to build scheme competence. They do not constitute client-specific consultancy, and participation in training never replaces or influences independent third-party certification evaluations conducted by accredited Certification Bodies.
             </p>
           </section>
 
@@ -260,7 +260,6 @@ export const CertificationIndependence: React.FC<CertificationIndependenceProps>
               <div><strong>Entity:</strong> Yitzak Consulting (Pty) Ltd</div>
               <div><strong>Email:</strong> info@yitzak.co.za / cgumpo@yitzak.co.za</div>
               <div><strong>Website:</strong> <a href="https://yitzak.co.za" className="text-[#B68A35] underline">yitzak.co.za</a></div>
-              <div><strong>Certification Body Portal:</strong> <a href="https://www.foodchainid.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-1">foodchainid.com <ExternalLink size={11} /></a></div>
             </div>
           </section>
 

@@ -160,7 +160,7 @@ export async function exportPortfolioToPDF(categories: Category[]) {
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(65, 73, 68); // Soft charcoal
-  const introText = 'This document presents the professional training portfolio of Yitzak, including selected FoodChain ID Academy courses available through our partnership. Our programmes are designed to build practical capability, support compliance with internationally aligned standards, and develop capable people across your organisation.';
+  const introText = 'This document presents the professional training portfolio of Yitzak, covering management systems, auditor qualification, and food safety curricula. Our programmes are designed to build practical capability, support compliance with internationally aligned standards, and develop capable people across your organisation.';
   const introLines = doc.splitTextToSize(introText, contentWidth);
   doc.text(introLines, marginX, y);
   
@@ -440,7 +440,7 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(182, 138, 53);
-      doc.text('FOODCHAIN ID PARTNER | INDEPENDENT ACCREDITED CERTIFICATION BODY', marginX, y);
+      doc.text('INDEPENDENT CERTIFICATION PREPARATION | ACCREDITED STANDARDS READINESS', marginX, y);
 
       y += 6;
       // Accreditation & Advisory Boundary Callout Box
@@ -458,7 +458,7 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(65, 73, 68);
-      const boundaryText = 'FoodChain ID is an independent accredited Certification Body (CB) and Academy. Yitzak Consulting provides independent readiness reviews and training. Formal certification audits are conducted autonomously by accredited Certification Bodies without consultancy influence or guarantees.';
+      const boundaryText = 'Accredited Certification Bodies (CBs) operate strictly independently from management system consultancies. Yitzak Consulting provides independent readiness reviews and training. Formal certification audits are conducted autonomously by accredited Certification Bodies without consultancy influence or guarantees.';
       const boundaryLines = doc.splitTextToSize(boundaryText, contentWidth - 8);
       doc.text(boundaryLines, marginX + 4, y + 9.5);
 
@@ -542,7 +542,7 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(9.5);
       doc.setTextColor(65, 73, 68);
-      const introText = 'Yitzak is a specialized compliance, audit readiness, and capability consulting practice delivering across Southern Africa. Through our partnership with FoodChain ID, we help organisations access selected services and prepare for suitable certification routes across food safety, quality, and agricultural standards.';
+      const introText = 'Yitzak is a specialized compliance, audit readiness, and capability consulting practice delivering across Southern Africa. We help organisations implement practical management systems, build internal competence, and prepare for accredited third-party certification routes across food safety, quality, and agricultural standards.';
       const introLines = doc.splitTextToSize(introText, contentWidth);
       doc.text(introLines, marginX, y);
 
@@ -552,15 +552,15 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
       const pillars = [
         {
           title: '1. Professional Training',
-          desc: 'Instructor-led competence building across BRCGS, FSSC 22000, ISO 22000 & HACCP. Access to selected FoodChain ID Academy courses.'
+          desc: 'Instructor-led competence building across BRCGS, FSSC 22000, ISO 22000 & HACCP, including structured auditor qualification courses.'
         },
         {
           title: '2. Consulting & Advisory',
           desc: 'Specialist guidance, gap reviews, diagnostic assessments, readiness planning, and internal audit preparation for external assessment.'
         },
         {
-          title: '3. Certification Preparation (FoodChain ID Partner)',
-          desc: 'Preparation and advisory for selected certification routes across GLOBALG.A.P., Non-GMO, Organic, and GFSI food safety schemes. Certification is issued by the relevant accredited certification body.'
+          title: '3. Certification Preparation (Independent Advisory)',
+          desc: 'Preparation and advisory for selected certification routes across GLOBALG.A.P., Non-GMO, Organic, and GFSI food safety schemes. Certification is conducted and issued independently by the client\'s chosen accredited certification body.'
         },
         {
           title: '4. Business Process Implementation',
@@ -597,7 +597,7 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
       }
     }
 
-    // FoodChain ID Partnership Banner
+    // Impartiality & Certification Body Independence Banner
     y += 2;
     doc.setFillColor(2, 54, 37); // Dark Green
     doc.rect(marginX, y, contentWidth, 24, 'F');
@@ -605,12 +605,12 @@ export async function exportCapabilitySheetPDF(type: string = 'capability_sheet'
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(223, 193, 129); // Gold accent #DFC181
-    doc.text('FOODCHAIN ID PARTNERSHIP | INDEPENDENT CB & ACADEMY', marginX + 6, y + 7);
+    doc.text('CERTIFICATION IMPARTIALITY | ISO/IEC 17021-1 COMPLIANCE', marginX + 6, y + 7);
 
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(255, 255, 255);
-    const fcText = 'FoodChain ID is an accredited independent Certification Body and Academy. Yitzak Consulting provides independent readiness reviews and training. Formal certification audits are conducted autonomously under accredited certification procedures without consultancy influence.';
+    const fcText = 'Yitzak Consulting provides independent readiness reviews, system implementation, and workforce training. Formal third-party certification audits are conducted autonomously by accredited Certification Bodies without consultancy influence or guarantees.';
     const fcLines = doc.splitTextToSize(fcText, contentWidth - 12);
     doc.text(fcLines, marginX + 6, y + 12.5);
 
@@ -838,7 +838,7 @@ export async function exportKnowledgeResourcePDF(resource: ExportableKnowledgeRe
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text('Partner: FoodChain ID Academy | Randburg, South Africa', marginX, y + 4.5);
+    doc.text('Yitzak Consulting (Pty) Ltd | Randburg, South Africa', marginX, y + 4.5);
     doc.text('Advisory Inquiries: info@yitzak.co.za | www.yitzak.co.za', marginX, y + 8.5);
 
     doc.text('Developing Competence. Enabling Compliance.', pageWidth - marginX, y + 4.5, { align: 'right' });

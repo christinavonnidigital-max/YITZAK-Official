@@ -153,7 +153,7 @@ export function generateEmailSignatureHtml(details: {
       </div>
 
       <div style="margin-top: 8px; font-size: 10px; color: #777777; border-top: 1px solid #E5E9E6; padding-top: 6px;">
-        Food Safety Advisory &bull; Quality Management &bull; FoodChain ID Authorized Partner
+        Food Safety Advisory &bull; Quality Management &bull; ISO &amp; GFSI Compliance
       </div>
     </td>
   </tr>

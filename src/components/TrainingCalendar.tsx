@@ -107,7 +107,7 @@ const UPCOMING_COURSES: TrainingCourse[] = [
     id: 'course-2',
     no: 2,
     name: 'GLOBALG.A.P. Version 6 Smart Training',
-    category: 'FCID Approved',
+    category: 'GFSI Approved',
     standardCategory: 'GFSI',
     difficulty: 'Intermediate',
     vertical: 'Food Safety',
@@ -132,7 +132,7 @@ const UPCOMING_COURSES: TrainingCourse[] = [
       {
         title: 'Module 2: On-Farm Implementation & Risk Mitigation',
         hours: '10 Hours',
-        accreditations: 'FCID Approved',
+        accreditations: 'GFSI Aligned',
         outcomes: ['Formulate crop and livestock hygiene safety plans', 'Verify fertilizer usage compliance and soil safety metrics']
       }
     ]
@@ -141,7 +141,7 @@ const UPCOMING_COURSES: TrainingCourse[] = [
     id: 'course-3',
     no: 3,
     name: 'Practical Guide to EU Food Labelling & Regulatory Requirements',
-    category: 'FCID Approved',
+    category: 'Regulatory',
     standardCategory: 'GFSI',
     difficulty: 'Beginner',
     vertical: 'Food Safety',
@@ -160,7 +160,7 @@ const UPCOMING_COURSES: TrainingCourse[] = [
       {
         title: 'Module 1: EU Regulation 1169/2011 Framework',
         hours: '2 Hours',
-        accreditations: 'FCID Regulatory',
+        accreditations: 'EU Regulatory',
         outcomes: ['Define basic labeling requirements for goods sold inside the EU', 'Map out required nutrition declaration parameters']
       },
       {
@@ -283,7 +283,7 @@ const UPCOMING_COURSES: TrainingCourse[] = [
     id: 'course-7',
     no: 7,
     name: 'FSSC 22000 IA V 7 – Internal Auditor Training',
-    category: 'FCID Approved',
+    category: 'FSSC Approved',
     standardCategory: 'ISO',
     difficulty: 'Intermediate',
     vertical: 'Food Safety',
@@ -728,7 +728,7 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
             Upcoming Training Calendar
           </h2>
           <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed mb-6">
-            Browse upcoming certified learning events in partnership with <strong>FoodChain ID Academy</strong> and statutory <strong>FSSAI FoSTaC</strong> schemes. Plan your compliance upskilling, verify dates, and immediately book custom consulting slots aligned to your chosen module.
+            Browse upcoming certified learning events across <strong>GFSI, ISO &amp; Auditor Qualification</strong> programmes and statutory <strong>FSSAI FoSTaC</strong> schemes. Plan your compliance upskilling, verify dates, and immediately book custom consulting slots aligned to your chosen module.
           </p>
           <div className="flex flex-wrap gap-4 text-xs font-mono text-white/60">
             <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded border border-white/10">
@@ -1063,17 +1063,17 @@ export default function TrainingCalendar({ onReserveCourse }: TrainingCalendarPr
                     <div className="flex gap-2 items-start">
                       <Award size={14} className="text-[#B68A35] mt-0.5 shrink-0" />
                       <p className="text-[11px] leading-relaxed text-primary font-sans font-medium">
-                        Looking for global certifications? Explore the full course list at FoodChain ID Academy.
+                        Need guidance selecting the right scheme or auditor course for your facility?
                       </p>
                     </div>
-                    <a
-                      href="https://www.foodchainid.com/academy/"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => onReserveCourse('Scheme & Auditor Curriculum Advisory', 'Contact for Course Selection')}
                       className="text-xs font-bold text-[#B68A35] hover:underline inline-flex items-center gap-1 cursor-pointer"
                     >
-                      <span>Visit FoodChain ID Academy ↗</span>
-                    </a>
+                      <span>Request Curriculum Advisory</span>
+                      <ArrowRight size={12} />
+                    </button>
                   </div>
                 </div>
               </div>

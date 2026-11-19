@@ -85,17 +85,17 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
         const mock: ReferralClickLog[] = [
           {
             id: 'ref_01',
-            targetUrl: 'https://www.foodchainid.com/academy/fssc22000-v6-lead-auditor',
-            trackingUrl: 'https://www.foodchainid.com/academy/fssc22000-v6-lead-auditor?utm_source=yitzak&utm_medium=partner_referral',
+            targetUrl: 'https://yitzak.co.za/services/certifications',
+            trackingUrl: 'https://yitzak.co.za/services/certifications?utm_source=yitzak&utm_medium=advisory_referral',
             userEmail: 'qa.lead@foodmfg.co.za',
             createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
             status: 'Enrolled',
-            notes: 'Reconciled via FoodChain ID monthly statement - FSSC Lead Auditor'
+            notes: 'Confirmed enrolment - FSSC 22000 Lead Auditor Preparation'
           },
           {
             id: 'ref_02',
-            targetUrl: 'https://www.foodchainid.com/services/brcgs-food-safety-v9',
-            trackingUrl: 'https://www.foodchainid.com/services/brcgs-food-safety-v9?utm_source=yitzak&utm_medium=partner_referral',
+            targetUrl: 'https://yitzak.co.za/services/consulting',
+            trackingUrl: 'https://yitzak.co.za/services/consulting?utm_source=yitzak&utm_medium=advisory_referral',
             userEmail: 'cgumpo@yitzak.co.za',
             createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
             status: 'In Contact',
@@ -309,11 +309,11 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
           </button>
           <button
             type="button"
-            onClick={() => handleQuickAdd('auditor@foodchainid.com', 'FoodChain ID Auditor', 'vip')}
+            onClick={() => handleQuickAdd('auditor@clientcompany.com', 'External Lead Auditor', 'vip')}
             className="text-xs bg-white hover:bg-emerald-50 border border-border hover:border-emerald-300 text-charcoal hover:text-emerald-900 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Sparkles className="w-3 h-3 text-amber-500" />
-            + auditor@foodchainid.com
+            + auditor@clientcompany.com
           </button>
           <button
             type="button"
@@ -549,7 +549,7 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
               </h4>
             </div>
             <p className="text-xs text-amber-900/80 leading-relaxed">
-              When visitors click FoodChain ID links on Yitzak, we automatically attach referral parameters (<code>utm_source=yitzak</code>). Because FoodChain ID is an external site, actual course completions &amp; fee conversions are verified via <strong>FoodChain ID’s monthly partner statements</strong> or direct Yitzak consultation requests. Admins can reconcile enrolment statuses below.
+              When visitors engage with certification preparation or training referral links on Yitzak, referral parameters (<code>utm_source=yitzak</code>) are logged for internal attribution. Course completions &amp; advisory conversions can be reconciled directly below.
             </p>
           </div>
 
@@ -565,7 +565,7 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
           <div className="border border-border rounded-xl overflow-hidden divide-y divide-border bg-white">
             {referrals.length === 0 ? (
               <div className="p-8 text-center text-xs text-ash">
-                No outbound referral clicks logged yet. When visitors click FoodChain ID links on the site, they will appear here automatically.
+                No referral clicks logged yet. Tracked advisory and certification referral activity will appear here automatically.
               </div>
             ) : (
               referrals.map((ref) => (
@@ -607,7 +607,7 @@ export default function WhitelistManager({ onClose, onSelectGuest }: WhitelistMa
                     <span className="text-[10px] font-mono text-ash uppercase font-bold">Set Status:</span>
                     <button
                       type="button"
-                      onClick={() => updateReferralStatus(ref.id, 'Enrolled', 'Enrolment confirmed via FoodChain ID monthly statement.')}
+                      onClick={() => updateReferralStatus(ref.id, 'Enrolled', 'Enrolment confirmed via Yitzak admissions statement.')}
                       className="px-2 py-1 text-[11px] bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-mono font-bold cursor-pointer transition-colors"
                     >
                       ✓ Mark Enrolled

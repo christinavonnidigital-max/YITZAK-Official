@@ -1585,7 +1585,7 @@ export default function AdministrativeView({
             {filteredReferrals.length === 0 ? (
               <div className="border border-dashed border-border p-12 text-center space-y-2 bg-surface rounded-xl">
                 <p className="font-serif text-sm text-primary font-bold">No partner referral records found</p>
-                <p className="text-xs text-ash">Outbound FoodChain ID referral tracking will appear here.</p>
+                <p className="text-xs text-ash">Outbound advisory &amp; certification referral tracking will appear here.</p>
               </div>
             ) : (
               filteredReferrals.map(ref => (

@@ -33,8 +33,8 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
       id: 'faq-streams',
       category: 'Curriculum & Standards',
       iconName: 'school',
-      question: 'What is the difference between YITZAK Programmes and FoodChain ID courses?',
-      answer: 'YITZAK Programmes are practical training courses developed by our consultants to support compliance implementation, internal auditing skills, and management system maintenance. FoodChain ID Academy courses are standardized auditor and scheme training programs available through our partnership, leading to FoodChain ID issued certificates (such as FSSC 22000, BRCGS, and ISO schemes).'
+      question: 'What is the difference between YITZAK Programmes and Auditor Qualification courses?',
+      answer: 'YITZAK Programmes are practical training courses developed by our consultants to support compliance implementation, internal auditing skills, and management system maintenance. Auditor Qualification and scheme-aligned courses provide structured competence training mapped to international standards (such as FSSC 22000, BRCGS, and ISO schemes).'
     },
     {
       id: 'faq-customization',
@@ -48,7 +48,7 @@ export default function FAQSection({ onNavigateToContact }: FAQSectionProps) {
       category: 'Certificates & Verification',
       iconName: 'verified',
       question: 'What certificates are issued upon course completion?',
-      answer: 'Participants completing Yitzak courses receive an official Yitzak Certificate of Completion and attendance record. For FoodChain ID Academy courses, official accredited certificates are issued directly by FoodChain ID following their standard evaluation and examination procedures.'
+      answer: 'Participants completing Yitzak courses receive an official Yitzak Certificate of Completion and attendance record following course evaluation and attendance verification. For formal third-party system or product certification, certificates are issued independently by an accredited Certification Body of your choice.'
     },
     {
       id: 'faq-calendar-booking',

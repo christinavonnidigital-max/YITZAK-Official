@@ -84,7 +84,7 @@ export const ROUTES: Record<AppView, RouteMeta> = {
     view: 'independence',
     path: '/certification-independence',
     title: 'Certification Independence & Impartiality Statement | Yitzak Consulting',
-    description: 'Official impartiality statement regarding independent Certification Bodies (CBs) including FoodChain ID, in accordance with ISO/IEC 17021-1:2015 Clause 5.2.'
+    description: 'Official impartiality statement regarding independent accredited Certification Bodies (CBs), in accordance with ISO/IEC 17021-1:2015 Clause 5.2.'
   },
   not_found: {
     view: 'not_found',
@@ -149,7 +149,7 @@ export function getViewFromLocation(): { view: AppView; elementId?: string } {
   }
 
   // 2. Path-based exact matches
-  if (rawPath === '/certification-independence' || rawPath === '/independence' || rawPath === '/impartiality' || rawPath === '/foodchain-id' || rawPath === '/cb-independence') {
+  if (rawPath === '/certification-independence' || rawPath === '/independence' || rawPath === '/impartiality' || rawPath === '/cb-independence') {
     return { view: 'independence' };
   }
   if (rawPath === '/privacy-policy' || rawPath === '/privacy' || rawPath === '/popia' || rawPath === '/popia-notice' || rawPath === '/legal/privacy' || rawPath === '/privacy-notice') {

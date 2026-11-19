@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow, ExternalLink, Info, Eye, EyeOff, Scale } from 'lucide-react';
+import { Shield, Download, ArrowRight, Menu, X, Calendar, Lock, Sparkles, Check, ChevronLeft, ChevronRight, ChevronDown, Globe, Mail, Loader2, ArrowUp, GraduationCap, Award, Building2, Laptop, RefreshCw, FileText, CheckCircle, AlertCircle, ShieldCheck, Send, User, Printer, Target, Sliders, TrendingUp, Layers, CheckCircle2, Phone, MapPin, Linkedin, Instagram, KeyRound, UserCheck, LayoutGrid, Headphones, Workflow, Info, Eye, EyeOff, Scale } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, initAuth, googleSignIn, db, getAccessToken } from './lib/firebase';
 import { Analytics } from '@vercel/analytics/react';
@@ -636,7 +636,7 @@ export default function App() {
     };
   }, []);
 
-  // Track FoodChain ID partner links and log 'Request Consultation' CTA clicks for Google Analytics and local conversion tracking
+  // Log 'Request Consultation' CTA clicks for Google Analytics and local conversion tracking
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -710,39 +710,6 @@ export default function App() {
           } catch (err) {
             console.debug('Consultation CTA tracking error:', err);
           }
-        }
-      }
-
-      // 2. Track FoodChain ID partner links seamlessly in the background with UTM attribution
-      const anchor = target.closest('a');
-      if (anchor && anchor.href && anchor.href.includes('foodchainid.com')) {
-        e.preventDefault();
-        const rawUrl = anchor.href;
-        
-        try {
-          const utmUrl = new URL(rawUrl);
-          if (!utmUrl.searchParams.has('utm_source')) {
-            utmUrl.searchParams.set('utm_source', 'yitzak');
-            utmUrl.searchParams.set('utm_medium', 'partner_referral');
-            utmUrl.searchParams.set('utm_campaign', 'yitzak_partner_deal');
-          }
-
-          // Silently log click locally for internal partner attribution analytics
-          const logData = {
-            id: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-            eventType: 'partner_referral_click',
-            targetUrl: rawUrl,
-            trackingUrl: utmUrl.toString(),
-            userEmail: currentUser?.email || 'guest@yitzak.co.za',
-            createdAt: new Date().toISOString()
-          };
-          const existingLogs = JSON.parse(localStorage.getItem('yitzak_referral_clicks') || '[]');
-          existingLogs.push(logData);
-          localStorage.setItem('yitzak_referral_clicks', JSON.stringify(existingLogs));
-
-          window.open(utmUrl.toString(), '_blank', 'noopener,noreferrer');
-        } catch (err) {
-          window.open(rawUrl, '_blank', 'noopener,noreferrer');
         }
       }
     };
@@ -1168,7 +1135,7 @@ export default function App() {
                         </div>
                         <div>
                           <div className="font-serif font-bold text-xs text-primary group-hover:text-[#023625] transition-colors">Certification Preparation</div>
-                          <div className="text-[11px] text-ash">FoodChain ID partner &amp; advisory route</div>
+                          <div className="text-[11px] text-ash">Accredited standards &amp; audit readiness route</div>
                         </div>
                       </button>
 
@@ -1508,7 +1475,7 @@ export default function App() {
                   <div className="inline-flex items-center gap-2 bg-[#023625]/8 border border-[#023625]/15 px-3.5 py-1.5 rounded-full">
                     <span className="w-2 h-2 rounded-full bg-[#B68A35]"></span>
                     <span className="text-[#023625] font-sans text-xs uppercase tracking-wider font-bold">
-                      FoodChain ID Partner
+                      Independent Training &amp; Compliance Advisory
                     </span>
                   </div>
                 </ScrollReveal>
@@ -1620,7 +1587,7 @@ export default function App() {
                           <ul className="space-y-2 pt-2 border-t border-border/60 text-xs text-ash font-sans">
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
-                              <span>FoodChain ID Academy courses</span>
+                              <span>Auditor qualification &amp; scheme courses</span>
                             </li>
                             <li className="flex items-center gap-2">
                               <CheckCircle2 size={13} className="text-[#B68A35] shrink-0" />
@@ -1668,7 +1635,7 @@ export default function App() {
                           </div>
                           <div className="space-y-2">
                             <p className="text-xs font-sans font-semibold tracking-wide text-[#7d5800] leading-snug">
-                              FoodChain ID Partner · Independent CB
+                              Independent Advisory · Accredited CBs
                             </p>
                             <h3 className="font-serif text-xl font-bold text-primary group-hover:text-[#B68A35] transition-colors leading-snug min-h-[56px] flex items-center">
                               Certification Preparation
@@ -1828,8 +1795,8 @@ export default function App() {
               </div>
             </section>
 
-            {/* 3. Compact High-Value Credibility Banner (FoodChain ID Partnership) */}
-            <section id="foodchain-partner-banner" className="bg-[#023625] text-white py-8 sm:py-10 px-4 sm:px-8 md:px-12 border-y border-[#B68A35]/30 relative overflow-hidden scroll-mt-[100px]">
+            {/* 3. Compact High-Value Credibility Banner (Certification Independence & Preparation) */}
+            <section id="certification-independence-banner" className="bg-[#023625] text-white py-8 sm:py-10 px-4 sm:px-8 md:px-12 border-y border-[#B68A35]/30 relative overflow-hidden scroll-mt-[100px]">
               <div className="max-w-[1280px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
                 <div className="flex items-start sm:items-center gap-4 text-left">
                   <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-[#DFC181] shrink-0">
@@ -1838,14 +1805,14 @@ export default function App() {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-[#DFC181] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
-                        FOODCHAIN ID PARTNERSHIP
+                        ISO/IEC 17021-1 IMPARTIALITY
                       </span>
                     </div>
                     <p className="font-serif text-base sm:text-lg text-white font-bold">
-                      Selected FoodChain ID Academy Courses &amp; Certification Preparation
+                      Independent Auditor Training &amp; Certification Preparation
                     </p>
                     <p className="text-xs text-white/80 font-sans leading-relaxed max-w-2xl">
-                      Yitzak is a FoodChain ID partner. We help organisations access selected FoodChain ID services and prepare for suitable certification routes. Formal certification is conducted and issued by the relevant accredited certification body.
+                      Yitzak is an independent training and compliance advisory practice. We prepare organisations for suitable international certification routes. Formal third-party audits and certifications are conducted autonomously by independent accredited Certification Bodies.
                     </p>
                   </div>
                 </div>
@@ -1999,9 +1966,9 @@ export default function App() {
                       fullSubtitle: "Team Training & System Rollout",
                       icon: GraduationCap,
                       summary: "Hands-on staff training and internal audit practice.",
-                      description: "A procedure only works if people know how to follow it. Through FoodChain ID Academy materials and practical training sessions, we train your operators, supervisors, and internal auditors so they run the system with confidence.",
+                      description: "A procedure only works if people know how to follow it. Through structured courseware and practical training sessions, we train your operators, supervisors, and internal auditors so they run the system with confidence.",
                       deliverables: [
-                        "Instructor-led training and access to selected FoodChain ID Academy courses",
+                        "Instructor-led training and structured auditor qualification courses",
                         "Practical mock audit drills on the factory floor",
                         "Management review and readiness check before formal external assessment"
                       ],
@@ -2431,10 +2398,10 @@ export default function App() {
                     Training that builds real competence
                   </h1>
                   <p className="font-sans text-sm md:text-base text-on-surface-variant mb-4 leading-relaxed opacity-90">
-                    Practical, instructor-led training for quality, food safety, environmental, and management systems. Delivered through Yitzak programmes and selected FoodChain ID Academy courses, with options tailored to your workplace.
+                    Practical, instructor-led training for quality, food safety, environmental, and management systems. Delivered through Yitzak programmes and structured auditor qualification courses, with options tailored to your workplace.
                   </p>
                   <p className="font-sans text-xs md:text-sm text-outline mb-6 border-l-2 border-antique-gold pl-4">
-                    Featuring YITZAK professional programmes, with access to selected FoodChain ID Academy courses.
+                    Featuring YITZAK professional programmes alongside internationally aligned auditor and scheme courses.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
@@ -2521,9 +2488,9 @@ export default function App() {
                       <div className="w-12 h-12 rounded-full bg-forest-green/10 flex items-center justify-center">
                         <Award className="text-forest-green" size={24} />
                       </div>
-                      <h3 className="font-serif text-xl text-primary font-bold">FoodChain ID Academy</h3>
+                      <h3 className="font-serif text-xl text-primary font-bold">Scheme &amp; Auditor Training</h3>
                       <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed">
-                        Specialized auditor and scheme training courses available through our partnership.
+                        Specialized auditor and scheme-aligned training courses across GFSI, food safety, and ISO disciplines.
                       </p>
                     </div>
                     <button
@@ -2558,7 +2525,7 @@ export default function App() {
               </div>
             </section>
 
-            {/* FoodChain ID Partnership Banner */}
+            {/* Scheme & Auditor Training Banner */}
             <section className="py-8 md:py-10 bg-mist border-y border-border">
               <div className="max-w-[1180px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16">
                 <ScrollReveal direction="up" delay={0.05}>
@@ -2566,15 +2533,15 @@ export default function App() {
                     <div className="space-y-2.5 max-w-2xl">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="bg-[#B68A35]/20 text-[#DFC181] border border-[#B68A35]/40 px-3 py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap">
-                          FoodChain ID Academy Partner
+                          Accredited Standards Curriculum
                         </span>
                         <span className="text-white/70 text-xs font-mono">Standardized Auditor &amp; Scheme Training</span>
                       </div>
                       <h3 className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-white">
-                        FoodChain ID Academy Courses &amp; Certification Preparation
+                        Auditor Qualification Courses &amp; Certification Preparation
                       </h3>
                       <p className="font-sans text-xs md:text-sm text-white/80 leading-relaxed">
-                        Access recognized FoodChain ID Academy training courses across GLOBALG.A.P., Non-GMO, BRCGS, and ISO schemes. Certification is conducted and awarded independently by accredited Certification Bodies in full compliance with ISO/IEC 17021-1.
+                        Build team capability across GLOBALG.A.P., Non-GMO, BRCGS, and ISO schemes. Formal third-party certification is conducted and awarded independently by accredited Certification Bodies in full compliance with ISO/IEC 17021-1.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
@@ -2593,15 +2560,6 @@ export default function App() {
                         <Scale size={13} className="text-[#DFC181]" />
                         <span>Impartiality Policy</span>
                       </button>
-                      <a
-                        href="https://www.foodchainid.com/academy/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="border border-white/20 hover:border-white hover:bg-white/5 text-white/80 hover:text-white font-sans text-xs uppercase tracking-widest font-bold py-3 px-4 rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 w-full sm:w-auto text-center"
-                      >
-                        <span>Global Academy</span>
-                        <span>↗</span>
-                      </a>
                     </div>
                   </div>
                 </ScrollReveal>
@@ -2748,7 +2706,7 @@ export default function App() {
                   <div>
                     <h3 className="font-serif text-lg md:text-xl text-primary font-bold mb-2">Certificates and Records</h3>
                     <p className="font-sans text-xs md:text-sm text-on-surface-variant leading-relaxed opacity-90">
-                      On successful completion of Yitzak courses, participants receive a formal Yitzak Certificate of Completion and attendance record. For FoodChain ID Academy courses, official certificates are issued directly by FoodChain ID following their accredited assessment requirements.
+                      On successful completion of Yitzak courses, participants receive a formal Yitzak Certificate of Completion and attendance record following our evaluation and assessment requirements. For formal third-party management system or product certification, audits and certificates are issued independently by an accredited Certification Body of your choice.
                     </p>
                   </div>
                 </div>
@@ -2810,13 +2768,13 @@ export default function App() {
               <div className="max-w-4xl space-y-4 sm:space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B68A35]/10 text-[#7a5a1f] rounded-full border border-[#B68A35]/30 text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider max-w-full">
                   <Award size={14} className="text-[#B68A35] shrink-0" />
-                  <span className="truncate sm:whitespace-normal">Independent Certification Preparation · FoodChain ID Partner</span>
+                  <span className="truncate sm:whitespace-normal">Independent Certification Preparation · Accredited CBs</span>
                 </div>
                 <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-[56px] leading-tight md:leading-[62px] tracking-tight text-primary font-bold">
                   Certification Preparation
                 </h1>
                 <p className="font-sans text-xs sm:text-sm md:text-base text-on-surface-variant leading-relaxed max-w-3xl">
-                  Yitzak Consulting provides diagnostic reviews, SOP development, and audit readiness preparation across food safety, quality, and agricultural standards. Formal third-party audits and certifications are conducted autonomously by independent accredited Certification Bodies (CBs) such as FoodChain ID.
+                  Yitzak Consulting provides diagnostic reviews, SOP development, and audit readiness preparation across food safety, quality, and agricultural standards. Formal third-party audits and certifications are conducted autonomously by independent accredited Certification Bodies (CBs).
                 </p>
 
                 {/* Explicit ISO/IEC 17021-1 Accreditation Boundary & Impartiality Notice */}
@@ -2840,7 +2798,7 @@ export default function App() {
                       </button>
                     </div>
                     <p className="leading-relaxed text-on-surface-variant text-[11px] sm:text-xs">
-                      FoodChain ID is an independent accredited Certification Body (CB) and global Academy. Under ISO/IEC 17021-1:2015 Clause 5.2, Certification Bodies operate strictly independently from management consultancies. Engaging Yitzak Consulting does not guarantee certification, nor does it make audits simpler, faster, or less expensive. Clients retain unrestricted freedom to select any accredited Certification Body.
+                      Accredited Certification Bodies (CBs) operate strictly independently from management consultancies under ISO/IEC 17021-1:2015 Clause 5.2. Engaging Yitzak Consulting does not guarantee certification, nor does it make audits simpler, faster, or less expensive. Clients retain unrestricted freedom to select any accredited Certification Body.
                     </p>
                   </div>
                 </div>
@@ -2872,17 +2830,6 @@ export default function App() {
                     <Printer size={14} className="text-[#DFC181]" />
                     <span>Print Overview</span>
                   </button>
-                  {/* Single clearly labelled optional external partner link on the Certification Preparation page */}
-                  <a
-                    href="https://www.foodchainid.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="border border-primary/40 text-primary hover:bg-primary hover:text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl cursor-pointer transition-all active:scale-95 inline-flex items-center justify-center gap-2 w-full sm:w-auto"
-                    title="Visit FoodChain ID global portal (opens in a new tab)"
-                  >
-                    <span>Visit FoodChain ID</span>
-                    <ExternalLink size={14} className="text-[#B68A35] shrink-0" />
-                  </a>
                 </div>
               </div>
             </section>
@@ -2897,7 +2844,7 @@ export default function App() {
                     <div>
                       <YitzakLogo size={30} className="mb-2" />
                       <p className="text-xs font-mono text-[#7d5800] uppercase font-bold">Certification Preparation Directory</p>
-                      <p className="text-[10px] text-gray-500 mt-1">FoodChain ID Partner &amp; Advisory Route (Certification issued by accredited certification bodies)</p>
+                      <p className="text-[10px] text-gray-500 mt-1">Independent Certification Readiness &amp; Advisory Route (Certification issued by accredited certification bodies)</p>
                     </div>
                     <div className="text-right text-[10px] font-mono text-gray-500">
                       <p>Issued: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
@@ -2910,7 +2857,7 @@ export default function App() {
                     <span className="text-[#B68A35] font-sans text-xs uppercase tracking-widest font-bold">Selected Certification Schemes</span>
                     <h2 className="font-serif text-3xl md:text-[42px] text-primary font-bold">Certification Preparation Schemes</h2>
                     <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-                      Explore selected FoodChain ID certification schemes across food safety, product integrity, and agriculture. Yitzak assists your team in evaluating requirements and preparing for the appropriate audit pathway.
+                      Explore selected accredited certification schemes across food safety, product integrity, and agriculture. Yitzak assists your team in evaluating requirements and preparing for the appropriate audit pathway.
                     </p>
                     <p className="font-sans text-xs md:text-sm text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
                       Scheme availability and audit delivery are subject to facility scope, sector criteria, and accredited partner scheduling across Southern Africa.
@@ -2996,7 +2943,7 @@ export default function App() {
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
                             <ShieldCheck size={12} className="text-emerald-600" />
-                            <span>FoodChain ID Route</span>
+                            <span>Accredited Route</span>
                           </span>
                           <span className="bg-purple-50 text-purple-800 border border-purple-200/80 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1">
                             <Sparkles size={12} className="text-purple-600" />
@@ -3038,20 +2985,20 @@ export default function App() {
                   </ScrollReveal>
                 )}
 
-                {/* FoodChain ID Partner & Impartiality Panel */}
+                {/* Impartiality & Certification Body Independence Panel */}
                 <ScrollReveal direction="up" delay={0.1}>
                   <div className="bg-[#023625] text-white p-8 md:p-10 rounded-2xl relative overflow-hidden shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="space-y-2.5 max-w-2xl">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-[#DFC181] font-mono text-xs uppercase tracking-widest font-bold block">
-                          Independent Partnership &amp; Academy Route
+                          Independent Advisory &amp; Certification Route
                         </span>
                         <span className="text-white/40 text-xs">·</span>
                         <span className="text-white/70 text-xs font-mono">ISO/IEC 17021-1 Compliant</span>
                       </div>
-                      <h3 className="font-serif text-xl md:text-2xl font-bold">FoodChain ID &amp; Yitzak Consulting</h3>
+                      <h3 className="font-serif text-xl md:text-2xl font-bold">Accredited Certification Bodies &amp; Yitzak Consulting</h3>
                       <p className="font-sans text-xs md:text-sm text-white/85 leading-relaxed">
-                        FoodChain ID is an accredited independent Certification Body and global Academy. Yitzak Consulting provides independent readiness reviews, gap assessments, and workforce training. Formal certification audits are conducted autonomously under accredited certification procedures without consultancy influence.
+                        Yitzak Consulting provides independent readiness reviews, gap assessments, and workforce training. Formal third-party certification audits are conducted autonomously by accredited Certification Bodies under independent certification procedures without consultancy influence.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
@@ -3068,7 +3015,7 @@ export default function App() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleOpenBooking('compliance', 'Inquiry: FoodChain ID Partnership & Certification Advisory')}
+                        onClick={() => handleOpenBooking('compliance', 'Inquiry: Independent Certification Readiness Advisory')}
                         className="bg-[#B68A35] hover:bg-[#a3792c] text-white font-sans text-xs uppercase tracking-widest py-3 px-5 rounded-xl transition-all cursor-pointer shrink-0 inline-flex items-center justify-center gap-2 font-bold shadow-sm active:scale-95 text-center"
                       >
                         <span>Advisory Scoping</span>

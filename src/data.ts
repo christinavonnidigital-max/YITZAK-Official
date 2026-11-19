@@ -8,7 +8,7 @@ export const PILLARS: Pillar[] = [
     description: 'Practical, instructor-led training that builds knowledge, competence, and confidence across management systems and industry disciplines. This is the heart of our business.',
     details: [
       'Yitzak professional programmes',
-      'Selected FoodChain ID Academy courses',
+      'Auditor qualification & scheme courses',
       'Corporate & in-house delivery',
       'Customised learning pathways'
     ]
@@ -32,7 +32,7 @@ export const PILLARS: Pillar[] = [
     description: 'Independent diagnostic advisory and audit preparation across international schemes. Third-party certification is conducted independently by accredited Certification Bodies.',
     details: [
       'Guidance on suitable certification routes',
-      'FoodChain ID scheme preparation & advisory',
+      'Product claim & scheme preparation advisory',
       'BRCGS, FSSC 22000 & ISO readiness reviews',
       'GLOBALG.A.P. & Non-GMO preparation support',
       'Strict impartiality & independent third-party certification'
@@ -99,10 +99,10 @@ export const TRAINING_STREAMS = [
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBfnxvXuGPx63Lf1_RPo8IPYqlbrT3deq2nG0muPHTDo4DvgOdSbGDLY6Jig2NuIHx-xgFTgd8n9cD67OVCI3GvInFhFkVXkweGrOZ5x7D1hiCFujE73VJhOsenrc030dj8oPgB3ukyKK3-2yHDhLcxTxnqtyhQqxN4jamKcPUda7DuifKZ-xaVl0SOO_maJcBNDQB3QcNju64L2kFue_Wk2-uM0JqO7m2Vs1bO4XH6FQsWPlTLdtPp'
   },
   {
-    id: 'foodchain',
-    kicker: 'FoodChain ID Course',
-    title: 'FoodChain ID Academy',
-    description: 'A trusted partner in our portfolio, giving clients access to a respected global range of internationally recognised courses.',
+    id: 'auditor-courses',
+    kicker: 'Accredited Curriculum',
+    title: 'Scheme & Auditor Training',
+    description: 'Structured training pathways aligned with internationally recognised management system and food safety standards.',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCRdGCDAe5YayYKRjrTKFPBBR34JK_ulUgp6xz92eP-ZLP_smKlwfpScfIMKskDmqHo8bauCn3H3Y7EQVCm-fnO8yx4KvSKLKvjtRqruQeK0ZCTbcbBZTrfE0e--1qcGAJemAaxNM2AqkgXMQqpCP8QNyHJt2gsePt8FoEwX6FxKsKlFOU2mn9DUi_XjHzSdK5XwVGfP0oIHdoKBmUVhW3z3zQ-gt2orjmK-eyebsqSQTizEdDsk1rm'
   },
   {

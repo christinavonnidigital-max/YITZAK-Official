@@ -14,7 +14,7 @@ export interface TrainingCategory {
 }
 
 /**
- * Current Professional Training Standards offered by Yitzak & FoodChain ID.
+ * Current Professional Training Standards offered by Yitzak Consulting.
  * Standards covered:
  * 1. ISO 9001 (Quality Management)
  * 2. ISO 14001 (Environmental Management)

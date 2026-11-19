@@ -38,13 +38,13 @@ export interface CMSState {
   lastUpdated: string;
 }
 
-const CMS_STORAGE_KEY = 'yitzak_cms_content_v1';
+const CMS_STORAGE_KEY = 'yitzak_cms_content_v2';
 
 export const DEFAULT_CMS_STATE: CMSState = {
   banner: {
     enabled: true,
     badge: 'NOTICE',
-    text: 'Official FoodChain ID Partner · FSSC 22000, BRCGS & ISO Lead Auditor Advisory Desk in Randburg, Johannesburg.',
+    text: 'ISO 9001, FSSC 22000, BRCGS & Management Systems Advisory Desk in Randburg, Johannesburg.',
     theme: 'emerald',
     linkTarget: 'training',
     linkText: 'View Calendar'

@@ -185,7 +185,7 @@ export async function dispatchQuickChatInquiry(
           </a>
         </div>
         <div class="footer">
-          &copy; 2026 YITZAK Institutional Advisory · FoodChain ID Partner · info@yitzak.co.za
+          &copy; 2026 YITZAK Institutional Advisory · Compliance &amp; Training · info@yitzak.co.za
         </div>
       </div>
     </body>
@@ -565,7 +565,7 @@ export async function dispatchConsultationRequest(
           </a>
         </div>
         <div class="footer">
-          &copy; 2026 YITZAK Institutional Advisory · FoodChain ID Partner · info@yitzak.co.za
+          &copy; 2026 YITZAK Institutional Advisory · Compliance &amp; Training · info@yitzak.co.za
         </div>
       </div>
     </body>
@@ -635,7 +635,7 @@ export async function dispatchConsultationRequest(
         </div>
         <div class="footer">
           &copy; 2026 YITZAK Institutional Advisory · Randburg, Johannesburg, South Africa<br>
-          <span style="color:#9CA3AF;">Official Representative of FoodChain ID · GFSI, ISO 22000, BRCGS, FSSC 22000</span>
+          <span style="color:#9CA3AF;">Management Systems, Training &amp; Advisory · GFSI, ISO 22000, BRCGS, FSSC 22000</span>
         </div>
       </div>
     </body>
@@ -739,7 +739,7 @@ export async function dispatchPortalAccessCodeEmail(
           </div>
         </div>
         <div class="footer">
-          &copy; 2026 YITZAK Consulting &amp; Advisory · FoodChain ID Partner<br>
+          &copy; 2026 YITZAK Consulting &amp; Advisory · Compliance &amp; Capability Development<br>
           Randburg, Johannesburg, South Africa · <a href="mailto:info@yitzak.co.za" style="color: #023625; text-decoration: none;">info@yitzak.co.za</a>
         </div>
       </div>
